@@ -3,10 +3,10 @@
 Created by louis at 2022/5/31
 Description:
 """
+import os
+
 import numpy as np
 import pandas as pd
-import pyarrow as pa
-import os
 
 
 class PrepareDataset:

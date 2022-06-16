@@ -3,12 +3,14 @@ import copy
 import numpy as np
 import pandas as pd
 from pandas.tseries.offsets import BDay, DateOffset
+
 from .cleaner_aux import get_time2maturity
 
-#This file contains functions that implement the CBOE rules, and organize data.
+
+# This file contains functions that implement the CBOE rules, and organize data.
 
 class EuropeanOption():
-    
+
     def __init__(
             self,
             path,
@@ -23,14 +25,13 @@ class EuropeanOption():
         self.op_start_date = op_start_date
         self.maturity = maturity
         self.op_end_date = min(maturity, path.index[-1])
-        
+
         time_grid = pd.date_range(
             start=op_start_date,
             end=self.op_end_date,
             freq='B')
         self.underlying_price = path.loc[time_grid]
 
-        
 
 def find_option_seq_jan_cycle(
         path,
@@ -63,13 +64,12 @@ def find_option_seq_jan_cycle(
 
         return np.unique(strikes_loc)
 
-
     def generate_option(
             path,
             start_date,
             strike,
             maturity):
-        
+
         name = 'C' + str(start_date.date()) + '-' + str(maturity.date()) + '-' + str(strike)
         options[name] = EuropeanOption(
             path=path,
@@ -77,7 +77,6 @@ def find_option_seq_jan_cycle(
             op_start_date=start_date,
             maturity=maturity
         )
-
 
     def get_new_strike(price_now, strike_min_max):
         """
@@ -98,14 +97,13 @@ def find_option_seq_jan_cycle(
             a.remove(K_min)
         return a
 
-
-    start_date = path.index[0] 
+    start_date = path.index[0]
     # this offset allows us to generate an option with maturity longer than underlying final date.
     end = path.index[-1] + DateOffset(years=1)
 
     # the 3rd Friday every month is expiries.
     expiry = pd.date_range(start=start_date, end=end, freq='WOM-3FRI')
-        
+
     if strike_per_maturity is None:
         strike_per_maturity = {}
         cur = path.loc[start_date, 'S0']
@@ -114,13 +112,12 @@ def find_option_seq_jan_cycle(
             strike_per_maturity[T] = [strike_bracket[0], strike_bracket[-1]]
     else:
         strike_per_maturity = copy.deepcopy(strike_per_maturity)
-    
+
     options = {}
     for mat, value in strike_per_maturity.items():
-        strike_bracket = np.arange(value[0], value[1]+0.0001, step_K)
-        for k in strike_bracket:        
+        strike_bracket = np.arange(value[0], value[1] + 0.0001, step_K)
+        for k in strike_bracket:
             generate_option(path, start_date, k, mat)
-    
 
     # we iterate over each day, and act according to the rules.
     time_grid = path.index
@@ -143,7 +140,6 @@ def find_option_seq_jan_cycle(
                     for k in new_strikes:
                         generate_option(path, t + BDay(), k, mat)
 
-
         # check for each time, to see if any option expires.
         # option expires IFF it is an expiration date.
         if t in expiry:
@@ -163,7 +159,6 @@ def find_option_seq_jan_cycle(
     return options, strike_per_maturity
 
 
-
 def get_hedge_df(
         options,
         interest_rate,
@@ -179,7 +174,7 @@ def get_hedge_df(
     """
     df = pd.DataFrame()
     optionID_counter = 1
-    
+
     for name, op in options.items():
         if op.op_start_date > op.op_end_date:
             continue  # exit this iter and do next iter
@@ -187,14 +182,14 @@ def get_hedge_df(
         df_add = op.underlying_price.copy()
 
         df_add.loc[:, 'K'] = op.strike
-        
+
         df_add.loc[:, 'tau0'] = get_time2maturity(
-                df_add.index,
-                [op.maturity]
-            )
+            df_add.index,
+            [op.maturity]
+        )
         df_add['optionid'] = optionID_counter
         optionID_counter += 1
-            
+
         df = pd.concat([df, df_add])
         if display:
             print(name + ': Done')
@@ -204,4 +199,3 @@ def get_hedge_df(
     df = df.reset_index()
     df.rename(columns={'index': 'date'}, inplace=True)
     return df
-

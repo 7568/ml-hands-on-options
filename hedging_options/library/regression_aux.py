@@ -1,7 +1,7 @@
 import os
+
 import numpy as np
 import pandas as pd
-
 from sklearn.linear_model import LinearRegression
 
 from . import common as cm
@@ -138,7 +138,7 @@ def rolling_lin_reg2(
     import random
     s = random.sample(range(df.shape[0]), int(df.shape[0] / 10))
     all_df_test = df.iloc[s]
-    all_df_train = df.iloc[np.delete(range(df.shape[0]),s)]
+    all_df_train = df.iloc[np.delete(range(df.shape[0]), s)]
     for name, group in grouped:
         df_train = all_df_train[all_df_train['cp_int'] == name]
         df_test = all_df_test[all_df_test['cp_int'] == name]
@@ -225,7 +225,7 @@ def run_store_lin2(
     #     cm.store_pnl(df, res_dict['delta'] + df['delta_bs'], pnl_path)
 
     return {'df_coef': res_dict['df_coef'], 'df_leve': res_dict['df_leve'],
-            'df_fit_std': res_dict['df_fit_std'],'delta':res_dict['delta']}
+            'df_fit_std': res_dict['df_fit_std'], 'delta': res_dict['delta']}
 
 
 def fit_leverage(df):

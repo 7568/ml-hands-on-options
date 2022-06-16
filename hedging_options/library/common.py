@@ -1,13 +1,11 @@
 import itertools
 import os
-import copy
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 
-from pandas.tseries.offsets import BDay, DateOffset, WeekOfMonth
-from sklearn.model_selection import train_test_split
+
 # This file contains functions that calculate and inspect the hedging error.
 
 def print_removal(before_size, cur_size, ori_size, issue):

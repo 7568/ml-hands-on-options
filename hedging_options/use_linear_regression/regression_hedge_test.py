@@ -3,9 +3,10 @@
 Created by louis at 2022/6/13
 Description:
 """
-import get_bS_delta_hedge
-from library import regression_aux as raux
 import numpy as np
+
+import hedging_options.use_bs_delta.get_bS_delta_hedge as get_bS_delta_hedge
+from hedging_options.library import regression_aux as raux
 
 if __name__ == '__main__':
     test_data = get_bS_delta_hedge.get_clean_data()

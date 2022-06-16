@@ -1,18 +1,12 @@
+import random
+
 import pandas as pd
-import numpy as np
+from tqdm import tqdm
 
-import sys
-import os
+
 # Load_Clean_aux.py loads the clean data and implements some extra cleaning, before running linear regressions or ANNs.
-
 # Append the library path to PYTHONPATH, so library can be imported.
 # sys.path.append(os.path.dirname(os.getcwd()))
-
-from library import common as cm
-from library import loader_aux as laux
-from tqdm import tqdm
-from multiprocessing import Pool, cpu_count
-import random
 
 
 #        ['index', 'SecurityID', 'TradingDate', 'Symbol', 'ExchangeCode',

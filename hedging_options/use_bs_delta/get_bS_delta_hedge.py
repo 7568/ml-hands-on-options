@@ -3,14 +3,15 @@
 Created by louis at 2022/6/13
 Description:
 """
-import datetime
 
-import math
+import random
+
 import numpy as np
 import pandas as pd
-from library import cleaner_aux as caux
-import matplotlib.pyplot as plt
-import random
+
+from hedging_options.library import cleaner_aux as caux
+
+
 def get_dirt_data():
     train_data = pd.read_csv('/home/liyu/data/hedging-option/china-market/h_sh_300.csv', parse_dates=[
         'TradingDate', 'ExerciseDate'])
