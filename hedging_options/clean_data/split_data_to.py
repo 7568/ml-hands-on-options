@@ -102,7 +102,7 @@ def make_index(tag):
 
 
 if __name__ == '__main__':
-    split_training_validation_test()
+    # split_training_validation_test()
     make_index('training')
     make_index('validation')
     make_index('test')

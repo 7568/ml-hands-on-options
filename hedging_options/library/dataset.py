@@ -78,6 +78,13 @@ class PrepareChineDataSet:
         _data[:, 2] = _data[:, 2] / underlying_scrt_close_rate
         _data[:, 4] = _data[:, 4] / underlying_scrt_close_rate
         _data[:, -2] = _data[:, -2] / underlying_scrt_close_rate
+        # Theta Vega Rho
+        _data[:, 8] = _data[:, 8] / underlying_scrt_close_rate
+        _data[:, 9] = _data[:, 9] / underlying_scrt_close_rate
+        _data[:, 10] = _data[:, 10] / underlying_scrt_close_rate
+        _data[:, -3] = _data[:, -3] / underlying_scrt_close_rate
+        _data[:, -4] = _data[:, -4] / underlying_scrt_close_rate
+        _data[:, -5] = _data[:, -5] / underlying_scrt_close_rate
         _data[:, 3] = 100
         # _data[:, _data[0, :] == 'C'] = 0
         # _data[:, _data[0, :] == 'P'] = 1

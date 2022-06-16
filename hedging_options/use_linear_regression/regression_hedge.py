@@ -324,9 +324,9 @@ PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/china-market/'
 if __name__ == '__main__':
     # prepare_data()
     clean_data = True
-    print(f'no_hedge_in_test , clean={clean_data}')
-    no_hedge_in_test(clean_data)
-    print(f'bs_delta_hedge_in_test , clean={clean_data}')
-    bs_delta_hedge_in_test(clean_data)
+    # print(f'no_hedge_in_test , clean={clean_data}')
+    # no_hedge_in_test(clean_data)
+    # print(f'bs_delta_hedge_in_test , clean={clean_data}')
+    # bs_delta_hedge_in_test(clean_data)
     print(f'linear_regression_hedge_in_test , clean={clean_data}')
     linear_regression_hedge_in_test(clean_data)
