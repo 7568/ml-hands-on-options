@@ -147,7 +147,7 @@ class Dataset_transformer:
         _data = np.delete(_data, 12, 1)
         _result = np.delete(_result, 12, 0)
         put_index = _data[:, 1] == 1
-        if len(put_index) > 0:
+        if put_index[0]:
             _data[put_index, 6] = -_data[put_index, 6] - 1
             _data[put_index, 12] = -_data[put_index, 12] - 1
         put_index = _result[1] == 1
