@@ -140,22 +140,24 @@ class Dataset_transformer:
 
     def __getitem__(self, idx):
         # print(idx)
+        # idx=0
         _id, _days = self.all_data_index[idx]
         _data = pd.read_parquet(f'{self.all_data_path}/{int(_id)}/day_{int(_days)}_datas.parquet').to_numpy()
         _result = pd.read_parquet(f'{self.all_data_path}/{int(_id)}/day_{int(_days)}_results.parquet').to_numpy()
         # delete the columns of ImpliedVolatility
         _data = np.delete(_data, 12, 1)
         _result = np.delete(_result, 12, 0)
-        put_index = _data[:, 1] == 1
-        if put_index[0]:
-            _data[put_index, 6] = -_data[put_index, 6] - 1
-            _data[put_index, 12] = -_data[put_index, 12] - 1
-        put_index = _result[1] == 1
-        if put_index:
-            _result[6] = -_result[ 6] - 1
-            _result[12] = -_result[ 12] - 1
+        # put_index = _data[:, 1] == 1
+        # if put_index[0]:
+        #     _data[put_index, 6] = -_data[put_index, 6] - 1
+        #     _data[put_index, 12] = -_data[put_index, 12] - 1
+        # put_index = _result[1] == 1
+        # if put_index:
+        #     _result[6] = -_result[ 6] - 1
+        #     _result[12] = -_result[ 12] - 1
         if _result[-2, 0] == 0:
             print(f'_id : {_id} , _days : {_days}')
+        # print(_result)
         return _data, _result.T
 
     def __len__(self):
