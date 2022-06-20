@@ -194,34 +194,6 @@ class Seq2Seq(nn.Module):
         self.fc_o = nn.Linear(input_dim, 1)
         self.fc_o2 = nn.Linear(15, 1)
 
-    def make_src_mask(self, src):
-        # src = [batch size, src len]
-
-        src_mask = (src != self.src_pad_idx).unsqueeze(1).unsqueeze(2)
-
-        # src_mask = [batch size, 1, 1, src len]
-
-        return src_mask
-
-    def make_trg_mask(self, trg):
-        # trg = [batch size, trg len]
-
-        trg_pad_mask = (trg != self.trg_pad_idx).unsqueeze(1).unsqueeze(2)
-
-        # trg_pad_mask = [batch size, 1, 1, trg len]
-
-        trg_len = trg.shape[1]
-
-        trg_sub_mask = torch.tril(torch.ones((trg_len, trg_len), device=self.device)).bool()
-
-        # trg_sub_mask = [trg len, trg len]
-
-        trg_mask = trg_pad_mask & trg_sub_mask
-
-        # trg_mask = [batch size, 1, trg len, trg len]
-
-        return trg_mask
-
     def forward(self, src, results):
         # src = [batch size, src len]
         # trg = [batch size, trg len]
@@ -278,4 +250,5 @@ def count_parameters(model):
 
 def initialize_weights(m):
     if hasattr(m, 'weight') and m.weight.dim() > 1:
-        nn.init.xavier_uniform_(m.weight.data)
+        # nn.init.xavier_uniform_(m.weight.data)
+        nn.init.kaiming_normal_(m.weight.data)

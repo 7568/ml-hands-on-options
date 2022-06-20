@@ -124,7 +124,6 @@ class Dataset:
         _data = pd.read_parquet(f'{self.all_data_path}/{int(_id)}/day_{int(_days)}_datas.parquet').to_numpy()
         _result = pd.read_parquet(f'{self.all_data_path}/{int(_id)}/day_{int(_days)}_results.parquet').to_numpy()
 
-
         if _result[-2, 0] == 0:
             print(f'_id : {_id} , _days : {_days}')
         return _data, _result.T
@@ -137,6 +136,7 @@ class Dataset_transformer:
     def __init__(self, data_index, parquet_data_path):
         self.all_data_path = parquet_data_path
         self.all_data_index = data_index
+        self.pos = np.sin(np.array([1 / (i + 1) for i in range(1, 16)]) * np.pi / 2)[::-1]
 
     def __getitem__(self, idx):
         # print(idx)
@@ -147,6 +147,7 @@ class Dataset_transformer:
         # delete the columns of ImpliedVolatility
         _data = np.delete(_data, 12, 1)
         _result = np.delete(_result, 12, 0)
+        _data = np.concatenate((_data, self.pos.reshape(15, 1)), axis=1)
         # put_index = _data[:, 1] == 1
         # if put_index[0]:
         #     _data[put_index, 6] = -_data[put_index, 6] - 1
