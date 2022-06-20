@@ -192,7 +192,8 @@ class Seq2Seq(nn.Module):
         # self.trg_pad_idx = trg_pad_idx
         self.device = device
         self.fc_o = nn.Linear(input_dim, 1)
-        self.fc_o2 = nn.Linear(15, 1)
+        self.fc_o2 = nn.Linear(15, 64)
+        self.fc_o3 = nn.Linear(64, 1)
 
     def forward(self, src, results):
         # src = [batch size, src len]
@@ -203,20 +204,23 @@ class Seq2Seq(nn.Module):
 
         # src_mask = [batch size, 1, 1, src len]
         # trg_mask = [batch size, 1, trg len, trg len]
-
-        output_ = torch.relu(self.fc_o(self.encoder(src)))
-        output_dim = output_.shape[0]
-        output = self.fc_o2(output_.view(output_dim, -1))
+        # self.fc_o2(torch.transpose(self.encoder(src),1,2))
+        # output_ = torch.relu(self.fc_o(self.encoder(src)))
+        # output = self.fc_o2(output_.view(output_dim, -1))
+        output = self.fc_o3(torch.relu(self.fc_o2(torch.transpose(self.encoder(src), 1, 2)[:, -1, :])))
+        # output = self.fc_o2(torch.transpose(self.encoder(src), 1, 2)).view(src.shape[0], -1)[:, -3].reshape((
+        #     src.shape[0],1))
+        output_dim = output.shape[0]
 
         if torch.isnan(output).any():
             print('\nweight error')
         # print(output.shape)
         # v_1 = output.contiguous().view(output_dim)
-        i = 0
-        for t in src:
-            i += 1
-            if torch.isnan(t).any():
-                print(i)
+        # i = 0
+        # for t in src:
+        #     i += 1
+        #     if torch.isnan(t).any():
+        #         print(i)
 
         R_1 = results.contiguous().view(output_dim, -1)
 

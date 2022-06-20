@@ -140,7 +140,7 @@ class Dataset_transformer:
 
     def __getitem__(self, idx):
         # print(idx)
-        # idx=0
+        # idx=idx%8
         _id, _days = self.all_data_index[idx]
         _data = pd.read_parquet(f'{self.all_data_path}/{int(_id)}/day_{int(_days)}_datas.parquet').to_numpy()
         _result = pd.read_parquet(f'{self.all_data_path}/{int(_id)}/day_{int(_days)}_results.parquet').to_numpy()
@@ -148,6 +148,12 @@ class Dataset_transformer:
         _data = np.delete(_data, 12, 1)
         _result = np.delete(_result, 12, 0)
         _data = np.concatenate((_data, self.pos.reshape(15, 1)), axis=1)
+        _data[:, 2] = _data[:, 2] / 100
+        _data[:, 3] = _data[:, 3] / 100
+        _data[:, 4] = _data[:, 4] / 100
+        _data[:, -2] = _data[:, -2] / 100
+        _data[:, -3] = _data[:, -3] / 100
+        _data[:, -4] = _data[:, -4] / 100
         # put_index = _data[:, 1] == 1
         # if put_index[0]:
         #     _data[put_index, 6] = -_data[put_index, 6] - 1
