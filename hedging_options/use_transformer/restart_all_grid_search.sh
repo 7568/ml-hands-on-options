@@ -22,6 +22,11 @@ rm -f pid/grid_search_transformer_train_code.pid
 #python grid_search_transformer_train_code.py 3 2 16 17 & echo $! >> pid/grid_search_transformer_train_code.pid
 #python grid_search_transformer_train_code.py 3 2 17 18 & echo $! >> pid/grid_search_transformer_train_code.pid
 
+#python grid_search_transformer_train_code.py 6 3 0 3 & echo $! >> pid/grid_search_transformer_train_code.pid
+#python grid_search_transformer_train_code.py 6 4 3 6 & echo $! >> pid/grid_search_transformer_train_code.pid
+#python grid_search_transformer_train_code.py 6 5 6 9 & echo $! >> pid/grid_search_transformer_train_code.pid
+#python grid_search_transformer_train_code.py 6 6 9 12 & echo $! >> pid/grid_search_transformer_train_code.pid
+
 python grid_search_transformer_train_code.py 6 1 0 1 & echo $! >> pid/grid_search_transformer_train_code.pid
 python grid_search_transformer_train_code.py 6 1 1 2 & echo $! >> pid/grid_search_transformer_train_code.pid
 python grid_search_transformer_train_code.py 6 2 2 3 & echo $! >> pid/grid_search_transformer_train_code.pid
@@ -37,9 +42,11 @@ python grid_search_transformer_train_code.py 6 6 11 12 & echo $! >> pid/grid_sea
 python grid_search_transformer_train_code.py 6 7 12 13 & echo $! >> pid/grid_search_transformer_train_code.pid
 python grid_search_transformer_train_code.py 6 7 13 14 & echo $! >> pid/grid_search_transformer_train_code.pid
 python grid_search_transformer_train_code.py 6 1 14 15 & echo $! >> pid/grid_search_transformer_train_code.pid
-python grid_search_transformer_train_code.py 6 1 15 16 & echo $! >> pid/grid_search_transformer_train_code.pid
-python grid_search_transformer_train_code.py 6 2 16 17 & echo $! >> pid/grid_search_transformer_train_code.pid
-python grid_search_transformer_train_code.py 6 2 17 18 & echo $! >> pid/grid_search_transformer_train_code.pid
+python grid_search_transformer_train_code.py 6 2 15 16 & echo $! >> pid/grid_search_transformer_train_code.pid
+python grid_search_transformer_train_code.py 6 3 16 17 & echo $! >> pid/grid_search_transformer_train_code.pid
+python grid_search_transformer_train_code.py 6 4 17 18 & echo $! >> pid/grid_search_transformer_train_code.pid
+python grid_search_transformer_train_code.py 6 5 18 19 & echo $! >> pid/grid_search_transformer_train_code.pid
+python grid_search_transformer_train_code.py 6 6 20 21 & echo $! >> pid/grid_search_transformer_train_code.pid
 
 #python grid_search_transformer_train_code.py 9 1 0 1 & echo $! >> pid/grid_search_transformer_train_code.pid
 #python grid_search_transformer_train_code.py 9 1 1 2 & echo $! >> pid/grid_search_transformer_train_code.pid

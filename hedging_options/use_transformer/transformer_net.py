@@ -62,6 +62,11 @@ class EncoderLayer(nn.Module):
         # self.self_attention_2 = MultiHeadAttentionLayer(hid_dim,input_dim, n_heads, dropout, device)
         # self.positionwise_feedforward = PositionwiseFeedforwardLayer(hid_dim, pf_dim, dropout)
         self.dropout = nn.Dropout(dropout)
+        self.dropout2 = nn.Dropout(dropout)
+        self.dropout3 = nn.Dropout(dropout)
+        self.linear1 = nn.Linear(input_dim, hid_dim)
+        self.linear2 = nn.Linear(hid_dim, input_dim)
+        self.relu = nn.ReLU()
 
     def forward(self, src):
         # src = [batch size, src len, hid dim]
@@ -74,6 +79,9 @@ class EncoderLayer(nn.Module):
 
         # dropout, residual connection and layer norm
         src = self.self_attn_layer_norm(src + self.dropout(_src))
+
+        src2 = self.linear2(self.dropout2(self.relu(self.linear1(src))))
+        src = self.ff_layer_norm(src + self.dropout3(src2))
 
         # src = [batch size, src len, hid dim]
 
@@ -247,6 +255,7 @@ class Seq2Seq(nn.Module):
         # attention = [batch size, n heads, trg len, src len]
 
         return output
+
 
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
