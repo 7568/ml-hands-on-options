@@ -35,7 +35,7 @@ def display_grid_search_loss(log_path, scenarios):
     i = 0
     for k in train_infos.keys():
         print(k)
-        ax = fig.add_subplot(4, 8, i + 1)
+        ax = fig.add_subplot(4, 5, i + 1)
         ax.set_title(k)
         i += 1
         if scenarios == 'MSHE in test':
