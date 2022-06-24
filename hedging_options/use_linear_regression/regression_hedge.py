@@ -9,7 +9,7 @@ import sys
 import torch
 
 # Append the library path to PYTHONPATH, so library can be imported.
-sys.path.append(os.path.dirname(os.getcwd()))
+# sys.path.append(os.path.dirname(os.getcwd()))
 
 from torch.utils.data import DataLoader
 from sklearn.linear_model import LinearRegression
@@ -21,7 +21,9 @@ import random
 from hedging_options.library import dataset
 
 from tqdm import tqdm
-
+import resource
+rlimit = resource.getrlimit(resource.RLIMIT_NOFILE)
+resource.setrlimit(resource.RLIMIT_NOFILE, (4096, rlimit[1]))
 torch.multiprocessing.set_sharing_strategy('file_system')
 
 
@@ -196,7 +198,7 @@ def linear_regression_hedge_put_clean_data(_data):
     return _data
 
 
-def linear_regression_hedge_in_test(clean_data):
+def get_regression_data(clean_data):
     _columns = ['RisklessRate', 'CallOrPut', 'ClosePrice', 'UnderlyingScrtClose', 'StrikePrice', 'RemainingTerm',
                 'Delta',
                 'Gamma', 'Vega', 'Theta', 'Rho', 'M', 'ImpliedVolatility', 'Delta_1', 'Gamma_1', 'Vega_1', 'Theta_1',
@@ -221,11 +223,16 @@ def linear_regression_hedge_in_test(clean_data):
         test_put_data = linear_regression_hedge_put_clean_data(test_put_data)
         test_call_data = linear_regression_hedge_call_clean_data(test_call_data)
     print(test_put_data.shape, test_call_data.shape)
-    features = ['Delta', 'Gamma', 'Vega', 'Theta', 'Rho']
     train_put_data = add_extra_feature(train_put_data)
     train_call_data = add_extra_feature(train_call_data)
     test_put_data = add_extra_feature(test_put_data)
     test_call_data = add_extra_feature(test_call_data)
+    return train_put_data ,train_call_data, test_put_data, test_call_data
+
+
+def linear_regression_hedge_in_test(clean_data):
+    train_put_data, train_call_data, test_put_data, test_call_data = get_regression_data(clean_data)
+    features = ['Delta', 'Gamma', 'Vega', 'Theta', 'Rho']
     put_regs = fit_lin_core(train_put_data, features)
     call_regs = fit_lin_core(train_call_data, features)
     predicted_put = predicted_linear_delta(put_regs['regr'], test_put_data, features)
@@ -257,7 +264,7 @@ def prepare_data():
 
     BATCH_SIZE = 1
     # Create data loaders.
-    train_dataloader = DataLoader(training_dataset, num_workers=0, batch_size=BATCH_SIZE, shuffle=True)
+    train_dataloader = DataLoader(training_dataset, num_workers=0, batch_size=BATCH_SIZE)
     # val_dataloader = DataLoader(valid_dataset, num_workers=10, batch_size=BATCH_SIZE)
     test_dataloader = DataLoader(test_dataset, num_workers=0, batch_size=BATCH_SIZE)
 
@@ -267,8 +274,9 @@ def prepare_data():
     train_call_data = []
     test_put_data = []
     test_call_data = []
-    for ii, (datas, results) in tqdm(enumerate(train_dataloader), total=len(train_data_index) / BATCH_SIZE):
+    for ii, (datas, results) in tqdm(enumerate(train_dataloader),total=int(len(train_data_index) / BATCH_SIZE)):
         output_dim = datas.shape[0]
+        datas=None
         # print(results.shape)
         # print(results.numpy().shape)
         results = results.view(output_dim, -1)
@@ -322,11 +330,11 @@ DEVICE = 'cpu'
 PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/china-market/'
 # PREPARE_HOME_PATH = f'/home/zhanghu/liyu/data/'
 if __name__ == '__main__':
-    # prepare_data()
-    clean_data = True
+    prepare_data()
+    CLEAN_DATA = True
     # print(f'no_hedge_in_test , clean={clean_data}')
     # no_hedge_in_test(clean_data)
     # print(f'bs_delta_hedge_in_test , clean={clean_data}')
     # bs_delta_hedge_in_test(clean_data)
-    print(f'linear_regression_hedge_in_test , clean={clean_data}')
-    linear_regression_hedge_in_test(clean_data)
+    # print(f'linear_regression_hedge_in_test , clean={CLEAN_DATA}')
+    # linear_regression_hedge_in_test(CLEAN_DATA)

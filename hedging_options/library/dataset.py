@@ -120,10 +120,11 @@ class Dataset:
 
     def __getitem__(self, idx):
         # print(idx)
+
         _id, _days = self.all_data_index[idx]
         _data = pd.read_parquet(f'{self.all_data_path}/{int(_id)}/day_{int(_days)}_datas.parquet').to_numpy()
         _result = pd.read_parquet(f'{self.all_data_path}/{int(_id)}/day_{int(_days)}_results.parquet').to_numpy()
-
+        # print(f'{idx} , {_id} , {_days}')
         if _result[-2, 0] == 0:
             print(f'_id : {_id} , _days : {_days}')
         return _data, _result.T
