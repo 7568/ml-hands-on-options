@@ -39,7 +39,7 @@ from tqdm import tqdm
 # 获取 test_set 方法同理
 
 def split_training_validation_test():
-    df = pd.read_csv('/home/liyu/data/hedging-option/china-market/h_sh_300.csv', parse_dates=[
+    df = pd.read_csv(f'{PREPARE_HOME_PATH}/sh_zh_50.csv', parse_dates=[
         'TradingDate', 'ExerciseDate'])
     option_ids = df['SecurityID'].unique()
     print(len(option_ids))
@@ -77,14 +77,14 @@ def split_training_validation_test():
     print(test_set.shape[0])
     if (training_set.shape[0] + validation_set.shape[0] + test_set.shape[0]) < df.shape[0]:
         print('error')
-    training_set.to_csv('/home/liyu/data/hedging-option/china-market/h_sh_300_training.csv', index=False)
-    validation_set.to_csv('/home/liyu/data/hedging-option/china-market/h_sh_300_validation.csv', index=False)
-    test_set.to_csv('/home/liyu/data/hedging-option/china-market/h_sh_300_test.csv', index=False)
+    training_set.to_csv(f'{PREPARE_HOME_PATH}/training.csv', index=False)
+    validation_set.to_csv(f'{PREPARE_HOME_PATH}/validation.csv', index=False)
+    test_set.to_csv(f'{PREPARE_HOME_PATH}/testing.csv', index=False)
 
 
 def make_index(tag):
 
-    train_data = pd.read_csv(f'/home/liyu/data/hedging-option/china-market/h_sh_300_{tag}.csv', parse_dates=[
+    train_data = pd.read_csv(f'{PREPARE_HOME_PATH}/{tag}.csv', parse_dates=[
         'TradingDate', 'ExerciseDate'])
     option_ids = train_data['SecurityID'].unique()
     # train_data_index=pd.DataFrame(columns=['SecurityID','days'])
@@ -97,12 +97,12 @@ def make_index(tag):
             train_data_index.append([id, i])
 
     pd.DataFrame(train_data_index, columns=['SecurityID', 'days']).to_csv(
-        f'/home/liyu/data/hedging-option/china-market/h_sh_300_{tag}_index.csv', index=False)
+        f'{PREPARE_HOME_PATH}/h_sh_300_{tag}_index.csv', index=False)
 
 
-
+PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/china-market/sh_zh_50/'
 if __name__ == '__main__':
-    # split_training_validation_test()
+    split_training_validation_test()
     make_index('training')
     make_index('validation')
-    make_index('test')
+    make_index('testing')

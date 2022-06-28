@@ -1,5 +1,9 @@
 bash stop_all.sh
 mkdir -p pid
+#pid_file = "pid/grid_search_transformer_train_code.pid"
+#if [-f "$pid_file"] ; then
+#  rm -f "$pid_file"
+#fi
 rm -f pid/grid_search_transformer_train_code.pid
 #echo '======================================'>>pid/grid_search_transformer_train_code.pid
 # one param means ENC_LAYERS, second param means gpu id, [third,forth] param means the sub set of H_P_L_BS[third,forth]

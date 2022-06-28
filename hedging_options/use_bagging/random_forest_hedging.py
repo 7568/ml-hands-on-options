@@ -17,14 +17,6 @@ from hedging_options.use_linear_regression import regression_hedge
 
 def make_predictor(df):
     df = df.to_numpy()[0:,:]
-    underlying_scrt_close_rate = df[:, 3] / 100
-    # # Theta Vega Rho
-    df[:, 4] = df[:, 4] / underlying_scrt_close_rate
-    df[:, 8] = df[:, 8] / underlying_scrt_close_rate
-    df[:, 9] = df[:, 9] / underlying_scrt_close_rate
-    df[:, 10] = df[:, 10] / underlying_scrt_close_rate
-    df[:, -2] = df[:, -2] / underlying_scrt_close_rate
-    df[:, -3] = df[:, -3] / underlying_scrt_close_rate
     # x = df[:, [-1, -3, -5, -6, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12]]
     x = df[:, [6]]
     y = (df[:, -2] - df[:, -1] * df[:, -3]) / (df[:, -4] - df[:, -1] * df[:, -5])

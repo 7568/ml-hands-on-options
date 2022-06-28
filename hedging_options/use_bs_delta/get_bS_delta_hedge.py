@@ -13,7 +13,7 @@ from hedging_options.library import cleaner_aux as caux
 
 
 def get_dirt_data():
-    train_data = pd.read_csv('/home/liyu/data/hedging-option/china-market/h_sh_300.csv', parse_dates=[
+    train_data = pd.read_csv(f'{PREPARE_HOME_PATH}/h_sh_300/testing.csv', parse_dates=[
         'TradingDate', 'ExerciseDate'])
     test_data = train_data.iloc[0:]
     del train_data
@@ -65,7 +65,7 @@ def get_dirt_data():
     return _test_data_numpy
 
 def get_clean_data():
-    train_data = pd.read_csv('/home/liyu/data/hedging-option/china-market/h_sh_300.csv', parse_dates=[
+    train_data = pd.read_csv(f'{PREPARE_HOME_PATH}/h_sh_300/testing.csv', parse_dates=[
         'TradingDate', 'ExerciseDate'])
     # test_data_index = pd.read_csv(f'/home/liyu/data/hedging-option/china-market/h_sh_300_test_index.csv').to_numpy()
     # bl = (train_data['SecurityID']==test_data_index[:0]) & (train_data['TradingDate']==test_data_index[:1])
@@ -146,10 +146,10 @@ def get_clean_data():
 '''
 对 delta 进行回归分析和不做对冲的分析，发现在早期2020年之前，他们的 MSHE 都比较大，
 有的时候高达10左右，而到了2020年之后，就变得很小，大多数时候都在1以内。
-也就是说在2020年之后，期权本身的风险就已经很低，即使是不进行对冲。而且即使是进行了对冲，提升的效果也并不大
+也就是说在2020年之后，期权本身的风险就已经很低，即使是不进行对冲。
 '''
 def test_1():
-    clean_data = get_clean_data().to_numpy()
+    clean_data = get_dirt_data().to_numpy()
     partial_num = 20
     _len = int(clean_data.shape[0] / partial_num)
     for i in range(partial_num):
@@ -215,6 +215,7 @@ def test_2():
     print(call_mshe)
     print(put_mshe)
 
-
+PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/china-market/'
 if __name__ == '__main__':
     test_1()
+    test_2()
