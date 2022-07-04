@@ -270,7 +270,7 @@ def test_strike_price(df):
 PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/china-market/'
 SAVE_ROOT_PATH = f'/home/liyu/data/hedging-option/china-market/display/'
 if __name__ == '__main__':
-    train_data = pd.read_csv('/home/liyu/data/hedging-option/china-market/h_sh_300.csv', parse_dates=[
+    train_data = pd.read_csv('/home/liyu/data/hedging-option/china-market/h_sh_300/all.csv', parse_dates=[
         'TradingDate', 'ExerciseDate'])
 
     print(train_data.columns)

@@ -18,7 +18,7 @@ from tqdm import tqdm
 
 
 def split_training_validation_test():
-    df = pd.read_csv(f'{PREPARE_HOME_PATH}/h_sh_300/two_day_all.csv', parse_dates=[
+    df = pd.read_csv(f'{PREPARE_HOME_PATH}/h_sh_300/two_day_all_clean_data.csv', parse_dates=[
         'TradingDate', 'ExerciseDate'])
     print(len(df['SecurityID'].unique()))
     trading_date = df.sort_values(by=['TradingDate'])['TradingDate'].unique()

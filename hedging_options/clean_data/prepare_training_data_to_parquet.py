@@ -44,6 +44,34 @@ def prepare_dataset(tag):
         continue
 
 
-prepare_dataset('training')
-prepare_dataset('validation')
-prepare_dataset('test')
+def test_001():
+    prepare_dataset('training')
+    prepare_dataset('validation')
+    prepare_dataset('test')
+
+
+# 将每一天的数据存放成 parquet 格式
+def prepare_dataset_for_panel_data(tag):
+    if not os.path.exists(f'{DATA_HOME_PATH}/h_sh_300/panel_parquet/{tag}/'):
+        os.makedirs(f'{DATA_HOME_PATH}/h_sh_300/panel_parquet/{tag}/')
+
+    df = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/{tag}.csv', parse_dates=['TradingDate'])
+    days = df.sort_values(by=['TradingDate'])['TradingDate'].unique()
+    for day in tqdm(days, total=len(days)):
+        _options = df[df['TradingDate'] == day]
+        _options.drop(columns=['SecurityID', 'TradingDate', 'Symbol', 'ExchangeCode', 'UnderlyingSecurityID',
+                               'UnderlyingSecuritySymbol', 'ShortName', 'DataType', 'HistoricalVolatility',
+                               'ImpliedVolatility','TheoreticalPrice'])
+        _options.to_parquet(
+            f'{DATA_HOME_PATH}/h_sh_300/panel_parquet/{tag}/{str(day)[:10]}_datas.parquet')
+
+
+def test_002():
+    prepare_dataset_for_panel_data('training')
+    prepare_dataset_for_panel_data('validation')
+    prepare_dataset_for_panel_data('testing')
+
+
+DATA_HOME_PATH = '/home/liyu/data/hedging-option/china-market'
+if __name__ == '__main__':
+    test_002()

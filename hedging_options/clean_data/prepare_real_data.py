@@ -120,7 +120,8 @@ def check_data():
 
 # 找出那些在重要参数表中剩余的还有空值的数据
 def check_dirt_data():
-    df = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/all.csv')
+    df = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/dirt_data.csv')
+    df = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/all_clean_data.csv')
     print(len(df['SecurityID'].unique()))
     df = df.drop(columns=['ImpliedVolatility', 'DataType'])
     df = df.reset_index()
@@ -247,6 +248,14 @@ def assemble_next_day_features_precess(param):
         _options_features = np.append(_options_features, [[0, 0, 0, 0, 0, 0, 0, 0]], axis=0)
         _options[['ClosePrice_1', 'UnderlyingScrtClose_1', 'ImpliedVolatility_1', 'Delta_1', 'Gamma_1', 'Vega_1',
                   'Theta_1', 'Rho_1']] = _options_features
+
+        _options = _options.replace({'CallOrPut': {'C': 0, 'P': 1}})
+        _options['on_ret'] = 1 + _options['RisklessRate'] / 100 * (1 / 253)
+        _options['Mo'] = _options['UnderlyingScrtClose'] / _options['StrikePrice']
+        _options['ActualDelta'] = (_options['ClosePrice_1'] - _options['on_ret'] * _options['ClosePrice']) / (
+                _options['UnderlyingScrtClose_1'] - _options['on_ret'] * _options['UnderlyingScrtClose'])
+        _options.drop(columns=['ClosePrice_1', 'UnderlyingScrtClose_1', 'ImpliedVolatility_1', 'Delta_1', 'Gamma_1', 'Vega_1',
+                  'Theta_1', 'Rho_1'])
         new_df = new_df.append(_options.iloc[:-1, :])  # 最后一天的数据不需要，因为既做不了训练集也做不了验证集
 
     return new_df
@@ -376,29 +385,109 @@ def remove_remaining_term_0_data():
     df.to_csv(f'{DATA_HOME_PATH}/h_sh_300/all.csv', index=False)
 
 
+def combine_all_data():
+    """
+    IO_PRICINGPARAMETER:股指期权合约定价重要参数表
+    证券ID[SecurityID] 交易日期[TradingDate] 交易代码[Symbol] 交易所代码[ExchangeCode] 标的证券ID[UnderlyingSecurityID]
+    标的证券交易代码[UnderlyingSecuritySymbol] 合约简称[ShortName] 认购认沽[CallOrPut] 行权价[StrikePrice] 行权日[ExerciseDate]
+     收盘价[ClosePrice] 标的证券收盘价[UnderlyingScrtClose] 剩余年限[RemainingTerm] 无风险利率(%)[RisklessRate]
+      历史波动率[HistoricalVolatility] 隐含波动率[ImpliedVolatility] 理论价格[TheoreticalPrice] Delta[Delta] Gamma[Gamma]
+      Vega[Vega] Theta[Theta] Rho[Rho] 连续股息率[DividendYeild] 数据类型[DataType]
+
+    IO_QUOTATIONBAS: 股指期权合约日交易基础表
+    证券ID[SecurityID] 交易日期[TradingDate] 交易代码[Symbol] 交易所代码[ExchangeCode] 合约简称[ShortName]
+    交易日状态编码[TradingDayStatusID] 标的证券ID[UnderlyingSecurityID] 标的证券交易代码[UnderlyingSecuritySymbol]
+    认购认沽[CallOrPut] 填充标识[Filling] 日开盘价[OpenPrice] 日最高价[HighPrice] 日最低价[LowPrice] 日收盘价[ClosePrice]
+     日结算价[SettlePrice] 涨跌1[Change1] 涨跌2[Change2] 成交量[Volume] 持仓量[Position] 成交金额[Amount]
+     数据类型[DataType]
+
+    IO_QUOTATIONDER:股指期权合约日交易衍生表
+    证券ID[SecurityID] 交易所代码[ExchangeCode] 交易代码[Symbol] 合约简称[ShortName] 认购认沽[CallOrPut]
+    交易日期[TradingDate] 标的证券ID[UnderlyingSecurityID] 填充标识[Filling] 连续合约标识[ContinueSign]
+    主力合约标识[MainSign] 昨收盘价[PreClosePrice] 昨结算价[PreSettlePrice] 昨持仓量[PrePosition]
+    持仓量变化[PositionChange] 成交均价[AvgPrice] 涨跌幅(收盘价)(%)[ClosePriceChangeRatio]
+    涨跌幅(结算价)(%)[SettlePriceChangeRatio] 振幅(%)[Amplitude] 涨停价[LimitUp] 跌停价[LimitDown]
+    当日单张维持保证金[MaintainingMargin] 数据类型[DataType] 涨跌幅[ChangeRatio]
+    :return:
+    """
+    df_1 = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/IO_PRICINGPARAMETER.csv')
+    df_2 = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/IO_QUOTATIONBAS.csv')
+    df_3 = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/IO_QUOTATIONDER.csv')
+
+    df_2 = df_2[['SecurityID', 'TradingDate', 'OpenPrice', 'HighPrice', 'LowPrice',
+                 'SettlePrice', 'Change1', 'Change2', 'Volume', 'Position', 'Amount']]
+
+    df_3 = df_3[['SecurityID', 'TradingDate', 'PreClosePrice', 'PreSettlePrice', 'PrePosition', 'PositionChange',
+                 'AvgPrice', 'ClosePriceChangeRatio', 'SettlePriceChangeRatio', 'Amplitude', 'LimitUp', 'LimitDown',
+                 'MaintainingMargin', 'ChangeRatio']]
+
+    df = pd.merge(df_1, df_2, how='left', on=['TradingDate', 'SecurityID'])
+    df = pd.merge(df, df_3, how='left', on=['TradingDate', 'SecurityID'])
+
+    df.to_csv(f'{DATA_HOME_PATH}/h_sh_300/all_raw_data.csv', index=False)
+
+    print('combine_all_data done!')
+
+
+def depart_data():
+    """
+    将数据分成沪深300和上证50
+    :return:
+    """
+    # 	股指期权合约定价重要参数表
+    df = pd.read_csv(f'{DATA_HOME_PATH}/IO_PRICINGPARAMETER.csv')
+    sh_zh_50_0 = df[df['UnderlyingSecurityID'] == 204000000015]
+    h_sh_300_0 = df[df['UnderlyingSecurityID'] == 204000000140]
+
+    # 股指期权合约日交易基础表
+    df = pd.read_csv(f'{DATA_HOME_PATH}/IO_QUOTATIONBAS.csv')
+    sh_zh_50_1 = df[df['UnderlyingSecurityID'] == 204000000015]
+    h_sh_300_1 = df[df['UnderlyingSecurityID'] == 204000000140]
+
+    # 股指期权合约日交易衍生表
+    df = pd.read_csv(f'{DATA_HOME_PATH}/IO_QUOTATIONDER.csv')
+    sh_zh_50_2 = df[df['UnderlyingSecurityID'] == 204000000015]
+    h_sh_300_2 = df[df['UnderlyingSecurityID'] == 204000000140]
+
+    sh_zh_50_0.to_csv(f'{DATA_HOME_PATH}/sh_zh_50/IO_PRICINGPARAMETER.csv', index=False)
+    h_sh_300_0.to_csv(f'{DATA_HOME_PATH}/h_sh_300/IO_PRICINGPARAMETER.csv', index=False)
+
+    sh_zh_50_1.to_csv(f'{DATA_HOME_PATH}/sh_zh_50/IO_QUOTATIONBAS.csv', index=False)
+    h_sh_300_1.to_csv(f'{DATA_HOME_PATH}/h_sh_300/IO_QUOTATIONBAS.csv', index=False)
+
+    sh_zh_50_2.to_csv(f'{DATA_HOME_PATH}/sh_zh_50/IO_QUOTATIONDER.csv', index=False)
+    h_sh_300_2.to_csv(f'{DATA_HOME_PATH}/h_sh_300/IO_QUOTATIONDER.csv', index=False)
+
+
+def remove_no_volume_data_2():
+    df = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/all_raw_data.csv', parse_dates=['TradingDate'])
+    df = df[df['TradingDate'] > pd.Timestamp('2020-01-01')]
+    print(df.shape)
+    # position_index = df[(df['Position'] < 1)].index
+
+    amount_index = df[(df['Amount'] < 1)].index
+    remainingterm_index = df[(df['RemainingTerm'] == 0)].index
+    # preposition_index = df[(df['PrePosition'] == 0)].index
+    df['PositionChange'] = df['Position'] - df['PrePosition']
+
+    print(f', amount_index : {amount_index.shape} , remainingterm_index :'
+          f' {remainingterm_index.shape}')
+    df = df.drop(index=amount_index.append(remainingterm_index).unique())
+    # df = df.drop(index=amount_index)
+    print(df.shape)
+    df.to_csv(f'{DATA_HOME_PATH}/h_sh_300/all_clean_data.csv', index=False)
+
+    print('remove_no_volume_data_2 done !')
+
+
 DATA_HOME_PATH = '/home/liyu/data/hedging-option/china-market'
 if __name__ == '__main__':
-    # run_still()
-    # check_data()
-    # check_data_2()
-    # get_no_volume_data()
-    # check_dirt_data_period()
-    # check_options_id()
-    # check_dirt_data()
-    # remove_no_volume_data()
-    # remove_dirt_data()
-    # assemble_next_day_features()
-    # check_features()
-    # seperate_underlying_security()
-    # check_seperate_underlying_security()
 
-    # get_no_volume_data()
-    # remove_no_volume_data()
-    # seperate_underlying_security()
-    # remove_remaining_term_0_data()  # 找出剩余期限为0的数据，如果还有请分析原因
+    # depart_data()
+    # combine_all_data()
+    # #
+    # #
+    # remove_no_volume_data_2()
+    # #
     # check_dirt_data()  # 查看是否还有为数据项为空的数据，如果还有请分析原因
-    # check_seperate_underlying_security()
-    # check_h_sh_300()
-    # check_dirt_data()
-    # check_dirt_data_2()
-    assemble_next_day_features('h_sh_300', 'all.csv')
+    assemble_next_day_features('h_sh_300', 'all_clean_data.csv')
