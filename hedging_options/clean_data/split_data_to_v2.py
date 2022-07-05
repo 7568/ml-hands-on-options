@@ -2,6 +2,7 @@ import random
 
 import pandas as pd
 from tqdm import tqdm
+import os
 
 
 # 我们尽量将 training_set , validation_set , test_set 按照交易时间的先后顺序分成4：1：1。
@@ -16,8 +17,10 @@ from tqdm import tqdm
 # 在 testing 数据集加入到新的 training 数据中之后，此时不能再用 testing 数据来做验证，所以训练新的 training 数据集的时候只是看模型有没有收敛。
 
 
-def split_training_validation_test():
-    df = pd.read_csv(f'{PREPARE_HOME_PATH}/h_sh_300/mean_normalization_data.csv')
+def split_training_validation_test(normal_type):
+    print(f'normal_type : {normal_type}')
+
+    df = pd.read_csv(f'{PREPARE_HOME_PATH}/h_sh_300/{normal_type}alization_data.csv')
     print(len(df['SecurityID'].unique()))
     trading_date = df.sort_values(by=['TradingDate'])['TradingDate'].unique()
     split_meta = len(trading_date) / 10
@@ -33,9 +36,11 @@ def split_training_validation_test():
     print(test_set.shape[0])
     if (training_set.shape[0] + validation_set.shape[0] + test_set.shape[0]) != df.shape[0]:
         print('error')
-    training_set.to_csv(f'{PREPARE_HOME_PATH}/h_sh_300/training.csv', index=False)
-    validation_set.to_csv(f'{PREPARE_HOME_PATH}/h_sh_300/validation.csv', index=False)
-    test_set.to_csv(f'{PREPARE_HOME_PATH}/h_sh_300/testing.csv', index=False)
+    if not os.path.exists(f'{PREPARE_HOME_PATH}/h_sh_300/{normal_type}'):
+        os.makedirs(f'{PREPARE_HOME_PATH}/h_sh_300/{normal_type}')
+    training_set.to_csv(f'{PREPARE_HOME_PATH}/h_sh_300/{normal_type}/training.csv', index=False)
+    validation_set.to_csv(f'{PREPARE_HOME_PATH}/h_sh_300/{normal_type}/validation.csv', index=False)
+    test_set.to_csv(f'{PREPARE_HOME_PATH}/h_sh_300/{normal_type}/testing.csv', index=False)
 
 
 def make_index(tag):
@@ -66,7 +71,7 @@ def mean_normalization():
         if df[column].dtypes not in ['float64', 'int64']:
             continue
         _df = df[column]
-        print(column,_df.max(),_df.min())
+        print(column, _df.max(), _df.min())
         mean = _df.mean()
         std = _df.std()
         df[column] = (_df - mean) / std
@@ -99,14 +104,15 @@ def min_max_normalization():
 
 
 PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/china-market/'
-exclude_features = ['ActualDelta','SecurityID', 'TradingDate', 'Symbol', 'ExchangeCode', 'UnderlyingSecurityID',
+exclude_features = ['ActualDelta', 'SecurityID', 'TradingDate', 'Symbol', 'ExchangeCode', 'UnderlyingSecurityID',
                     'UnderlyingSecuritySymbol', 'ShortName', 'DataType', 'HistoricalVolatility',
-                     'ImpliedVolatility', 'TheoreticalPrice','ExerciseDate','CallOrPut','on_ret',
+                    'ImpliedVolatility', 'TheoreticalPrice', 'ExerciseDate', 'CallOrPut', 'on_ret',
                     'RisklessRate']
 if __name__ == '__main__':
-    min_max_normalization()
-    mean_normalization()
-    split_training_validation_test()
+    # min_max_normalization()
+    # mean_normalization()
+    normal_type = 'min_max_norm'
+    split_training_validation_test(normal_type)
     # make_index('training')
     # make_index('validation')
     # make_index('testing')

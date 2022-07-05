@@ -51,31 +51,33 @@ def test_001():
 
 
 # 将每一天的数据存放成 parquet 格式
-def prepare_dataset_for_panel_data(tag):
-    if not os.path.exists(f'{DATA_HOME_PATH}/h_sh_300/panel_parquet/{tag}/'):
-        os.makedirs(f'{DATA_HOME_PATH}/h_sh_300/panel_parquet/{tag}/')
+def prepare_dataset_for_panel_data(normal_type, tag):
+    if not os.path.exists(f'{DATA_HOME_PATH}/h_sh_300/panel_parquet/{normal_type}/{tag}/'):
+        os.makedirs(f'{DATA_HOME_PATH}/h_sh_300/panel_parquet/{normal_type}/{tag}/')
 
-    df = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/{tag}.csv', parse_dates=['TradingDate'])
+    df = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/{normal_type}/{tag}.csv', parse_dates=['TradingDate'])
     days = df.sort_values(by=['TradingDate'])['TradingDate'].unique()
-    all_nums=[]
+    all_nums = []
     for day in tqdm(days, total=len(days)):
         _options = df[df['TradingDate'] == day]
         all_nums.append(_options.shape[0])
         _options = _options.drop(columns=['SecurityID', 'TradingDate', 'Symbol', 'ExchangeCode', 'UnderlyingSecurityID',
                                           'UnderlyingSecuritySymbol', 'ShortName', 'DataType', 'HistoricalVolatility',
-                                          'ImpliedVolatility', 'TheoreticalPrice','ExerciseDate','ImpliedVolatility_1',
-                                          'Delta_1','Gamma_1', 'Vega_1', 'Theta_1', 'Rho_1', 'index', 'ClosePrice_1',
-                                          'UnderlyingScrtClose_1',])
+                                          'ImpliedVolatility', 'TheoreticalPrice', 'ExerciseDate',
+                                          'ImpliedVolatility_1',
+                                          'Delta_1', 'Gamma_1', 'Vega_1', 'Theta_1', 'Rho_1', 'index', 'ClosePrice_1',
+                                          'UnderlyingScrtClose_1', ])
         _options.to_parquet(
-            f'{DATA_HOME_PATH}/h_sh_300/panel_parquet/{tag}/{str(day)[:10]}_datas.parquet')
+            f'{DATA_HOME_PATH}/h_sh_300/panel_parquet/{normal_type}/{tag}/{str(day)[:10]}_datas.parquet')
 
     print(np.array(all_nums).min())
 
 
 def test_002():
-    prepare_dataset_for_panel_data('training')
-    prepare_dataset_for_panel_data('validation')
-    prepare_dataset_for_panel_data('testing')
+    normal_type = 'min_max_norm'
+    prepare_dataset_for_panel_data(normal_type, 'training')
+    prepare_dataset_for_panel_data(normal_type, 'validation')
+    prepare_dataset_for_panel_data(normal_type, 'testing')
 
 
 DATA_HOME_PATH = '/home/liyu/data/hedging-option/china-market'
