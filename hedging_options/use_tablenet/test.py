@@ -21,14 +21,17 @@ from hedging_options.library import common as cm
 
 DATA_HOME_PATH = '/home/liyu/data/hedging-option/china-market'
 if __name__ == '__main__':
-    df = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/two_day_all.csv')
+    df = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/two_day_all_clean_data.csv')
     # df = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/training.csv')
     # df = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/validation.csv')
     # df = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/testing.csv')
+    #'2021-06-21_datas.parquet'
     days = df.sort_values(by=['TradingDate'])['TradingDate'].unique()
     print(len(days))
     all_num = []
     for day in tqdm(days, total=len(days)):
+        if day=='2021-06-21':
+            print(df[df['TradingDate'] == day].shape[0])
         num = df[df['TradingDate'] == day].shape[0]
         all_num.append(num)
     all_num = np.array(all_num)

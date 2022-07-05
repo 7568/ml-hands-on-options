@@ -7,6 +7,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # all_points = 1-np.cos(np.arange(1 / 430, 1, 1 / 430) * np.pi / 2)
+import torch
+
 all_points = np.power(np.arange(1 / 430, 1, 1 / 430) * np.pi / 2,1)
 fig = plt.figure(figsize=(10, 10))
 ax = fig.add_subplot(1, 1, 1)
@@ -33,6 +35,9 @@ print(all_index[-100:])
 
 a=[1,2,3]
 print(a[:-1])
+
+a = torch.ones((2,3,4))
+print(torch.sum(a,dim=[1,2]))
 
 
 

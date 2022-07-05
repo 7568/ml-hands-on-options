@@ -1,5 +1,5 @@
 import torch
-from utils import define_device
+from hedging_options.use_tablenet.pytorch_tabnet.utils import define_device
 import numpy as np
 
 

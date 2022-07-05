@@ -36,7 +36,7 @@ class TorchDataset(Dataset):
 
 
 class OptionPriceDataset(Dataset):
-    def __init__(self, data_path, one_day_data_numbers, use_features):
+    def __init__(self, data_path, one_day_data_numbers, target_feature):
         """
 
         :param data_path:
@@ -45,7 +45,7 @@ class OptionPriceDataset(Dataset):
         """
         self.data_path = data_path
         self.one_day_data_numbers = one_day_data_numbers
-        self.use_features = use_features
+        self.target_feature = target_feature
         # 获得路劲下的文件个数
         self.all_files = os.listdir(f'{self.data_path}/')
         file_number = len(self.all_files)
@@ -60,15 +60,17 @@ class OptionPriceDataset(Dataset):
         all_index = np.array([])
         for i, _rate in enumerate(all_rates):
             all_index = np.append(np.repeat(i, _rate), all_index)
-        np.random.shuffle(all_index)
+        # np.random.shuffle(all_index)
         self.all_data_index = all_index
 
     def __len__(self):
-        return self.data_length
+        return len(self.all_data_index)
 
     def __getitem__(self, index):
-        file_index = self.all_files[self.all_data_index[index]]
-        one_day_all_data = pd.read_parquet(f'{self.data_path}/{file_index}_data.parquet')
+        if index == 0:
+            np.random.shuffle(self.all_data_index)
+        file_index = self.all_files[int(self.all_data_index[index])]
+        one_day_all_data = pd.read_parquet(f'{self.data_path}/{file_index}')
         sample = one_day_all_data.sample(n=self.one_day_data_numbers)
         target = sample[self.target_feature]
         return sample.drop(columns=[self.target_feature]).to_numpy(), target.to_numpy()

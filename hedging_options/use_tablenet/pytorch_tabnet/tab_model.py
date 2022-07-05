@@ -1,9 +1,9 @@
 import torch
 import numpy as np
 from scipy.special import softmax
-from utils import PredictDataset, filter_weights
-from abstract_model import TabModel
-from multiclass_utils import infer_output_dim, check_output_dim
+from hedging_options.use_tablenet.pytorch_tabnet.utils import PredictDataset, filter_weights
+from hedging_options.use_tablenet.pytorch_tabnet.abstract_model import TabModel
+from hedging_options.use_tablenet.pytorch_tabnet.multiclass_utils import infer_output_dim, check_output_dim
 from torch.utils.data import DataLoader
 
 

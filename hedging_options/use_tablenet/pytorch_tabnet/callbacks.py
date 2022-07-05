@@ -5,7 +5,7 @@ import numpy as np
 from dataclasses import dataclass, field
 from typing import List, Any
 import warnings
-
+from hedging_options.use_tablenet.pytorch_tabnet.logger import logger
 
 class Callback:
     """
@@ -160,14 +160,14 @@ class EarlyStopping(Callback):
                 f" with best_epoch = {self.best_epoch} and "
                 + f"best_{self.early_stopping_metric} = {round(self.best_loss, 5)}"
             )
-            print(msg)
+            logger.debug(msg)
         else:
             msg = (
                 f"Stop training because you reached max_epochs = {self.trainer.max_epochs}"
                 + f" with best_epoch = {self.best_epoch} and "
                 + f"best_{self.early_stopping_metric} = {round(self.best_loss, 5)}"
             )
-            print(msg)
+            logger.debug(msg)
         wrn_msg = "Best weights from best epoch are automatically used!"
         warnings.warn(wrn_msg)
 
@@ -220,7 +220,7 @@ class History(Callback):
                 msg += f"| {metric_name:<3}: {np.round(metric_value, 5):<8}"
         self.total_time = int(time.time() - self.start_time)
         msg += f"|  {str(datetime.timedelta(seconds=self.total_time)) + 's':<6}"
-        print(msg)
+        logger.debug(msg)
 
     def on_batch_end(self, batch, logs=None):
         batch_size = logs["batch_size"]
