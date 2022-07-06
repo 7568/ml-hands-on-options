@@ -1,6 +1,6 @@
 #!/bin/sh
-#NORMAL_TYPE="min_max_norm"
-NORMAL_TYPE="mean_norm"
+NORMAL_TYPE="min_max_norm"
+#NORMAL_TYPE="mean_norm"
 echo "${NORMAL_TYPE}"
 
 bash stop_all.sh ${NORMAL_TYPE}

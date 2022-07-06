@@ -63,7 +63,13 @@ def main(args):
     from hedging_options.use_tablenet.pytorch_tabnet.augmentations import RegressionSMOTE
 
     clf = TabNetRegressor(device_name=args.device, n_steps=args.n_steps, input_dim=args.input_dim,
-                          output_dim=args.output_dim, n_a=args.n_a, n_d=args.n_d)
+                          output_dim=args.output_dim, n_a=args.n_a, n_d=args.n_d, lambda_sparse=1e-4, momentum=0.3,
+                          clip_value=2,
+                          optimizer_fn=torch.optim.Adam,
+                          optimizer_params=dict(lr=2e-2),
+                          scheduler_params={"gamma": 0.95,
+                                            "step_size": 20},
+                          scheduler_fn=torch.optim.lr_scheduler.StepLR, epsilon=1e-15)
 
     aug = RegressionSMOTE(p=0.2)
     aug = None
