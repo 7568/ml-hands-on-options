@@ -24,8 +24,9 @@ import argparse
 def get_args_parser():
     parser = argparse.ArgumentParser('Set transformer detector', add_help=False)
     parser.add_argument('--normal_type', default='mean_norm', type=str, help='mean_norm,min_max_norm')
-    parser.add_argument('--n_steps', default=3, type=int)
-    parser.add_argument('--cuda_id', default=0, type=int)
+    parser.add_argument('--device', default='cuda', type=str, help='cuda,cpu')
+    parser.add_argument('--cuda_id', default=7, type=int)
+    parser.add_argument('--n_steps', default=1, type=int)
     parser.add_argument('--input_dim', default=[35, 100], type=list)
     parser.add_argument('--n_a', default=[35, 100], type=list)
     parser.add_argument('--n_d', default=[35, 100], type=list)
@@ -33,7 +34,10 @@ def get_args_parser():
     parser.add_argument('--output_dim', default=1, type=int)
     parser.add_argument('--one_day_data_numbers', default=100, type=int)
     parser.add_argument('--batch_size', default=64, type=int)
-    parser.add_argument('--num_workers', default=10, type=int)
+    parser.add_argument('--num_workers', default=3, type=int)
+    parser.add_argument('--drop_last', default=True, type=bool)
+    parser.add_argument('--pin_memory', default=True, type=bool)
+    parser.add_argument('--redirect_sys_stderr', default=False, type=bool)
 
     return parser
 
@@ -51,13 +55,14 @@ def main(args):
     if not os.path.exists(f'{args.normal_type}/pid'):
         os.makedirs(f'{args.normal_type}/pid')
 
-    sys.stderr = open(f'{args.normal_type}/log/test002_N_STEPS_{args.n_steps}.log', 'a')
-
+    if args.redirect_sys_stderr:
+        sys.stderr = open(f'{args.normal_type}/log/test002_N_STEPS_{args.n_steps}.log', 'a')
+    os.environ["CUDA_VISIBLE_DEVICES"] = str(args.cuda_id)
     logger.set_logger_param(args.normal_type, args.n_steps)
 
     from hedging_options.use_tablenet.pytorch_tabnet.augmentations import RegressionSMOTE
 
-    clf = TabNetRegressor(device_name=f'cuda:{args.cuda_id}', n_steps=args.n_steps, input_dim=args.input_dim,
+    clf = TabNetRegressor(device_name=args.device, n_steps=args.n_steps, input_dim=args.input_dim,
                           output_dim=args.output_dim, n_a=args.n_a, n_d=args.n_d)
 
     aug = RegressionSMOTE(p=0.2)
@@ -66,24 +71,30 @@ def main(args):
     train_params = {
         'data_path': f'{PARQUET_HOME_PATH}/training/',
         'one_day_data_numbers': args.one_day_data_numbers,
-        'target_feature': 'ActualDelta'
+        'target_feature': 'ActualDelta',
+        'batch_size': args.batch_size,
     }
     validate_params = {
         'data_path': f'{PARQUET_HOME_PATH}/validation/',
         'one_day_data_numbers': args.one_day_data_numbers,
-        'target_feature': 'ActualDelta'
+        'target_feature': 'ActualDelta',
+        'batch_size': args.batch_size
     }
 
     TRAIN_DATALOADER = DataLoader(
         utils.OptionPriceDataset(**train_params),
-        batch_size=args.batch_size,
-        num_workers=args.num_workers
+        # batch_size=args.batch_size,
+        num_workers=args.num_workers,
+        drop_last=args.drop_last,
+        pin_memory=args.pin_memory
     )
 
     VALIDATE_DATALOADER = DataLoader(
         utils.OptionPriceDataset(**validate_params),
-        batch_size=args.batch_size,
-        num_workers=args.num_workers
+        # batch_size=args.batch_size,
+        num_workers=args.num_workers,
+        drop_last=args.drop_last,
+        pin_memory=args.pin_memory
     )
 
     # for i in range(10):
@@ -98,7 +109,7 @@ def main(args):
         patience=50,
         batch_size=args.batch_size, virtual_batch_size=128,
         num_workers=0,
-        drop_last=False,
+        drop_last=args.drop_last,
         augmentations=None  # aug
     )
 

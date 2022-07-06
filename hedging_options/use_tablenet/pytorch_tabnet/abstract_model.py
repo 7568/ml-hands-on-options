@@ -237,7 +237,9 @@ class TabModel(BaseEstimator):
             # Call method on_epoch_begin for all callbacks
             self._callback_container.on_epoch_begin(epoch_idx)
 
+            logger.debug(f'epoch : {epoch_idx} , ')
             self._train_epoch(train_dataloader)
+
 
             # Apply predict epoch to all eval sets
             # for eval_name, valid_dataloader in zip(eval_name, validate_dataloader):
@@ -450,15 +452,21 @@ class TabModel(BaseEstimator):
         """
         self.network.train()
 
+        epoch_loss = []
+
         for batch_idx, (X, y) in tqdm(enumerate(train_loader), total=len(train_loader)):
+            # print(X.shape)
             self._callback_container.on_batch_begin(batch_idx)
 
             batch_logs = self._train_batch(X, y)
-            logger.debug(f'batch_logs : {batch_logs} ')
+            epoch_loss.append(batch_logs['loss'])
+            # logger.debug(f'batch_logs : {batch_logs} ')
 
             self._callback_container.on_batch_end(batch_idx, batch_logs)
 
         epoch_logs = {"lr": self._optimizer.param_groups[-1]["lr"]}
+
+        logger.debug(f'lr : {epoch_logs["lr"]} , training average loss : {np.array(epoch_loss).mean()}')
         self.history.epoch_metrics.update(epoch_logs)
 
         return
@@ -481,10 +489,13 @@ class TabModel(BaseEstimator):
         batch_logs : dict
             Dictionnary with "batch_size" and "loss".
         """
-        batch_logs = {"batch_size": X.shape[0]}
 
-        X = X.to(self.device).float()
-        y = y.to(self.device).float()
+        # X = X.to(self.device).float()
+        X = torch.squeeze(X).to(self.device).float()
+        # y = y.to(self.device).float()
+        y = torch.squeeze(y).to(self.device).float()
+
+        batch_logs = {"batch_size": X.shape[0]}
 
         if self.augmentations is not None:
             X, y = self.augmentations(X, y)
@@ -503,7 +514,7 @@ class TabModel(BaseEstimator):
             clip_grad_norm_(self.network.parameters(), self.clip_value)
         self._optimizer.step()
 
-        batch_logs["loss"] = loss.cpu().detach().numpy().item()
+        batch_logs["loss"] = loss.detach().cpu().numpy().item()
 
         return batch_logs
 
@@ -526,6 +537,7 @@ class TabModel(BaseEstimator):
 
         # Main loop
         for batch_idx, (X, y) in tqdm(enumerate(loader), total=len(loader)):
+            X = torch.squeeze(X).to(self.device).float()
             scores = self._predict_batch(X)
             list_y_true.append(torch.squeeze(y).detach().numpy())
             list_y_score.append(scores)
@@ -535,7 +547,7 @@ class TabModel(BaseEstimator):
         # metrics_logs = self._metric_container_dict[name](y_true, scores)
         list_y_true = np.array(list_y_true)
         list_y_score = np.array(list_y_score)
-        logger.debug(f'is validate loss is {np.power((list_y_score - list_y_true), 2).mean()}')
+        logger.debug(f'the validate loss is {np.power((list_y_score - list_y_true), 2).mean()}')
         self.network.train()
         # self.history.epoch_metrics.update(metrics_logs)
         return
@@ -554,7 +566,7 @@ class TabModel(BaseEstimator):
         np.array
             model scores
         """
-        X = X.to(self.device).float()
+        # X = X.to(self.device).float()
 
         # compute model output
         scores, _ = self.network(X)
