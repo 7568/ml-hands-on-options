@@ -5,12 +5,14 @@ Description:
 """
 import sys
 import os
+
 sys.path.append(os.path.dirname("../../*"))
 sys.path.append(os.path.dirname("../*"))
 import numpy as np
 import pandas as pd
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression, LogisticRegression, SGDRegressor, RidgeCV
 from hedging_options.no_hedging import no_hedging
+
 
 def make_predictor(df, features, delta_coeff_1=False):
     """
@@ -34,7 +36,12 @@ def fit_lin_core(df, features, delta_coeff_1=False):
     such that (P&L)^2 is minimized
     """
     y, preds = make_predictor(df, features, delta_coeff_1)
-    lin = LinearRegression(fit_intercept=False).fit(preds, y)
+    for f in ['ClosePrice', 'StrikePrice', 'Vega', 'Theta', 'Rho']:
+        if f in preds.columns:
+            preds[f] /= 100
+    # lin = LinearRegression(fit_intercept=False).fit(preds, y)
+    lin = SGDRegressor(random_state=0, fit_intercept=False,shuffle=False,max_iter=90000,alpha=0.0005).fit(preds.to_numpy(), y.to_numpy())
+    # lin = RidgeCV(alphas=[1e-1, 1e-1, 1e-1, 1e-1, 1e-1,1], fit_intercept=False).fit(preds.to_numpy(), y.to_numpy())
 
     y_hat = lin.predict(preds)
     residual = (y - y_hat)
@@ -54,8 +61,6 @@ def predicted_linear_delta(lin, df_test, features):
     return df_delta
 
 
-
-
 def train_linear_regression_hedge(clean_data, features):
     train_put_data, train_call_data = no_hedging.get_data('training', clean_data)
     put_regs = fit_lin_core(train_put_data, features)
@@ -70,30 +75,17 @@ def predict_linear_regression_hedge(features, clean_data, tag):
     predicted_put = predicted_linear_delta(put_regs['regr'], test_put_data, features)
     predicted_call = predicted_linear_delta(call_regs['regr'], test_call_data, features)
 
-    predicted_delta = predicted_put
-    # predicted_delta = test_put_data['delta_bs']
-    put_mshe = np.power((100 * (predicted_delta * test_put_data['S1_n'] + test_put_data['on_ret'] * (
-            test_put_data['V0_n'] - predicted_delta * test_put_data['S0_n']) - test_put_data['V1_n'])) / test_put_data[
-                            'S0_n'], 2).mean()
-    predicted_delta = predicted_call
-    # predicted_delta = test_call_data['delta_bs']
-    call_mshe = np.power((100 * (predicted_delta * test_call_data['S1_n'] + test_call_data['on_ret'] * (
-            test_call_data['V0_n'] - predicted_delta * test_call_data['S0_n']) - test_call_data['V1_n'])) /
-                         test_call_data['S0_n'], 2).mean()
-
-    print(round(call_mshe, 3), '\t', round(put_mshe, 3), '\t', round((put_mshe + call_mshe) / 2, 3))
-
-
-
+    no_hedging.show_hedge_result(test_put_data, predicted_put, test_call_data, predicted_call)
 
 
 PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/china-market/'
 if __name__ == '__main__':
     # no_hedging.prepare_data()
-    CLEAN_DATA = True
+    CLEAN_DATA = False
 
     print(f'linear_regression_hedge_in_test , clean={CLEAN_DATA}')
     FEATURES = ['ClosePrice', 'StrikePrice', 'RemainingTerm', 'M', 'Gamma', 'Vega', 'Theta', 'Rho', 'Delta']
     for i in range(8):
+        print('==========')
         predict_linear_regression_hedge(FEATURES[i:], CLEAN_DATA, 'validation')
         predict_linear_regression_hedge(FEATURES[i:], CLEAN_DATA, 'testing')

@@ -3,6 +3,7 @@ import random
 import pandas as pd
 from tqdm import tqdm
 import os
+import numpy as np
 
 
 # 我们尽量将 training_set , validation_set , test_set 按照交易时间的先后顺序分成4：1：1。
@@ -41,6 +42,8 @@ def split_training_validation_test(normal_type):
     training_set.to_csv(f'{PREPARE_HOME_PATH}/h_sh_300/{normal_type}/training.csv', index=False)
     validation_set.to_csv(f'{PREPARE_HOME_PATH}/h_sh_300/{normal_type}/validation.csv', index=False)
     test_set.to_csv(f'{PREPARE_HOME_PATH}/h_sh_300/{normal_type}/testing.csv', index=False)
+
+
 
 
 def make_index(tag):
