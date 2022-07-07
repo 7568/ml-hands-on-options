@@ -129,7 +129,8 @@ class EarlyStopping(Callback):
         super().__init__()
 
     def on_epoch_end(self, epoch, logs=None):
-        current_loss = logs.get(self.early_stopping_metric)
+        # current_loss = logs.get(self.early_stopping_metric)
+        current_loss = logs.get('loss')
         if current_loss is None:
             return
 
@@ -275,7 +276,8 @@ class LRSchedulerCallback(Callback):
             pass
 
     def on_epoch_end(self, epoch, logs=None):
-        current_loss = logs.get(self.early_stopping_metric)
+        # current_loss = logs.get(self.early_stopping_metric)
+        current_loss = logs.get('loss')
         if current_loss is None:
             return
         if self.is_batch_level:

@@ -30,10 +30,14 @@ def get_args_parser():
     parser.add_argument('--input_dim', default=[35, 100], type=list)
     parser.add_argument('--n_a', default=[35, 100], type=list)
     parser.add_argument('--n_d', default=[35, 100], type=list)
-    parser.add_argument('--max_epochs', default=100, type=int)
+    parser.add_argument('--max_epochs', default=200, type=int)
     parser.add_argument('--output_dim', default=1, type=int)
+    parser.add_argument('--clip_value', default=2, type=int)
     parser.add_argument('--one_day_data_numbers', default=100, type=int)
     parser.add_argument('--batch_size', default=64, type=int)
+    parser.add_argument('--l_r', default=0.02, type=float)
+    parser.add_argument('--scheduler_step_size', default=5, type=int)
+    parser.add_argument('--scheduler_gamma', default=0.95, type=float)
     parser.add_argument('--num_workers', default=3, type=int)
     parser.add_argument('--drop_last', default=True, type=bool)
     parser.add_argument('--pin_memory', default=True, type=bool)
@@ -64,15 +68,13 @@ def main(args):
 
     clf = TabNetRegressor(device_name=args.device, n_steps=args.n_steps, input_dim=args.input_dim,
                           output_dim=args.output_dim, n_a=args.n_a, n_d=args.n_d, lambda_sparse=1e-4, momentum=0.3,
-                          clip_value=2,
+                          clip_value=args.clip_value,
                           optimizer_fn=torch.optim.Adam,
-                          optimizer_params=dict(lr=2e-2),
-                          scheduler_params={"gamma": 0.95,
-                                            "step_size": 20},
+                          optimizer_params=dict(lr=args.l_r),
+                          scheduler_params={"gamma": args.scheduler_gamma,
+                                            "step_size": args.scheduler_step_size},
                           scheduler_fn=torch.optim.lr_scheduler.StepLR, epsilon=1e-15)
 
-    aug = RegressionSMOTE(p=0.2)
-    aug = None
     PARQUET_HOME_PATH = f'/home/liyu/data/hedging-option/china-market/h_sh_300/panel_parquet/{args.normal_type}/'
     train_params = {
         'data_path': f'{PARQUET_HOME_PATH}/training/',
@@ -110,13 +112,12 @@ def main(args):
         train_dataloader=TRAIN_DATALOADER,
         validate_dataloader=VALIDATE_DATALOADER,
         eval_name=['train', 'valid'],
-        eval_metric=['rmsle', 'mae', 'rmse', 'mse'],
+        eval_metric=['mse'],
         max_epochs=args.max_epochs,
         patience=50,
         batch_size=args.batch_size, virtual_batch_size=128,
-        num_workers=0,
+        num_workers=args.num_workers,
         drop_last=args.drop_last,
-        augmentations=None  # aug
     )
 
 
