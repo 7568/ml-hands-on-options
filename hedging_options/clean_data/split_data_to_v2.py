@@ -4,7 +4,10 @@ import pandas as pd
 from tqdm import tqdm
 import os
 import numpy as np
+SEED = 1234
 
+random.seed(SEED)
+np.random.seed(SEED)
 
 # 我们尽量将 training_set , validation_set , test_set 按照交易时间的先后顺序分成4：1：1。
 # 总共有 135170 条数据，包含的期权为 1978 个
@@ -57,6 +60,7 @@ def split_training_validation_test_2(normal_type):
     print(len(trading_date))
     validation_testing_index = np.arange(4, 599, 5)
     np.random.shuffle(validation_testing_index)
+    print(validation_testing_index)
     validation_index = validation_testing_index[:int(len(validation_testing_index)/2)]
     testing_index = validation_testing_index[int(len(validation_testing_index)/2):]
     training_index = np.arange(0, 600).reshape(120, 5)[:, :4].flatten()
@@ -106,7 +110,6 @@ def mean_normalization():
         if df[column].dtypes not in ['float64', 'int64']:
             continue
         _df = df[column]
-        print(column, _df.max(), _df.min())
         mean = _df.mean()
         std = _df.std()
         df[column] = (_df - mean) / std
@@ -122,7 +125,7 @@ def min_max_normalization():
     columns = df.columns
     normalization_info = pd.DataFrame(columns=['column', 'max', 'min'])
     for column in tqdm(columns, total=len(columns)):
-        # print(column, df[column].dtypes)
+        print(column, df[column].dtypes)
         if column in exclude_features:
             continue
         if df[column].dtypes not in ['float64', 'int64']:
@@ -146,9 +149,10 @@ exclude_features = ['ActualDelta', 'SecurityID', 'TradingDate', 'Symbol', 'Excha
 if __name__ == '__main__':
     # min_max_normalization()
     # mean_normalization()
-    # normal_type = 'min_max_norm'
-    normal_type = 'mean_norm'
-    split_training_validation_test_2(normal_type)
+    NORMAL_TYPE = 'min_max_norm'
+    split_training_validation_test_2(NORMAL_TYPE)
+    NORMAL_TYPE = 'mean_norm'
+    split_training_validation_test_2(NORMAL_TYPE)
     # make_index('training')
     # make_index('validation')
     # make_index('testing')

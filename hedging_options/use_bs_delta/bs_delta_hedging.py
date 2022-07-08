@@ -32,18 +32,18 @@ from hedging_options.no_hedging import no_hedging
 
 def bs_delta_hedge_in_training(clean_data):
     put_data, call_data = no_hedging.get_data('training', clean_data)
-    no_hedging.show_hedge_result(put_data, put_data['delta_bs'], call_data, call_data['delta_bs'])
+    no_hedging.show_hedge_result(put_data, put_data['Delta'], call_data, call_data['Delta'])
 
 
 def bs_delta_hedge_in_validation(clean_data):
     put_data, call_data = no_hedging.get_data('validation', clean_data)
-    no_hedging.show_hedge_result(put_data, put_data['delta_bs'], call_data, call_data['delta_bs'])
+    no_hedging.show_hedge_result(put_data, put_data['Delta'], call_data, call_data['Delta'])
 
 
 def bs_delta_hedge_in_test(clean_data):
     # put_results, call_results = get_test_data(clean_data)
     put_data, call_data = no_hedging.get_data('testing', clean_data)
-    no_hedging.show_hedge_result(put_data, put_data['delta_bs'], call_data, call_data['delta_bs'])
+    no_hedging.show_hedge_result(put_data, put_data['Delta'], call_data, call_data['Delta'])
 
 
 PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/china-market/'

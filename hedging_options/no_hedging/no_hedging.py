@@ -23,6 +23,10 @@ from hedging_options.library import dataset
 from tqdm import tqdm
 import resource
 
+SEED = 1234
+
+random.seed(SEED)
+np.random.seed(SEED)
 
 def distill_put_clean_data(_data):
     pos = _data['M'] > 1.5
@@ -52,16 +56,15 @@ def distill_call_clean_data(_data):
 
 def add_extra_feature(_data):
     # ClosePrice ,StrikePrice,'Vega', 'Theta', 'Rho','Vega_1', 'Theta_1','Rho_1', 'ClosePrice_1', 'UnderlyingScrtClose_1'
-    _scale_rate = _data['UnderlyingScrtClose'] / 1.0
-    for _name in ['ClosePrice', 'StrikePrice', 'Vega', 'Theta', 'Rho', 'Vega_1', 'Theta_1', 'Rho_1', 'ClosePrice_1',
-                  'UnderlyingScrtClose_1']:
-        _data[_name] = _data[_name] / _scale_rate
-    _data['UnderlyingScrtClose'] = 1.0
-    _data['delta_bs'] = _data['Delta']
-    _data['S0_n'] = 1.0
-    _data['S1_n'] = _data['UnderlyingScrtClose_1']
-    _data['V0_n'] = _data['ClosePrice']
-    _data['V1_n'] = _data['ClosePrice_1']
+    _scale_rate = _data['UnderlyingScrtClose'] / 100
+    # for _name in ['ClosePrice', 'StrikePrice', 'Vega', 'Theta', 'Rho', 'Vega_1', 'Theta_1', 'Rho_1', 'ClosePrice_1',
+    #               'UnderlyingScrtClose_1']:
+    #     _data[_name] = _data[_name] / _scale_rate
+    # _data['UnderlyingScrtClose'] = 100
+    _data['S0_n'] = 100
+    _data['S1_n'] = _data['UnderlyingScrtClose_1'] / _scale_rate
+    _data['V0_n'] = _data['ClosePrice'] / _scale_rate
+    _data['V1_n'] = _data['ClosePrice_1'] / _scale_rate
     _data['on_ret'] = 1 + _data['RisklessRate'] / 100 * (1 / 253)
     return _data
 
@@ -101,10 +104,10 @@ def no_hedge_result(tag, clean_data):
 
 def show_hedge_result(put_results, put_delta, call_results, call_delta):
     put_mshes = np.power((100 * (put_delta * put_results['S1_n'] + put_results['on_ret'] * (
-            put_results['V0_n'] - put_delta * put_results['S0_n']) - put_results['V1_n'])) / put_results['S0_n'],
+            put_results['V0_n'] - put_delta * put_results['S0_n']) - put_results['V1_n'])) / put_results['S1_n'],
                          2).mean()
     call_mshes = np.power((100 * (call_delta * call_results['S1_n'] + call_results['on_ret'] * (
-            call_results['V0_n'] - call_delta * call_results['S0_n']) - call_results['V1_n'])) / call_results['S0_n'],
+            call_results['V0_n'] - call_delta * call_results['S0_n']) - call_results['V1_n'])) / call_results['S1_n'],
                           2).mean()
 
     print(round(call_mshes, 3), '\t', round(put_mshes, 3), '\t', round((put_mshes + call_mshes) / 2, 3))
@@ -119,6 +122,7 @@ def reset_features(df):
     # df = df.replace({'CallOrPut': {'C': 0, 'P': 1}})
     return df
 
+
 # 数据集总共时长为 599 天，那么训练集数据为 599*0.8 , 验证集和测试集分别为60天
 # 于是我们将599天分成120份，则每份有5天(最后一份4天)，在这5天中，最后一天为训练集或者测试集，所以总共有119天是训练集和测试集
 # 然后从191天中随机取出一半为验证集，剩余的为测试集，得到59天验证集，60天测试集
@@ -130,8 +134,9 @@ def split_training_validation_test():
     print(len(trading_date))
     validation_testing_index = np.arange(4, 599, 5)
     np.random.shuffle(validation_testing_index)
-    validation_index = validation_testing_index[:int(len(validation_testing_index)/2)]
-    testing_index = validation_testing_index[int(len(validation_testing_index)/2):]
+    print(validation_testing_index)
+    validation_index = validation_testing_index[:int(len(validation_testing_index) / 2)]
+    testing_index = validation_testing_index[int(len(validation_testing_index) / 2):]
     training_index = np.arange(0, 600).reshape(120, 5)[:, :4].flatten()
     traning_day = trading_date[training_index]
     validation_day = trading_date[validation_index]
