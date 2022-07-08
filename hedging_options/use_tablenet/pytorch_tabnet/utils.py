@@ -36,7 +36,7 @@ class TorchDataset(Dataset):
 
 
 class OptionPriceDataset(Dataset):
-    def __init__(self, data_path, one_day_data_numbers, target_feature,batch_size):
+    def __init__old(self, data_path, one_day_data_numbers, target_feature, batch_size):
         """
 
         :param data_path:
@@ -64,8 +64,29 @@ class OptionPriceDataset(Dataset):
         # np.random.shuffle(all_index)
         self.all_data_index = all_index
 
+    def __init__(self, data_path, one_day_data_numbers, target_feature, batch_size):
+        """
+
+        :param data_path:
+        :param one_day_data_numbers: 训练样本中选择一天中的部分期权数据，one_day_data_numbers 为个数
+        :param use_features: 用来训练的特征集合
+        """
+        self.data_path = data_path
+        self.one_day_data_numbers = one_day_data_numbers
+        self.target_feature = target_feature
+        self.batch_size = batch_size
+        # 获得路劲下的文件个数
+        self.all_files = os.listdir(f'{self.data_path}/')
+        file_number = len(self.all_files)
+
+        self.all_data_index = np.arange(file_number)
+
     def __len__(self):
-        return int(len(self.all_data_index) / self.batch_size)
+        _length = int(len(self.all_data_index) / self.batch_size)
+        if _length < 1:
+            return 1
+        else:
+            return _length
 
     def __getitem__(self, index):
         # if self.y is not None:
@@ -75,6 +96,8 @@ class OptionPriceDataset(Dataset):
         X = []
         Y = []
         for i in range(self.batch_size):
+            if i >= len(self.all_data_index):
+                break
             file_index = self.all_files[int(self.all_data_index[index])]
             one_day_all_data = pd.read_parquet(f'{self.data_path}/{file_index}')
             sample = one_day_all_data.sample(n=self.one_day_data_numbers)

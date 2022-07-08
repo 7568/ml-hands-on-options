@@ -75,6 +75,7 @@ def prepare_dataset_for_panel_data(normal_type, tag):
 
 def test_002():
     normal_type = 'min_max_norm'
+    # normal_type = 'mean_norm'
     prepare_dataset_for_panel_data(normal_type, 'training')
     prepare_dataset_for_panel_data(normal_type, 'validation')
     prepare_dataset_for_panel_data(normal_type, 'testing')

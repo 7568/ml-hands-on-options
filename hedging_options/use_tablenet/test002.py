@@ -36,10 +36,10 @@ def get_args_parser():
     parser.add_argument('--one_day_data_numbers', default=100, type=int)
     parser.add_argument('--batch_size', default=64, type=int)
     parser.add_argument('--l_r', default=0.02, type=float)
-    parser.add_argument('--scheduler_step_size', default=5, type=int)
+    parser.add_argument('--scheduler_step_size', default=3, type=int)
     parser.add_argument('--scheduler_gamma', default=0.95, type=float)
     parser.add_argument('--num_workers', default=3, type=int)
-    parser.add_argument('--drop_last', default=True, type=bool)
+    parser.add_argument('--drop_last', default=False, type=bool)
     parser.add_argument('--pin_memory', default=True, type=bool)
     parser.add_argument('--redirect_sys_stderr', default=False, type=bool)
 
@@ -89,6 +89,13 @@ def main(args):
         'batch_size': args.batch_size
     }
 
+    validate_params = {
+        'data_path': f'{PARQUET_HOME_PATH}/testing/',
+        'one_day_data_numbers': args.one_day_data_numbers,
+        'target_feature': 'ActualDelta',
+        'batch_size': args.batch_size
+    }
+
     TRAIN_DATALOADER = DataLoader(
         utils.OptionPriceDataset(**train_params),
         # batch_size=args.batch_size,
@@ -99,6 +106,13 @@ def main(args):
 
     VALIDATE_DATALOADER = DataLoader(
         utils.OptionPriceDataset(**validate_params),
+        # batch_size=args.batch_size,
+        num_workers=args.num_workers,
+        drop_last=args.drop_last,
+        pin_memory=args.pin_memory
+    )
+    TESTING_DATALOADER = DataLoader(
+        utils.OptionPriceDataset(**testing_params),
         # batch_size=args.batch_size,
         num_workers=args.num_workers,
         drop_last=args.drop_last,

@@ -100,7 +100,7 @@ class TabNetEncoder(torch.nn.Module):
         self.n_shared = n_shared
         self.virtual_batch_size = virtual_batch_size
         self.mask_type = mask_type
-        self.initial_bn = BatchNorm1d(self.input_dim, momentum=0.01)
+        # self.initial_bn = BatchNorm1d(self.input_dim, momentum=0.01)
         n_d_0 = self.n_d_0
         n_d_1 = self.n_d_1
         n_a_0 = self.n_a_0
@@ -229,7 +229,7 @@ class TabNetEncoder(torch.nn.Module):
         return steps_output, M_loss
 
     def forward_masks(self, x):
-        x = self.initial_bn(x)
+        # x = self.initial_bn(x)
 
         prior = torch.ones(x.shape).to(x.device)
         M_explain = torch.zeros(x.shape).to(x.device)
@@ -493,7 +493,7 @@ class TabNetNoEmbeddings(torch.nn.Module):
         self.n_shared = n_shared
         self.virtual_batch_size = virtual_batch_size
         self.mask_type = mask_type
-        self.initial_bn = BatchNorm1d(self.input_dim, momentum=0.01)
+        # self.initial_bn = BatchNorm1d(self.input_dim, momentum=0.01)
 
         self.encoder = TabNetEncoder(
             input_dim=input_dim,

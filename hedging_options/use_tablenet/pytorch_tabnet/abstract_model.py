@@ -112,6 +112,7 @@ class TabModel(BaseEstimator):
             self,
             train_dataloader=None,
             validate_dataloader=None,
+            testing_dataloader=None,
             eval_set=None,
             eval_name=None,
             eval_metric=None,
@@ -175,6 +176,7 @@ class TabModel(BaseEstimator):
         # update model name
         self.train_dataloader = train_dataloader
         self.validate_dataloader = validate_dataloader
+        self.testing_dataloader = testing_dataloader
         self.max_epochs = max_epochs
         self.patience = patience
         self.batch_size = batch_size
@@ -240,18 +242,18 @@ class TabModel(BaseEstimator):
             logger.debug(f'epoch : {epoch_idx} , ')
             self._train_epoch(train_dataloader)
 
-
             # Apply predict epoch to all eval sets
             # for eval_name, valid_dataloader in zip(eval_name, validate_dataloader):
             self._predict_epoch(eval_name, validate_dataloader)
+            self._predict_epoch(eval_name, testing_dataloader)
 
             # Call method on_epoch_end for all callbacks
             self._callback_container.on_epoch_end(
                 epoch_idx, logs=self.history.epoch_metrics
             )
 
-            if self._stop_training:
-                break
+            # if self._stop_training:
+            #     break
 
         # Call method on_train_end for all callbacks
         self._callback_container.on_train_end()
@@ -532,22 +534,41 @@ class TabModel(BaseEstimator):
         # Setting network on evaluation mode
         self.network.eval()
 
-        list_y_true = []
-        list_y_score = []
+        list_y_true_put = []
+        list_y_true_call = []
+        list_y_score_put = []
+        list_y_score_call = []
 
         # Main loop
         for batch_idx, (X, y) in tqdm(enumerate(loader), total=len(loader)):
             X = torch.squeeze(X).to(self.device).float()
             scores = self._predict_batch(X)
-            list_y_true.append(torch.squeeze(y).detach().numpy())
-            list_y_score.append(scores)
+            x_np = X.cpu().detach().numpy()
+            x_np_call_or_put = x_np[:, :, 0]
+            put_idx = np.argwhere(np.array(x_np_call_or_put).flatten() == 0)
+            call_idx = np.argwhere(np.array(x_np_call_or_put).flatten() == 1)
+            y_true = torch.squeeze(y).detach().numpy()
+            y_true_put = np.delete(y_true, call_idx)
+            y_true_call = np.delete(y_true, put_idx)
+
+            list_y_true_put.append(y_true_put)
+
+            list_y_true_call.append(y_true_call)
+
+            put_scores = np.delete(scores, call_idx)
+            call_scores = np.delete(scores, put_idx)
+            list_y_score_put.append(put_scores)
+            list_y_score_call.append(call_scores)
 
         # y_true, scores = self.stack_batches(list_y_true, list_y_score)
         #
         # metrics_logs = self._metric_container_dict[name](y_true, scores)
-        list_y_true = np.array(list_y_true)
-        list_y_score = np.array(list_y_score)
-        logger.debug(f'the validate loss is {np.power((list_y_score - list_y_true), 2).mean()}')
+        list_y_true_put = np.array(list_y_true_put)
+        list_y_true_call = np.array(list_y_true_call)
+        list_y_score_put = np.array(list_y_score_put)
+        list_y_score_call = np.array(list_y_score_call)
+        logger.debug(f'the put validate loss is {np.power((list_y_true_put - list_y_score_put), 2).mean()}')
+        logger.debug(f'the call validate loss is {np.power((list_y_true_call - list_y_score_call), 2).mean()}')
         self.network.train()
         # self.history.epoch_metrics.update(metrics_logs)
         return

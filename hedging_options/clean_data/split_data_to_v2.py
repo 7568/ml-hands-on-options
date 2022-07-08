@@ -43,6 +43,38 @@ def split_training_validation_test(normal_type):
     validation_set.to_csv(f'{PREPARE_HOME_PATH}/h_sh_300/{normal_type}/validation.csv', index=False)
     test_set.to_csv(f'{PREPARE_HOME_PATH}/h_sh_300/{normal_type}/testing.csv', index=False)
 
+# 数据集总共时长为 599 天，那么训练集数据为 599*0.8 , 验证集和测试集分别为60天
+# 于是我们将599天分成120份，则每份有5天(最后一份4天)，在这5天中，最后一天为训练集或者测试集，所以总共有119天是训练集和测试集
+# 然后从191天中随机取出一半为验证集，剩余的为测试集，得到59天验证集，60天测试集
+def split_training_validation_test_2(normal_type):
+    print(f'normal_type : {normal_type}')
+
+    df = pd.read_csv(f'{PREPARE_HOME_PATH}/h_sh_300/{normal_type}alization_data.csv')
+
+    print(len(df['SecurityID'].unique()))
+    trading_date = df.sort_values(by=['TradingDate'])['TradingDate'].unique()
+
+    print(len(trading_date))
+    validation_testing_index = np.arange(4, 599, 5)
+    np.random.shuffle(validation_testing_index)
+    validation_index = validation_testing_index[:int(len(validation_testing_index)/2)]
+    testing_index = validation_testing_index[int(len(validation_testing_index)/2):]
+    training_index = np.arange(0, 600).reshape(120, 5)[:, :4].flatten()
+    traning_day = trading_date[training_index]
+    validation_day = trading_date[validation_index]
+    testing_day = trading_date[testing_index]
+    training_set = df[df['TradingDate'].isin(traning_day)]
+    validation_set = df[df['TradingDate'].isin(validation_day)]
+    test_set = df[df['TradingDate'].isin(testing_day)]
+
+    print(training_set.shape[0])
+    print(validation_set.shape[0])
+    print(test_set.shape[0])
+    if not os.path.exists(f'{PREPARE_HOME_PATH}/h_sh_300/{normal_type}'):
+        os.makedirs(f'{PREPARE_HOME_PATH}/h_sh_300/{normal_type}')
+    training_set.to_csv(f'{PREPARE_HOME_PATH}/h_sh_300/{normal_type}/training.csv', index=False)
+    validation_set.to_csv(f'{PREPARE_HOME_PATH}/h_sh_300/{normal_type}/validation.csv', index=False)
+    test_set.to_csv(f'{PREPARE_HOME_PATH}/h_sh_300/{normal_type}/testing.csv', index=False)
 
 
 
@@ -114,8 +146,9 @@ exclude_features = ['ActualDelta', 'SecurityID', 'TradingDate', 'Symbol', 'Excha
 if __name__ == '__main__':
     # min_max_normalization()
     # mean_normalization()
-    normal_type = 'min_max_norm'
-    split_training_validation_test(normal_type)
+    # normal_type = 'min_max_norm'
+    normal_type = 'mean_norm'
+    split_training_validation_test_2(normal_type)
     # make_index('training')
     # make_index('validation')
     # make_index('testing')
