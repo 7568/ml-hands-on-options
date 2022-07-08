@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from typing import List, Any, Dict
 import torch
+import os
 from torch.nn.utils import clip_grad_norm_
 import numpy as np
 from scipy.sparse import csc_matrix
@@ -389,23 +390,25 @@ class TabModel(BaseEstimator):
                 init_params[key] = val
         saved_params["init_params"] = init_params
 
-        class_attrs = {
-            "preds_mapper": self.preds_mapper
-        }
-        saved_params["class_attrs"] = class_attrs
+        # class_attrs = {
+        #     "preds_mapper": self.preds_mapper
+        # }
+        # saved_params["class_attrs"] = class_attrs
 
         # Create folder
         Path(path).mkdir(parents=True, exist_ok=True)
 
         # Save models params
-        with open(Path(path).joinpath("model_params.json"), "w", encoding="utf8") as f:
-            json.dump(saved_params, f, cls=ComplexEncoder)
+        # with open(Path(path).joinpath("model_params.json"), "w", encoding="utf8") as f:
+        #     json.dump(saved_params, f, cls=ComplexEncoder)
 
         # Save state_dict
-        torch.save(self.network.state_dict(), Path(path).joinpath("network.pt"))
-        shutil.make_archive(path, "zip", path)
-        shutil.rmtree(path)
-        logger.debug(f"Successfully saved model at {path}.zip")
+        torch.save(self.network.state_dict(), Path(path).joinpath(f"{self.n_steps}_network.pt"))
+        # shutil.make_archive(Path(path).joinpath(f"{self.n_steps}_network.pt"), "zip", Path(path))
+        # shutil.rmtree(Path(path).joinpath(f"{self.n_steps}_network.pt"))
+        # if os.path.isfile(Path(path).joinpath(f"{self.n_steps}_network.pt")):
+        #     os.remove(Path(path).joinpath(f"{self.n_steps}_network.pt"))
+        # logger.debug(f"Successfully saved model at {path}.zip")
         return f"{path}.zip"
 
     def load_model(self, filepath):
@@ -416,31 +419,31 @@ class TabModel(BaseEstimator):
         filepath : str
             Path of the model.
         """
-        try:
-            with zipfile.ZipFile(filepath) as z:
-                with z.open("model_params.json") as f:
-                    loaded_params = json.load(f)
-                    loaded_params["init_params"]["device_name"] = self.device_name
-                with z.open("network.pt") as f:
-                    try:
-                        saved_state_dict = torch.load(f, map_location=self.device)
-                    except io.UnsupportedOperation:
-                        # In Python <3.7, the returned file object is not seekable (which at least
-                        # some versions of PyTorch require) - so we'll try buffering it in to a
-                        # BytesIO instead:
-                        saved_state_dict = torch.load(
-                            io.BytesIO(f.read()),
-                            map_location=self.device,
-                        )
-        except KeyError:
-            raise KeyError("Your zip file is missing at least one component")
+        # try:
+            # with zipfile.ZipFile(filepath) as z:
+            #     with z.open("model_params.json") as f:
+            #         loaded_params = json.load(f)
+            #         loaded_params["init_params"]["device_name"] = self.device_name
+        with os.open(filepath) as f:
+            try:
+                saved_state_dict = torch.load(f, map_location=self.device)
+            except io.UnsupportedOperation:
+                # In Python <3.7, the returned file object is not seekable (which at least
+                # some versions of PyTorch require) - so we'll try buffering it in to a
+                # BytesIO instead:
+                saved_state_dict = torch.load(
+                    io.BytesIO(f.read()),
+                    map_location=self.device,
+                )
+        # except KeyError:
+        #     raise KeyError("Your zip file is missing at least one component")
 
-        self.__init__(**loaded_params["init_params"])
+        # self.__init__(**loaded_params["init_params"])
 
         self._set_network()
         self.network.load_state_dict(saved_state_dict)
         self.network.eval()
-        self.load_class_attrs(loaded_params["class_attrs"])
+        # self.load_class_attrs(loaded_params["class_attrs"])
 
         return
 
@@ -572,27 +575,29 @@ class TabModel(BaseEstimator):
         call_validate_loss = np.power((list_y_true_call - list_y_score_call), 2).mean()
         logger.debug(f'the put validate loss is {put_validate_loss}')
         logger.debug(f'the call validate loss is {call_validate_loss}')
-        self.network.train()
+
         mean_validate_loss = (put_validate_loss + call_validate_loss) / 2
-        put_best = self.history.epoch_metrics['put_best']
-        call_best = self.history.epoch_metrics['call_best']
-        mean_best = self.history.epoch_metrics['mean_best']
+        put_best = self.history.best_info['put_best']
+        call_best = self.history.best_info['call_best']
+        mean_best = self.history.best_info['mean_best']
         if put_validate_loss < put_best:
             put_best = put_validate_loss
             put_best_info = {'put_best': put_best, 'call_best': call_best, 'mean_best': mean_best}
-            self.history.epoch_metrics.update({'put_best': put_best, 'put_best_info': put_best_info})
-            self.save_model(f'{self.normal_type}/pt/put_best_model')
+            self.history.best_info.update({'put_best': put_best, 'put_best_info': put_best_info})
+            self.save_model(f'{self.normal_type}/pt/put_best_model/')
         if call_validate_loss < call_best:
             call_best = call_validate_loss
             call_best_info = {'put_best': put_best, 'call_best': call_best, 'mean_best': mean_best}
-            self.history.epoch_metrics.update({'call_best': call_best, 'call_best_info': call_best_info})
-            self.save_model(f'{self.normal_type}/pt/call_best_model')
+            self.history.best_info.update({'call_best': call_best, 'call_best_info': call_best_info})
+            self.save_model(f'{self.normal_type}/pt/call_best_model/')
         if mean_validate_loss < mean_best:
             mean_best = mean_validate_loss
             mean_best_info = {'put_best': put_best, 'call_best': call_best, 'mean_best': mean_best}
-            self.history.epoch_metrics.update({'put_best': put_best, 'mean_best_info': mean_best_info})
-            self.save_model(f'{self.normal_type}/pt/mean_best_model')
-        logger.debug(f'best score is {self.history.epoch_metrics}')
+            self.history.best_info.update({'mean_best': mean_best, 'mean_best_info': mean_best_info})
+            self.save_model(f'{self.normal_type}/pt/mean_best_model/')
+        logger.debug(f'best score is {self.history.best_info}')
+
+        self.network.train()
         return
 
     def _predict_batch(self, X):

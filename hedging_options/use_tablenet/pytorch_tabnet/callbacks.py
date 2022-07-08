@@ -205,8 +205,8 @@ class History(Callback):
         self.epoch_loss = 0.0
 
     def on_epoch_begin(self, epoch, logs=None):
-        self.epoch_metrics = {"loss": 0.0, 'put_best': float('inf'), 'call_best': float('inf'),
-                              'mean_best': float('inf')}
+        self.epoch_metrics = {"loss": 0.0}
+        self.best_info = {'put_best': float('inf'), 'call_best': float('inf'), 'mean_best': float('inf')}
         self.samples_seen = 0.0
 
     def on_epoch_end(self, epoch, logs=None):
@@ -224,7 +224,6 @@ class History(Callback):
         self.total_time = int(time.time() - self.start_time)
         msg += f"|  {str(datetime.timedelta(seconds=self.total_time)) + 's':<6}"
         logger.debug(msg)
-
 
     def on_batch_end(self, batch, logs=None):
         batch_size = logs["batch_size"]
