@@ -89,7 +89,7 @@ def main(args):
         'batch_size': args.batch_size
     }
 
-    validate_params = {
+    testing_params = {
         'data_path': f'{PARQUET_HOME_PATH}/testing/',
         'one_day_data_numbers': args.one_day_data_numbers,
         'target_feature': 'ActualDelta',
@@ -125,6 +125,7 @@ def main(args):
     clf.fit(
         train_dataloader=TRAIN_DATALOADER,
         validate_dataloader=VALIDATE_DATALOADER,
+        testing_dataloader=TESTING_DATALOADER,
         eval_name=['train', 'valid'],
         eval_metric=['mse'],
         max_epochs=args.max_epochs,
@@ -132,6 +133,7 @@ def main(args):
         batch_size=args.batch_size, virtual_batch_size=128,
         num_workers=args.num_workers,
         drop_last=args.drop_last,
+        normal_type=args.normal_type,
     )
 
 

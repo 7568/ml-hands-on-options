@@ -7,6 +7,7 @@ from typing import List, Any
 import warnings
 from hedging_options.use_tablenet.pytorch_tabnet.logger import logger
 
+
 class Callback:
     """
     Abstract base class used to build new callbacks.
@@ -158,15 +159,15 @@ class EarlyStopping(Callback):
         if self.stopped_epoch > 0:
             msg = f"\nEarly stopping occurred at epoch {self.stopped_epoch}"
             msg += (
-                f" with best_epoch = {self.best_epoch} and "
-                + f"best_{self.early_stopping_metric} = {round(self.best_loss, 5)}"
+                    f" with best_epoch = {self.best_epoch} and "
+                    + f"best_{self.early_stopping_metric} = {round(self.best_loss, 5)}"
             )
             logger.debug(msg)
         else:
             msg = (
-                f"Stop training because you reached max_epochs = {self.trainer.max_epochs}"
-                + f" with best_epoch = {self.best_epoch} and "
-                + f"best_{self.early_stopping_metric} = {round(self.best_loss, 5)}"
+                    f"Stop training because you reached max_epochs = {self.trainer.max_epochs}"
+                    + f" with best_epoch = {self.best_epoch} and "
+                    + f"best_{self.early_stopping_metric} = {round(self.best_loss, 5)}"
             )
             logger.debug(msg)
         wrn_msg = "Best weights from best epoch are automatically used!"
@@ -204,7 +205,8 @@ class History(Callback):
         self.epoch_loss = 0.0
 
     def on_epoch_begin(self, epoch, logs=None):
-        self.epoch_metrics = {"loss": 0.0}
+        self.epoch_metrics = {"loss": 0.0, 'put_best': float('inf'), 'call_best': float('inf'),
+                              'mean_best': float('inf')}
         self.samples_seen = 0.0
 
     def on_epoch_end(self, epoch, logs=None):
@@ -223,11 +225,12 @@ class History(Callback):
         msg += f"|  {str(datetime.timedelta(seconds=self.total_time)) + 's':<6}"
         logger.debug(msg)
 
+
     def on_batch_end(self, batch, logs=None):
         batch_size = logs["batch_size"]
         self.epoch_loss = (
-            self.samples_seen * self.epoch_loss + batch_size * logs["loss"]
-        ) / (self.samples_seen + batch_size)
+                                  self.samples_seen * self.epoch_loss + batch_size * logs["loss"]
+                          ) / (self.samples_seen + batch_size)
         self.samples_seen += batch_size
 
     def __getitem__(self, name):
@@ -263,7 +266,7 @@ class LRSchedulerCallback(Callback):
     is_batch_level: bool = False
 
     def __post_init__(
-        self,
+            self,
     ):
         self.is_metric_related = hasattr(self.scheduler_fn, "is_better")
         self.scheduler = self.scheduler_fn(self.optimizer, **self.scheduler_params)

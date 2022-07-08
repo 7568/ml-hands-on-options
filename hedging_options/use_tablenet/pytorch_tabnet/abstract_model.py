@@ -129,6 +129,7 @@ class TabModel(BaseEstimator):
             from_unsupervised=None,
             warm_start=False,
             augmentations=None,
+            normal_type=None,
     ):
         """Train a neural network stored in self.network
         Using train_dataloader for training data and
@@ -186,6 +187,7 @@ class TabModel(BaseEstimator):
         self._stop_training = False
         self.pin_memory = pin_memory and (self.device.type != "cpu")
         self.augmentations = augmentations
+        self.normal_type = normal_type
 
         if self.augmentations is not None:
             # This ensure reproducibility
@@ -235,7 +237,6 @@ class TabModel(BaseEstimator):
 
         # Training loop over epochs
         for epoch_idx in range(self.max_epochs):
-
             # Call method on_epoch_begin for all callbacks
             self._callback_container.on_epoch_begin(epoch_idx)
 
@@ -245,7 +246,6 @@ class TabModel(BaseEstimator):
             # Apply predict epoch to all eval sets
             # for eval_name, valid_dataloader in zip(eval_name, validate_dataloader):
             self._predict_epoch(eval_name, validate_dataloader)
-            self._predict_epoch(eval_name, testing_dataloader)
 
             # Call method on_epoch_end for all callbacks
             self._callback_container.on_epoch_end(
@@ -258,6 +258,7 @@ class TabModel(BaseEstimator):
         # Call method on_train_end for all callbacks
         self._callback_container.on_train_end()
         self.network.eval()
+        self._predict_epoch(eval_name, testing_dataloader)
 
         # compute feature importance once the best model is defined
         # self.feature_importances_ = self._compute_feature_importances(X_train)
@@ -567,10 +568,31 @@ class TabModel(BaseEstimator):
         list_y_true_call = np.array(list_y_true_call)
         list_y_score_put = np.array(list_y_score_put)
         list_y_score_call = np.array(list_y_score_call)
-        logger.debug(f'the put validate loss is {np.power((list_y_true_put - list_y_score_put), 2).mean()}')
-        logger.debug(f'the call validate loss is {np.power((list_y_true_call - list_y_score_call), 2).mean()}')
+        put_validate_loss = np.power((list_y_true_put - list_y_score_put), 2).mean()
+        call_validate_loss = np.power((list_y_true_call - list_y_score_call), 2).mean()
+        logger.debug(f'the put validate loss is {put_validate_loss}')
+        logger.debug(f'the call validate loss is {call_validate_loss}')
         self.network.train()
-        # self.history.epoch_metrics.update(metrics_logs)
+        mean_validate_loss = (put_validate_loss + call_validate_loss) / 2
+        put_best = self.history.epoch_metrics['put_best']
+        call_best = self.history.epoch_metrics['call_best']
+        mean_best = self.history.epoch_metrics['mean_best']
+        if put_validate_loss < put_best:
+            put_best = put_validate_loss
+            put_best_info = {'put_best': put_best, 'call_best': call_best, 'mean_best': mean_best}
+            self.history.epoch_metrics.update({'put_best': put_best, 'put_best_info': put_best_info})
+            self.save_model(f'{self.normal_type}/pt/put_best_model')
+        if call_validate_loss < call_best:
+            call_best = call_validate_loss
+            call_best_info = {'put_best': put_best, 'call_best': call_best, 'mean_best': mean_best}
+            self.history.epoch_metrics.update({'call_best': call_best, 'call_best_info': call_best_info})
+            self.save_model(f'{self.normal_type}/pt/call_best_model')
+        if mean_validate_loss < mean_best:
+            mean_best = mean_validate_loss
+            mean_best_info = {'put_best': put_best, 'call_best': call_best, 'mean_best': mean_best}
+            self.history.epoch_metrics.update({'put_best': put_best, 'mean_best_info': mean_best_info})
+            self.save_model(f'{self.normal_type}/pt/mean_best_model')
+        logger.debug(f'best score is {self.history.epoch_metrics}')
         return
 
     def _predict_batch(self, X):
