@@ -131,6 +131,7 @@ class TabModel(BaseEstimator):
             warm_start=False,
             augmentations=None,
             normal_type=None,
+            next_day_features=None
     ):
         """Train a neural network stored in self.network
         Using train_dataloader for training data and
@@ -189,6 +190,7 @@ class TabModel(BaseEstimator):
         self.pin_memory = pin_memory and (self.device.type != "cpu")
         self.augmentations = augmentations
         self.normal_type = normal_type
+        self.next_day_features = next_day_features
 
         if self.augmentations is not None:
             # This ensure reproducibility
@@ -420,10 +422,10 @@ class TabModel(BaseEstimator):
             Path of the model.
         """
         # try:
-            # with zipfile.ZipFile(filepath) as z:
-            #     with z.open("model_params.json") as f:
-            #         loaded_params = json.load(f)
-            #         loaded_params["init_params"]["device_name"] = self.device_name
+        # with zipfile.ZipFile(filepath) as z:
+        #     with z.open("model_params.json") as f:
+        #         loaded_params = json.load(f)
+        #         loaded_params["init_params"]["device_name"] = self.device_name
         with os.open(filepath) as f:
             try:
                 saved_state_dict = torch.load(f, map_location=self.device)
@@ -460,11 +462,11 @@ class TabModel(BaseEstimator):
 
         epoch_loss = []
 
-        for batch_idx, (X, y) in tqdm(enumerate(train_loader), total=len(train_loader)):
+        for batch_idx, (X, Y, _) in tqdm(enumerate(train_loader), total=len(train_loader)):
             # print(X.shape)
             self._callback_container.on_batch_begin(batch_idx)
 
-            batch_logs = self._train_batch(X, y)
+            batch_logs = self._train_batch(X, Y)
             epoch_loss.append(batch_logs['loss'])
             # logger.debug(f'batch_logs : {batch_logs} ')
 
@@ -540,60 +542,93 @@ class TabModel(BaseEstimator):
 
         list_y_true_put = []
         list_y_true_call = []
-        list_y_score_put = []
-        list_y_score_call = []
+
+        list_n_true_put = []
+        list_n_true_call = []
+
+        list_score_put = []
+        list_score_call = []
 
         # Main loop
-        for batch_idx, (X, y) in tqdm(enumerate(loader), total=len(loader)):
+        for batch_idx, (X, Y, N) in tqdm(enumerate(loader), total=len(loader)):
             X = torch.squeeze(X).to(self.device).float()
             scores = self._predict_batch(X)
+
             x_np = X.cpu().detach().numpy()
             x_np_call_or_put = x_np[:, :, 0]
             put_idx = np.argwhere(np.array(x_np_call_or_put).flatten() == 0)
             call_idx = np.argwhere(np.array(x_np_call_or_put).flatten() == 1)
-            y_true = torch.squeeze(y).detach().numpy()
+            y_true = torch.squeeze(Y).detach().numpy()
             y_true_put = np.delete(y_true, call_idx)
             y_true_call = np.delete(y_true, put_idx)
 
-            list_y_true_put.append(y_true_put)
+            n_true = torch.squeeze(N).detach().numpy().reshape(-1, 5)
+            n_true_put = np.delete(n_true, call_idx, axis=0)
+            n_true_call = np.delete(n_true, put_idx, axis=0)
 
+            list_y_true_put.append(y_true_put)
             list_y_true_call.append(y_true_call)
+
+            list_n_true_put.append(n_true_put)
+            list_n_true_call.append(n_true_call)
 
             put_scores = np.delete(scores, call_idx)
             call_scores = np.delete(scores, put_idx)
-            list_y_score_put.append(put_scores)
-            list_y_score_call.append(call_scores)
+            list_score_put.append(put_scores)
+            list_score_call.append(call_scores)
 
         # y_true, scores = self.stack_batches(list_y_true, list_y_score)
         #
         # metrics_logs = self._metric_container_dict[name](y_true, scores)
-        list_y_true_put = np.array(list_y_true_put)
-        list_y_true_call = np.array(list_y_true_call)
-        list_y_score_put = np.array(list_y_score_put)
-        list_y_score_call = np.array(list_y_score_call)
-        put_validate_loss = np.power((list_y_true_put - list_y_score_put), 2).mean()
-        call_validate_loss = np.power((list_y_true_call - list_y_score_call), 2).mean()
-        logger.debug(f'the put validate loss is {put_validate_loss}')
-        logger.debug(f'the call validate loss is {call_validate_loss}')
+        # list_y_true_put = np.array(list_y_true_put)
+        # list_y_true_call = np.array(list_y_true_call)
+        list_score_put = np.array(list_score_put)
+        list_score_call = np.array(list_score_call)
+        # put_validate_loss = np.power((list_y_true_put - list_score_put), 2).mean()
+        # call_validate_loss = np.power((list_y_true_call - list_score_call), 2).mean()
 
-        mean_validate_loss = (put_validate_loss + call_validate_loss) / 2
+        _p = np.array(list_n_true_put)
+        _c = np.array(list_n_true_call)
+        _p = _p.reshape(-1, len(self.next_day_features))
+        _c = _c.reshape(-1, len(self.next_day_features))
+        l_s_p = list_score_put
+        MSHE_put = 100 * (l_s_p * _p[:, 1] + _p[:, -1] * (_p[:, 2] - l_s_p * _p[:, 0]) - _p[:, -2]) / _p[:, 1]
+        MSHE_put = (MSHE_put ** 2).mean()
+        l_s_c = list_score_call
+        MSHE_call = 100 * (l_s_c * _c[:, 1] + _c[:, -1] * (_c[:, 2] - l_s_c * _c[:, 0]) - _c[:, -2]) / _c[:, 1]
+        MSHE_call = (MSHE_call ** 2).mean()
+        MSHE = (MSHE_put + MSHE_call) / 2
+        # logger.debug(f'the put validate loss is {put_validate_loss}')
+        # logger.debug(f'the call validate loss is {call_validate_loss}')
+
+        # mean_validate_loss = (put_validate_loss + call_validate_loss) / 2
         put_best = self.history.best_info['put_best']
         call_best = self.history.best_info['call_best']
         mean_best = self.history.best_info['mean_best']
-        if put_validate_loss < put_best:
-            put_best = put_validate_loss
-            put_best_info = {'put_best': put_best, 'call_best': call_best, 'mean_best': mean_best}
+        mshe_best = self.history.best_info['mshe_best']
+
+        if MSHE_put < put_best:
+            put_best = MSHE_put
+            put_best_info = {'put_best': put_best, 'call_best': call_best,
+                             'mshe_best': mshe_best}
             self.history.best_info.update({'put_best': put_best, 'put_best_info': put_best_info})
             self.save_model(f'{self.normal_type}/pt/put_best_model/')
-        if call_validate_loss < call_best:
-            call_best = call_validate_loss
-            call_best_info = {'put_best': put_best, 'call_best': call_best, 'mean_best': mean_best}
+        if MSHE_call < call_best:
+            call_best = MSHE_call
+            call_best_info = {'put_best': put_best, 'call_best': call_best,
+                              'mshe_best': mshe_best}
             self.history.best_info.update({'call_best': call_best, 'call_best_info': call_best_info})
             self.save_model(f'{self.normal_type}/pt/call_best_model/')
-        if mean_validate_loss < mean_best:
-            mean_best = mean_validate_loss
-            mean_best_info = {'put_best': put_best, 'call_best': call_best, 'mean_best': mean_best}
-            self.history.best_info.update({'mean_best': mean_best, 'mean_best_info': mean_best_info})
+        # if mean_validate_loss < mean_best:
+        #     mean_best = mean_validate_loss
+        #     mean_best_info = {'put_best': put_best, 'call_best': call_best, 'mean_best': mean_best,
+        #                       'mshe_best': mshe_best}
+        #     self.history.best_info.update({'mean_best': mean_best, 'mean_best_info': mean_best_info})
+        #     self.save_model(f'{self.normal_type}/pt/mean_best_model/')
+        if MSHE < mshe_best:
+            mean_best = MSHE
+            mshe_best_info = {'put_best': put_best, 'call_best': call_best,  'mshe_best': MSHE}
+            self.history.best_info.update({'mshe_best': mshe_best, 'mshe_best_info': mshe_best_info})
             self.save_model(f'{self.normal_type}/pt/mean_best_model/')
         logger.debug(f'best score is {self.history.best_info}')
 

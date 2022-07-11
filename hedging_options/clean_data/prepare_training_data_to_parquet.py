@@ -49,6 +49,20 @@ def test_001():
     prepare_dataset('validation')
     prepare_dataset('test')
 
+def add_extra_feature(_data):
+    # ClosePrice ,StrikePrice,'Vega', 'Theta', 'Rho','Vega_1', 'Theta_1','Rho_1', 'ClosePrice_1', 'UnderlyingScrtClose_1'
+    _scale_rate = _data['UnderlyingScrtClose'] / 100
+    # for _name in ['ClosePrice', 'StrikePrice', 'Vega', 'Theta', 'Rho', 'Vega_1', 'Theta_1', 'Rho_1', 'ClosePrice_1',
+    #               'UnderlyingScrtClose_1']:
+    #     _data[_name] = _data[_name] / _scale_rate
+    # _data['UnderlyingScrtClose'] = 100
+    _data['S0_n'] = 100
+    _data['S1_n'] = _data['UnderlyingScrtClose_1'] / _scale_rate
+    _data['V0_n'] = _data['ClosePrice'] / _scale_rate
+    _data['V1_n'] = _data['ClosePrice_1'] / _scale_rate
+    _data['On_ret'] = 1 + _data['RisklessRate'] / 100 * (1 / 253)
+    return _data
+
 
 # 将每一天的数据存放成 parquet 格式
 def prepare_dataset_for_panel_data(normal_type, tag):
@@ -61,6 +75,7 @@ def prepare_dataset_for_panel_data(normal_type, tag):
     for day in tqdm(days, total=len(days)):
         _options = df[df['TradingDate'] == day]
         all_nums.append(_options.shape[0])
+        add_extra_feature(_options)
         _options = _options.drop(columns=['SecurityID', 'TradingDate', 'Symbol', 'ExchangeCode', 'UnderlyingSecurityID',
                                           'UnderlyingSecuritySymbol', 'ShortName', 'DataType', 'HistoricalVolatility',
                                           'ImpliedVolatility', 'TheoreticalPrice', 'ExerciseDate',

@@ -64,7 +64,7 @@ class OptionPriceDataset(Dataset):
         # np.random.shuffle(all_index)
         self.all_data_index = all_index
 
-    def __init__(self, data_path, one_day_data_numbers, target_feature, batch_size):
+    def __init__(self, data_path, one_day_data_numbers, target_feature, next_day_features, batch_size):
         """
 
         :param data_path:
@@ -75,6 +75,7 @@ class OptionPriceDataset(Dataset):
         self.one_day_data_numbers = one_day_data_numbers
         self.target_feature = target_feature
         self.batch_size = batch_size
+        self.next_day_features = next_day_features
         # 获得路劲下的文件个数
         self.all_files = os.listdir(f'{self.data_path}/')
         file_number = len(self.all_files)
@@ -95,6 +96,7 @@ class OptionPriceDataset(Dataset):
             np.random.shuffle(self.all_data_index)
         X = []
         Y = []
+        N = []
         for i in range(self.batch_size):
             if i >= len(self.all_data_index):
                 break
@@ -102,9 +104,11 @@ class OptionPriceDataset(Dataset):
             one_day_all_data = pd.read_parquet(f'{self.data_path}/{file_index}')
             sample = one_day_all_data.sample(n=self.one_day_data_numbers)
             target = sample[self.target_feature]
-            X.append(sample.drop(columns=[self.target_feature]).to_numpy())
+            next_day_data = sample[self.next_day_features]
+            X.append(sample.drop(columns=[self.target_feature]).drop(columns=self.next_day_features).to_numpy())
             Y.append(target.to_numpy())
-        return np.array(X), np.array(Y)
+            N.append(next_day_data.to_numpy())
+        return np.array(X), np.array(Y), np.array(N),
 
 
 class PredictDataset(Dataset):

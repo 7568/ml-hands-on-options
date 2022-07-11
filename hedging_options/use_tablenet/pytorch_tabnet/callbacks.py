@@ -206,7 +206,7 @@ class History(Callback):
 
     def on_epoch_begin(self, epoch, logs=None):
         self.epoch_metrics = {"loss": 0.0}
-        self.best_info = {'put_best': float('inf'), 'call_best': float('inf'), 'mean_best': float('inf')}
+        self.best_info = {'put_best': float('inf'), 'call_best': float('inf'), 'mshe_best': float('inf')}
         self.samples_seen = 0.0
 
     def on_epoch_end(self, epoch, logs=None):

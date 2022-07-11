@@ -42,6 +42,7 @@ def get_args_parser():
     parser.add_argument('--drop_last', default=False, type=bool)
     parser.add_argument('--pin_memory', default=True, type=bool)
     parser.add_argument('--redirect_sys_stderr', default=False, type=bool)
+    parser.add_argument('--next_day_features', default=['S0_n', 'S1_n', 'V0_n', 'V1_n', 'On_ret'],type=list)
 
     return parser
 
@@ -64,7 +65,7 @@ def main(args):
     os.environ["CUDA_VISIBLE_DEVICES"] = str(args.cuda_id)
     logger.set_logger_param(args.normal_type, args.n_steps)
 
-    from hedging_options.use_tablenet.pytorch_tabnet.augmentations import RegressionSMOTE
+    # from hedging_options.use_tablenet.pytorch_tabnet.augmentations import RegressionSMOTE
 
     clf = TabNetRegressor(device_name=args.device, n_steps=args.n_steps, input_dim=args.input_dim,
                           output_dim=args.output_dim, n_a=args.n_a, n_d=args.n_d, lambda_sparse=1e-4, momentum=0.3,
@@ -81,19 +82,22 @@ def main(args):
         'one_day_data_numbers': args.one_day_data_numbers,
         'target_feature': 'ActualDelta',
         'batch_size': args.batch_size,
+        'next_day_features': args.next_day_features
     }
     validate_params = {
         'data_path': f'{PARQUET_HOME_PATH}/validation/',
         'one_day_data_numbers': args.one_day_data_numbers,
         'target_feature': 'ActualDelta',
-        'batch_size': args.batch_size
+        'batch_size': args.batch_size,
+        'next_day_features': args.next_day_features
     }
 
     testing_params = {
         'data_path': f'{PARQUET_HOME_PATH}/testing/',
         'one_day_data_numbers': args.one_day_data_numbers,
         'target_feature': 'ActualDelta',
-        'batch_size': args.batch_size
+        'batch_size': args.batch_size,
+        'next_day_features': args.next_day_features
     }
 
     TRAIN_DATALOADER = DataLoader(
@@ -134,6 +138,7 @@ def main(args):
         num_workers=args.num_workers,
         drop_last=args.drop_last,
         normal_type=args.normal_type,
+        next_day_features=args.next_day_features,
     )
 
 
