@@ -42,7 +42,7 @@ def get_args_parser():
     parser.add_argument('--drop_last', default=False, type=bool)
     parser.add_argument('--pin_memory', default=True, type=bool)
     parser.add_argument('--redirect_sys_stderr', default=False, type=bool)
-    parser.add_argument('--next_day_features', default=['S0_n', 'S1_n', 'V0_n', 'V1_n', 'On_ret'],type=list)
+    parser.add_argument('--next_day_features', default=['S0_n', 'S1_n', 'V0_n', 'V1_n', 'On_ret'], type=list)
 
     return parser
 
@@ -63,7 +63,7 @@ def main(args):
     if args.redirect_sys_stderr:
         sys.stderr = open(f'{args.normal_type}/log/test002_N_STEPS_{args.n_steps}.log', 'a')
     os.environ["CUDA_VISIBLE_DEVICES"] = str(args.cuda_id)
-    logger.set_logger_param(args.normal_type, args.n_steps)
+    logger.set_logger_param(args.normal_type, args.n_steps, args.redirect_sys_stderr)
 
     # from hedging_options.use_tablenet.pytorch_tabnet.augmentations import RegressionSMOTE
 

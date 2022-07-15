@@ -196,7 +196,6 @@ class TabNetEncoder(torch.nn.Module):
 
         M_loss_0 = 0
         M_loss_1 = 0
-        M_loss = 0
         att_0 = self.initial_splitter_0(x)[:, :, self.n_d_0:]
         att_1 = self.initial_splitter_1(torch.transpose(x, 1, 2))[:, :, self.n_d_1:]
 
@@ -205,12 +204,12 @@ class TabNetEncoder(torch.nn.Module):
             M_0 = self.att_transformers_0[step](prior_0, att_0)
             M_1 = self.att_transformers_1[step](prior_1, att_1)
             M_loss_0 += torch.mean(
-                torch.sum(torch.mul(M_0, torch.log(M_0 + self.epsilon)), dim=[1,2])
+                torch.sum(torch.mul(M_0, torch.log(M_0 + self.epsilon)), dim=[1, 2])
             )
             M_loss_1 += torch.mean(
-                torch.sum(torch.mul(M_1, torch.log(M_1 + self.epsilon)), dim=[1,2])
+                torch.sum(torch.mul(M_1, torch.log(M_1 + self.epsilon)), dim=[1, 2])
             )
-            M_loss = (M_loss_0 + M_loss_1) / 2
+            # M_loss = (M_loss_0 + M_loss_1) / 2
             # update prior
             prior_0 = torch.mul(self.gamma - M_0, prior_0)
             prior_1 = torch.mul(self.gamma - M_1, prior_1)
@@ -225,8 +224,9 @@ class TabNetEncoder(torch.nn.Module):
             att_0 = out_0[:, :, self.n_d_0:]
             att_1 = out_1[:, :, self.n_d_1:]
 
-        M_loss /= self.n_steps
-        return steps_output, M_loss
+        M_loss_0 /= self.n_steps
+        M_loss_1 /= self.n_steps
+        return steps_output, M_loss_0, M_loss_1
 
     def forward_masks(self, x):
         # x = self.initial_bn(x)
@@ -420,7 +420,7 @@ class TabNetPretraining(torch.nn.Module):
             masked_x, obf_vars = self.masker(embedded_x)
             # set prior of encoder with obf_mask
             prior = 1 - obf_vars
-            steps_out, _ = self.encoder(masked_x, prior=prior)
+            steps_out, _, __ = self.encoder(masked_x, prior=prior)
             res = self.decoder(steps_out)
             return res, embedded_x, obf_vars
         else:
@@ -521,8 +521,7 @@ class TabNetNoEmbeddings(torch.nn.Module):
             initialize_non_glu(self.final_mapping, n_d[0], output_dim)
 
     def forward(self, x):
-        res = 0
-        steps_output, M_loss = self.encoder(x)
+        steps_output, M_loss_0, M_loss_1 = self.encoder(x)
         res = torch.sum(torch.stack(steps_output, dim=0), dim=0)
 
         if self.is_multi_task:
@@ -532,7 +531,7 @@ class TabNetNoEmbeddings(torch.nn.Module):
                 out.append(task_mapping(res))
         else:
             out = self.final_mapping(res)
-        return out, M_loss
+        return out, M_loss_0, M_loss_1
 
     def forward_masks(self, x):
         return self.encoder.forward_masks(x)

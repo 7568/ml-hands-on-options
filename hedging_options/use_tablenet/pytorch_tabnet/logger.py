@@ -9,23 +9,34 @@ import logging
 class Logger:
 
     def __init__(self):
+        self.redirect_sys_stderr = False
         self.logger = logging.getLogger()
         self.logger.setLevel(level=logging.DEBUG)
 
-    def set_logger_param(self, normal_type,n_steps):
+    def set_logger_param(self, normal_type, n_steps, redirect_sys_stderr):
         handler = logging.FileHandler(f'{normal_type}/log/train_test002_{n_steps}.log')
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         handler.setFormatter(formatter)
         self.logger.addHandler(handler)
+        self.redirect_sys_stderr = redirect_sys_stderr
 
     def info(self, msg):
-        self.logger.info(msg)
+        if self.redirect_sys_stderr:
+            self.logger.info(msg)
+        else:
+            print(msg)
 
     def debug(self, msg):
-        self.logger.debug(msg)
+        if self.redirect_sys_stderr:
+            self.logger.debug(msg)
+        else:
+            print(msg)
 
     def error(self, msg):
-        self.logger.error(msg)
+        if self.redirect_sys_stderr:
+            self.logger.error(msg)
+        else:
+            print(msg)
 
 
 logger = Logger()

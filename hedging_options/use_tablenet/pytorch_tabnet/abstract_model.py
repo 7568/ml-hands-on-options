@@ -511,10 +511,10 @@ class TabModel(BaseEstimator):
         for param in self.network.parameters():
             param.grad = None
 
-        output, M_loss = self.network(X)
+        output, M_loss_0, M_loss_1 = self.network(X)
         loss = self.compute_loss(torch.squeeze(output), y)
         # Add the overall sparsity loss
-        loss = loss - self.lambda_sparse * M_loss
+        loss = loss - self.lambda_sparse * (M_loss_0 + M_loss_1) / 2
 
         # Perform backward pass and optimization
         loss.backward()
@@ -604,7 +604,6 @@ class TabModel(BaseEstimator):
         # mean_validate_loss = (put_validate_loss + call_validate_loss) / 2
         put_best = self.history.best_info['put_best']
         call_best = self.history.best_info['call_best']
-        mean_best = self.history.best_info['mean_best']
         mshe_best = self.history.best_info['mshe_best']
 
         if MSHE_put < put_best:
@@ -627,7 +626,7 @@ class TabModel(BaseEstimator):
         #     self.save_model(f'{self.normal_type}/pt/mean_best_model/')
         if MSHE < mshe_best:
             mean_best = MSHE
-            mshe_best_info = {'put_best': put_best, 'call_best': call_best,  'mshe_best': MSHE}
+            mshe_best_info = {'put_best': put_best, 'call_best': call_best, 'mshe_best': MSHE}
             self.history.best_info.update({'mshe_best': mshe_best, 'mshe_best_info': mshe_best_info})
             self.save_model(f'{self.normal_type}/pt/mean_best_model/')
         logger.debug(f'best score is {self.history.best_info}')
@@ -652,7 +651,7 @@ class TabModel(BaseEstimator):
         # X = X.to(self.device).float()
 
         # compute model output
-        scores, _ = self.network(X)
+        scores, _, __ = self.network(X)
         scores = torch.squeeze(scores)
         if isinstance(scores, list):
             scores = [x.cpu().detach().numpy() for x in scores]
