@@ -29,7 +29,7 @@ random.seed(SEED)
 np.random.seed(SEED)
 
 def distill_put_clean_data(_data):
-    pos = _data['M'] > 1.5
+    pos = _data['Mo'] > 1.5
     _data = _data.loc[~pos]
     _data = _data.dropna(subset=['ImpliedVolatility'])
     bl = (_data['ImpliedVolatility'] > 1) | (_data['ImpliedVolatility'] < 0.01)
@@ -42,7 +42,7 @@ def distill_put_clean_data(_data):
 
 
 def distill_call_clean_data(_data):
-    pos = _data['M'] < 0.5
+    pos = _data['Mo'] < 0.5
     _data = _data.loc[~pos]
     _data = _data.dropna(subset=['ImpliedVolatility'])
     bl = (_data['ImpliedVolatility'] > 1) | (_data['ImpliedVolatility'] < 0.01)
@@ -53,52 +53,60 @@ def distill_call_clean_data(_data):
     _data = _data.loc[~bl]
     return _data
 
+def go_back_old_value(normal_type, column, _data):
+    if normal_type == 'mean_norm':
+        mean_normalization_info = pd.read_csv(f'{PREPARE_HOME_PATH}/h_sh_300/mean_normalization_info.csv')
+        _close_old_info = mean_normalization_info[mean_normalization_info['column'] == column]
+        std = _close_old_info['std'].values[0]
+        mean = _close_old_info['mean'].values[0]
+        underlying_scrt_close_old = _data[column] * std + mean
+        return underlying_scrt_close_old
+    else:
+        mean_normalization_info = pd.read_csv(f'{PREPARE_HOME_PATH}/h_sh_300/min_max_normalization_info.csv')
+        _close_old_info = mean_normalization_info[mean_normalization_info['column'] == column]
+        max = _close_old_info['max'].values[0]
+        min = _close_old_info['min'].values[0]
+        underlying_scrt_close_old = _data[column] * (max - min) + min
+        return underlying_scrt_close_old
 
-def add_extra_feature(_data):
+
+def add_extra_feature(normal_type, _data):
     # ClosePrice ,StrikePrice,'Vega', 'Theta', 'Rho','Vega_1', 'Theta_1','Rho_1', 'ClosePrice_1', 'UnderlyingScrtClose_1'
-    _scale_rate = _data['UnderlyingScrtClose'] / 100
+    underlying_scrt_close_old = go_back_old_value(normal_type, 'UnderlyingScrtClose', _data)
+    _scale_rate = underlying_scrt_close_old / 100
     # for _name in ['ClosePrice', 'StrikePrice', 'Vega', 'Theta', 'Rho', 'Vega_1', 'Theta_1', 'Rho_1', 'ClosePrice_1',
     #               'UnderlyingScrtClose_1']:
     #     _data[_name] = _data[_name] / _scale_rate
     # _data['UnderlyingScrtClose'] = 100
     _data['S0_n'] = 100
-    _data['S1_n'] = _data['UnderlyingScrtClose_1'] / _scale_rate
-    _data['V0_n'] = _data['ClosePrice'] / _scale_rate
-    _data['V1_n'] = _data['ClosePrice_1'] / _scale_rate
-    _data['on_ret'] = 1 + _data['RisklessRate'] / 100 * (1 / 253)
+    _data['S1_n'] = go_back_old_value(normal_type, 'UnderlyingScrtClose_1', _data) / _scale_rate
+    _data['V0_n'] = go_back_old_value(normal_type, 'ClosePrice', _data) / _scale_rate
+    _data['V1_n'] = go_back_old_value(normal_type, 'ClosePrice_1', _data) / _scale_rate
+    # _data['on_ret'] = 1 + _data['RisklessRate'] / 100 * (1 / 253)
+    _data['Delta'] = go_back_old_value(normal_type, 'Delta', _data)
     return _data
 
 
-def get_data(tag, clean_data):
+def get_data(normal_type, tag, clean_data):
     # _columns = ['RisklessRate', 'CallOrPut', 'ClosePrice', 'UnderlyingScrtClose', 'StrikePrice', 'RemainingTerm',
     #             'Delta',
     #             'Gamma', 'Vega', 'Theta', 'Rho', 'M', 'ImpliedVolatility', 'Delta_1', 'Gamma_1', 'Vega_1', 'Theta_1',
     #             'Rho_1', 'ClosePrice_1', 'UnderlyingScrtClose_1']
-    train_put_data = pd.read_csv(f'{PREPARE_HOME_PATH}/h_sh_300/{tag}_put_data.csv', date_parser=[''])
-    train_put_data['Delta'] = -train_put_data['Delta'] - 1
+    _put_data = pd.read_csv(f'{PREPARE_HOME_PATH}/h_sh_300/{normal_type}/{tag}_put_data.csv', date_parser=[''])
+    _put_data['Delta'] = -_put_data['Delta'] - 1
 
-    train_call_data = pd.read_csv(f'{PREPARE_HOME_PATH}/h_sh_300/{tag}_call_data.csv')
-
-    # test_put_data = pd.read_csv(f'{PREPARE_HOME_PATH}/h_sh_300/test_put_data.csv')
-    # test_put_data['Delta'] = -test_put_data['Delta'] - 1
-    #
-    # test_call_data = pd.read_csv(f'{PREPARE_HOME_PATH}/h_sh_300/test_call_data.csv')
+    _call_data = pd.read_csv(f'{PREPARE_HOME_PATH}/h_sh_300/{normal_type}/{tag}_call_data.csv')
 
     if clean_data:
-        train_put_data = distill_put_clean_data(train_put_data)
-        train_call_data = distill_call_clean_data(train_call_data)
-        # test_put_data = linear_regression_hedge_put_clean_data(test_put_data)
-        # test_call_data = linear_regression_hedge_call_clean_data(test_call_data)
-    # print(test_put_data.shape, test_call_data.shape)
-    train_put_data = add_extra_feature(train_put_data)
-    train_call_data = add_extra_feature(train_call_data)
-    # test_put_data = add_extra_feature(test_put_data)
-    # test_call_data = add_extra_feature(test_call_data)
-    return train_put_data, train_call_data
+        _put_data = distill_put_clean_data(_put_data)
+        _call_data = distill_call_clean_data(_call_data)
+    _put_data = add_extra_feature(normal_type, _put_data)
+    _call_data = add_extra_feature(normal_type, _call_data)
+    return _put_data, _call_data
 
 
-def no_hedge_result(tag, clean_data):
-    put_data, call_data = get_data(tag, clean_data)
+def no_hedge_result(NORMAL_TYPE,tag, clean_data):
+    put_data, call_data = get_data(NORMAL_TYPE,tag, clean_data)
     show_hedge_result(put_data, 0, call_data, 0)
 
 
@@ -155,37 +163,39 @@ def split_training_validation_test():
     test_set.to_csv(f'{PREPARE_HOME_PATH}/h_sh_300/testing.csv', index=False)
 
 
-def prepare_data():
-    split_training_validation_test()
-    train_data = pd.read_csv(f'{PREPARE_HOME_PATH}/h_sh_300/training.csv')
-    valid_data = pd.read_csv(f'{PREPARE_HOME_PATH}/h_sh_300/validation.csv')
-    test_data = pd.read_csv(f'{PREPARE_HOME_PATH}/h_sh_300/testing.csv')
+def prepare_data(normal_type):
+    train_data = pd.read_csv(f'{PREPARE_HOME_PATH}/h_sh_300/{normal_type}/training.csv')
+    valid_data = pd.read_csv(f'{PREPARE_HOME_PATH}/h_sh_300/{normal_type}/validation.csv')
+    test_data = pd.read_csv(f'{PREPARE_HOME_PATH}/h_sh_300/{normal_type}/testing.csv')
     # train_data = train_data.iloc[:500, :]
     # valid_data_index = valid_data_index[:3000, :]
     # test_data_index = test_data_index[:500, :]
 
-    train_data = reset_features(train_data)
-    valid_data = reset_features(valid_data)
-    test_data = reset_features(test_data)
+    # train_data = reset_features(train_data)
+    # valid_data = reset_features(valid_data)
+    # test_data = reset_features(test_data)
     train_put_data = train_data[train_data['CallOrPut'] == 1]
     train_call_data = train_data[train_data['CallOrPut'] == 0]
     valid_put_data = valid_data[valid_data['CallOrPut'] == 1]
     valid_call_data = valid_data[valid_data['CallOrPut'] == 0]
     test_put_data = test_data[test_data['CallOrPut'] == 1]
     test_call_data = test_data[test_data['CallOrPut'] == 0]
-    train_put_data.to_csv(f'{PREPARE_HOME_PATH}/h_sh_300/training_put_data.csv', index=False)
-    train_call_data.to_csv(f'{PREPARE_HOME_PATH}/h_sh_300/training_call_data.csv', index=False)
-    valid_put_data.to_csv(f'{PREPARE_HOME_PATH}/h_sh_300/validation_put_data.csv', index=False)
-    valid_call_data.to_csv(f'{PREPARE_HOME_PATH}/h_sh_300/validation_call_data.csv', index=False)
-    test_put_data.to_csv(f'{PREPARE_HOME_PATH}/h_sh_300/testing_put_data.csv', index=False)
-    test_call_data.to_csv(f'{PREPARE_HOME_PATH}/h_sh_300/testing_call_data.csv', index=False)
+    train_put_data.to_csv(f'{PREPARE_HOME_PATH}/h_sh_300/{normal_type}/training_put_data.csv', index=False)
+    train_call_data.to_csv(f'{PREPARE_HOME_PATH}/h_sh_300/{normal_type}/training_call_data.csv', index=False)
+    valid_put_data.to_csv(f'{PREPARE_HOME_PATH}/h_sh_300/{normal_type}/validation_put_data.csv', index=False)
+    valid_call_data.to_csv(f'{PREPARE_HOME_PATH}/h_sh_300/{normal_type}/validation_call_data.csv', index=False)
+    test_put_data.to_csv(f'{PREPARE_HOME_PATH}/h_sh_300/{normal_type}/testing_put_data.csv', index=False)
+    test_call_data.to_csv(f'{PREPARE_HOME_PATH}/h_sh_300/{normal_type}/testing_call_data.csv', index=False)
+
 
 
 PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/china-market/'
 if __name__ == '__main__':
+    NORMAL_TYPE = 'min_max_norm'
+    # NORMAL_TYPE = 'mean_norm'
     # prepare_data()
     CLEAN_DATA = False
     print(f'no_hedge_in_test , clean={CLEAN_DATA}')
     # no_hedge_in_training(CLEAN_DATA)
-    no_hedge_result('validation', CLEAN_DATA)
-    no_hedge_result('testing', CLEAN_DATA)
+    no_hedge_result(NORMAL_TYPE,'validation', CLEAN_DATA)
+    no_hedge_result(NORMAL_TYPE,'testing', CLEAN_DATA)

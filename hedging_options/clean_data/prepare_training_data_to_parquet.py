@@ -49,18 +49,37 @@ def test_001():
     prepare_dataset('validation')
     prepare_dataset('test')
 
-def add_extra_feature(_data):
+def go_back_old_value(normal_type, column, _data):
+    if normal_type == 'mean_norm':
+        mean_normalization_info = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/mean_normalization_info.csv')
+        _close_old_info = mean_normalization_info[mean_normalization_info['column'] == column]
+        std = _close_old_info['std'].values[0]
+        mean = _close_old_info['mean'].values[0]
+        underlying_scrt_close_old = _data[column] * std + mean
+        return underlying_scrt_close_old
+    else:
+        mean_normalization_info = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/min_max_normalization_info.csv')
+        _close_old_info = mean_normalization_info[mean_normalization_info['column'] == column]
+        max = _close_old_info['max'].values[0]
+        min = _close_old_info['min'].values[0]
+        underlying_scrt_close_old = _data[column] * (max - min) + min
+        return underlying_scrt_close_old
+
+
+def add_extra_feature(normal_type, _data):
     # ClosePrice ,StrikePrice,'Vega', 'Theta', 'Rho','Vega_1', 'Theta_1','Rho_1', 'ClosePrice_1', 'UnderlyingScrtClose_1'
-    _scale_rate = _data['UnderlyingScrtClose'] / 100
+    underlying_scrt_close_old = go_back_old_value(normal_type, 'UnderlyingScrtClose', _data)
+    _scale_rate = underlying_scrt_close_old / 100
     # for _name in ['ClosePrice', 'StrikePrice', 'Vega', 'Theta', 'Rho', 'Vega_1', 'Theta_1', 'Rho_1', 'ClosePrice_1',
     #               'UnderlyingScrtClose_1']:
     #     _data[_name] = _data[_name] / _scale_rate
     # _data['UnderlyingScrtClose'] = 100
     _data['S0_n'] = 100
-    _data['S1_n'] = _data['UnderlyingScrtClose_1'] / _scale_rate
-    _data['V0_n'] = _data['ClosePrice'] / _scale_rate
-    _data['V1_n'] = _data['ClosePrice_1'] / _scale_rate
+    _data['S1_n'] = go_back_old_value(normal_type, 'UnderlyingScrtClose_1', _data) / _scale_rate
+    _data['V0_n'] = go_back_old_value(normal_type, 'ClosePrice', _data) / _scale_rate
+    _data['V1_n'] = go_back_old_value(normal_type, 'ClosePrice_1', _data) / _scale_rate
     _data['On_ret'] = 1 + _data['RisklessRate'] / 100 * (1 / 253)
+    _data['Delta'] = go_back_old_value(normal_type, 'Delta', _data)
     return _data
 
 
@@ -73,9 +92,9 @@ def prepare_dataset_for_panel_data(normal_type, tag):
     days = df.sort_values(by=['TradingDate'])['TradingDate'].unique()
     all_nums = []
     for day in tqdm(days, total=len(days)):
-        _options = df[df['TradingDate'] == day]
+        _options = df.loc[df['TradingDate'] == day].copy()
         all_nums.append(_options.shape[0])
-        add_extra_feature(_options)
+        add_extra_feature(normal_type,_options)
         _options = _options.drop(columns=['SecurityID', 'TradingDate', 'Symbol', 'ExchangeCode', 'UnderlyingSecurityID',
                                           'UnderlyingSecuritySymbol', 'ShortName', 'DataType', 'HistoricalVolatility',
                                           'ImpliedVolatility', 'TheoreticalPrice', 'ExerciseDate',
