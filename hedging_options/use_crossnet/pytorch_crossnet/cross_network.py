@@ -1,7 +1,7 @@
 import torch
 from torch.nn import Linear, BatchNorm1d, ReLU, LayerNorm
 import numpy as np
-from hedging_options.use_tablenet.pytorch_tabnet import sparsemax
+from hedging_options.use_crossnet.pytorch_crossnet import sparsemax
 
 
 def initialize_non_glu(module, input_dim, output_dim):

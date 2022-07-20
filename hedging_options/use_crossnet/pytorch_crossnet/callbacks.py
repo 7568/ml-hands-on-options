@@ -5,7 +5,7 @@ import numpy as np
 from dataclasses import dataclass, field
 from typing import List, Any
 import warnings
-from hedging_options.use_tablenet.pytorch_tabnet.logger import logger
+from hedging_options.use_crossnet.pytorch_crossnet.logger import logger
 
 
 class Callback:

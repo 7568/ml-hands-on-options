@@ -7,7 +7,7 @@ import os
 import sys
 sys.path.append(os.path.dirname("../../*"))
 sys.path.append(os.path.dirname("../*"))
-from hedging_options.use_tablenet.pytorch_tabnet.tab_model import TabNetRegressor
+from hedging_options.use_crossnet.pytorch_crossnet.cross_model import CrossNetRegressor
 
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import mean_squared_error
@@ -59,7 +59,7 @@ cat_dims = [ categorical_dims[f] for i, f in enumerate(features) if f in categor
 cat_emb_dim = [5, 4, 3, 6, 2, 2, 1, 10]
 
 
-clf = TabNetRegressor(cat_dims=cat_dims, cat_emb_dim=cat_emb_dim, cat_idxs=cat_idxs,device_name='cpu')
+clf = CrossNetRegressor(cat_dims=cat_dims, cat_emb_dim=cat_emb_dim, cat_idxs=cat_idxs, device_name='cpu')
 
 X_train = train[features].values[train_indices]
 y_train = train[target].values[train_indices].reshape(-1, 1)
@@ -71,7 +71,7 @@ X_test = train[features].values[test_indices]
 y_test = train[target].values[test_indices].reshape(-1, 1)
 
 max_epochs = 100 if not os.getenv("CI", False) else 2
-from pytorch_tabnet.augmentations import RegressionSMOTE
+from pytorch_crossnet.augmentations import RegressionSMOTE
 aug = RegressionSMOTE(p=0.2)
 aug = None
 clf.fit(
@@ -103,7 +103,7 @@ print(f"FINAL TEST SCORE FOR {dataset_name} : {test_score}")
 saving_path_name = "./tabnet_model_test_1"
 saved_filepath = clf.save_model(saving_path_name)
 # define new model with basic parameters and load state dict weights
-loaded_clf = TabNetRegressor()
+loaded_clf = CrossNetRegressor()
 loaded_clf.load_model(saved_filepath)
 loaded_preds = loaded_clf.predict(X_test)
 loaded_test_mse = mean_squared_error(loaded_preds, y_test)

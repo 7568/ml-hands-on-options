@@ -6,8 +6,8 @@ from torch.nn.utils import clip_grad_norm_
 import numpy as np
 from scipy.sparse import csc_matrix
 from abc import abstractmethod
-from hedging_options.use_tablenet.pytorch_tabnet import tab_network
-from hedging_options.use_tablenet.pytorch_tabnet.utils import (
+from hedging_options.use_crossnet.pytorch_crossnet import cross_network
+from hedging_options.use_crossnet.pytorch_crossnet.utils import (
     PredictDataset,
     create_explain_matrix,
     validate_eval_set,
@@ -17,13 +17,13 @@ from hedging_options.use_tablenet.pytorch_tabnet.utils import (
     check_input,
     check_warm_start
 )
-from hedging_options.use_tablenet.pytorch_tabnet.callbacks import (
+from hedging_options.use_crossnet.pytorch_crossnet.callbacks import (
     CallbackContainer,
     History,
     EarlyStopping,
     LRSchedulerCallback,
 )
-from hedging_options.use_tablenet.pytorch_tabnet.metrics import MetricContainer, check_metrics
+from hedging_options.use_crossnet.pytorch_crossnet.metrics import MetricContainer, check_metrics
 from sklearn.base import BaseEstimator
 from tqdm import tqdm
 from torch.utils.data import DataLoader
@@ -34,11 +34,11 @@ import shutil
 import zipfile
 import warnings
 import copy
-from hedging_options.use_tablenet.pytorch_tabnet.logger import logger
+from hedging_options.use_crossnet.pytorch_crossnet.logger import logger
 
 
 @dataclass
-class TabModel(BaseEstimator):
+class CrossModel(BaseEstimator):
     """ Class for TabNet model."""
 
     n_d: int = 8

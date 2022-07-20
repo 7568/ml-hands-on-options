@@ -10,12 +10,12 @@ sys.path.append(os.path.dirname("../../*"))
 sys.path.append(os.path.dirname("../*"))
 from torch.utils.data import DataLoader
 
-from hedging_options.use_tablenet.pytorch_tabnet.tab_model import TabNetRegressor
+from hedging_options.use_crossnet.pytorch_crossnet.cross_model import CrossNetRegressor
 
-from hedging_options.use_tablenet.pytorch_tabnet import utils
+from hedging_options.use_crossnet.pytorch_crossnet import utils
 
 import torch.multiprocessing
-from hedging_options.use_tablenet.pytorch_tabnet.logger import logger
+from hedging_options.use_crossnet.pytorch_crossnet.logger import logger
 
 torch.multiprocessing.set_sharing_strategy('file_system')
 import argparse
@@ -67,16 +67,16 @@ def main(args):
     os.environ["CUDA_VISIBLE_DEVICES"] = str(args.cuda_id)
     logger.set_logger_param(args.normal_type, args.n_steps, args.redirect_sys_stderr,'train')
 
-    # from hedging_options.use_tablenet.pytorch_tabnet.augmentations import RegressionSMOTE
+    # from hedging_options.use_crossnet.pytorch_crossnet.augmentations import RegressionSMOTE
 
-    clf = TabNetRegressor(device_name=args.device, n_steps=args.n_steps, input_dim=args.input_dim,
-                          output_dim=args.output_dim, n_a=args.n_a, n_d=args.n_d, lambda_sparse=1e-4, momentum=0.3,
-                          clip_value=args.clip_value,
-                          optimizer_fn=torch.optim.Adam,
-                          optimizer_params=dict(lr=args.l_r),
-                          scheduler_params={"gamma": args.scheduler_gamma,
+    clf = CrossNetRegressor(device_name=args.device, n_steps=args.n_steps, input_dim=args.input_dim,
+                            output_dim=args.output_dim, n_a=args.n_a, n_d=args.n_d, lambda_sparse=1e-4, momentum=0.3,
+                            clip_value=args.clip_value,
+                            optimizer_fn=torch.optim.Adam,
+                            optimizer_params=dict(lr=args.l_r),
+                            scheduler_params={"gamma": args.scheduler_gamma,
                                             "step_size": args.scheduler_step_size},
-                          scheduler_fn=torch.optim.lr_scheduler.StepLR, epsilon=1e-15)
+                            scheduler_fn=torch.optim.lr_scheduler.StepLR, epsilon=1e-15)
 
     PARQUET_HOME_PATH = f'{args.parquet_data_path}/{args.normal_type}/'
     train_params = {

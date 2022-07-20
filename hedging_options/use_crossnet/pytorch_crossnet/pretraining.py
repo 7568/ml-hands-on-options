@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 from torch.utils.data import DataLoader
-import tab_network
+import cross_network
 from utils import (
     create_explain_matrix,
     filter_weights,
@@ -18,12 +18,12 @@ from metrics import (
     check_metrics,
     UnsupervisedLoss,
 )
-from abstract_model import TabModel
+from abstract_model import CrossModel
 
 
-class TabNetPretrainer(TabModel):
+class CrossNetPretrainer(CrossModel):
     def __post_init__(self):
-        super(TabNetPretrainer, self).__post_init__()
+        super(CrossNetPretrainer, self).__post_init__()
         self._task = 'unsupervised'
         self._default_loss = UnsupervisedLoss
         self._default_metric = 'unsup_loss_numpy'

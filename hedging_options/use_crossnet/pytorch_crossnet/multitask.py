@@ -2,14 +2,14 @@ import torch
 import numpy as np
 from scipy.special import softmax
 from utils import PredictDataset, filter_weights
-from abstract_model import TabModel
+from abstract_model import CrossModel
 from multiclass_utils import infer_multitask_output, check_output_dim
 from torch.utils.data import DataLoader
 
 
-class TabNetMultiTaskClassifier(TabModel):
+class CrossNetMultiTaskClassifier(CrossModel):
     def __post_init__(self):
-        super(TabNetMultiTaskClassifier, self).__post_init__()
+        super(CrossNetMultiTaskClassifier, self).__post_init__()
         self._task = 'classification'
         self._default_loss = torch.nn.functional.cross_entropy
         self._default_metric = 'logloss'
