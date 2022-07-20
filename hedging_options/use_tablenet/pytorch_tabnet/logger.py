@@ -13,8 +13,8 @@ class Logger:
         self.logger = logging.getLogger()
         self.logger.setLevel(level=logging.DEBUG)
 
-    def set_logger_param(self, normal_type, n_steps, redirect_sys_stderr):
-        handler = logging.FileHandler(f'{normal_type}/log/train_test002_{n_steps}.log')
+    def set_logger_param(self, normal_type, n_steps, redirect_sys_stderr,tag):
+        handler = logging.FileHandler(f'{normal_type}/log/sys_out_{tag}_{n_steps}.log')
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         handler.setFormatter(formatter)
         self.logger.addHandler(handler)

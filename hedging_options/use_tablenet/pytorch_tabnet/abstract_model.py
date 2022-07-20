@@ -66,6 +66,7 @@ class TabModel(BaseEstimator):
     device_name: str = "auto"
     n_shared_decoder: int = 1
     n_indep_decoder: int = 1
+    next_day_features: list = None
 
     def __post_init__(self):
         self.batch_size = 1024
@@ -266,36 +267,6 @@ class TabModel(BaseEstimator):
         # compute feature importance once the best model is defined
         # self.feature_importances_ = self._compute_feature_importances(X_train)
 
-    def predict(self, X):
-        """
-        Make predictions on a batch (valid)
-
-        Parameters
-        ----------
-        X : a :tensor: `torch.Tensor`
-            Input data
-
-        Returns
-        -------
-        predictions : np.array
-            Predictions of the regression problem
-        """
-        self.network.eval()
-        dataloader = DataLoader(
-            PredictDataset(X),
-            batch_size=self.batch_size,
-            shuffle=False,
-        )
-
-        results = []
-        for batch_nb, data in enumerate(dataloader):
-            data = data.to(self.device).float()
-            output, M_loss = self.network(data)
-            predictions = output.cpu().detach().numpy()
-            results.append(predictions)
-        res = np.vstack(results)
-        return self.predict_func(res)
-
     def explain(self, X, normalize=False):
         """
         Return local explanation
@@ -426,24 +397,25 @@ class TabModel(BaseEstimator):
         #     with z.open("model_params.json") as f:
         #         loaded_params = json.load(f)
         #         loaded_params["init_params"]["device_name"] = self.device_name
-        with os.open(filepath) as f:
-            try:
-                saved_state_dict = torch.load(f, map_location=self.device)
-            except io.UnsupportedOperation:
-                # In Python <3.7, the returned file object is not seekable (which at least
-                # some versions of PyTorch require) - so we'll try buffering it in to a
-                # BytesIO instead:
-                saved_state_dict = torch.load(
-                    io.BytesIO(f.read()),
-                    map_location=self.device,
-                )
+        # with open(filepath) as f:
+        #     try:
+        #         saved_state_dict = torch.load(f, map_location=self.device)
+        #     except io.UnsupportedOperation:
+        #         # In Python <3.7, the returned file object is not seekable (which at least
+        #         # some versions of PyTorch require) - so we'll try buffering it in to a
+        #         # BytesIO instead:
+        #         saved_state_dict = torch.load(
+        #             io.BytesIO(f.read()),
+        #             map_location=self.device,
+        #         )
         # except KeyError:
         #     raise KeyError("Your zip file is missing at least one component")
 
         # self.__init__(**loaded_params["init_params"])
 
         self._set_network()
-        self.network.load_state_dict(saved_state_dict)
+        self.network.load_state_dict(torch.load(filepath))
+        # self.network.load_state_dict(saved_state_dict)
         self.network.eval()
         # self.load_class_attrs(loaded_params["class_attrs"])
 
@@ -540,68 +512,67 @@ class TabModel(BaseEstimator):
         # Setting network on evaluation mode
         self.network.eval()
 
-        list_y_true_put = []
-        list_y_true_call = []
-
-        list_n_true_put = []
-        list_n_true_call = []
-
-        list_score_put = []
-        list_score_call = []
-
+        MSHE_puts=[]
+        MSHE_calls=[]
+        MSHEs=[]
         # Main loop
-        for batch_idx, (X, Y, N) in tqdm(enumerate(loader), total=len(loader)):
-            X = torch.squeeze(X).to(self.device).float()
-            scores = self._predict_batch(X)
+        for i in range(50):
+            list_y_true_put = []
+            list_y_true_call = []
 
-            x_np = X.cpu().detach().numpy()
-            x_np_call_or_put = x_np[:, :, 0]
-            put_idx = np.argwhere(np.array(x_np_call_or_put).flatten() == 0)
-            call_idx = np.argwhere(np.array(x_np_call_or_put).flatten() == 1)
-            y_true = torch.squeeze(Y).detach().numpy()
-            y_true_put = np.delete(y_true, call_idx)
-            y_true_call = np.delete(y_true, put_idx)
+            list_n_true_put = []
+            list_n_true_call = []
+            list_score_put = []
+            list_score_call = []
+            for batch_idx, (X, Y, N) in tqdm(enumerate(loader), total=len(loader)):
+                X = torch.squeeze(X).to(self.device).float()
+                scores = self._predict_batch(X)
 
-            n_true = torch.squeeze(N).detach().numpy().reshape(-1, 5)
-            n_true_put = np.delete(n_true, call_idx, axis=0)
-            n_true_call = np.delete(n_true, put_idx, axis=0)
+                x_np = X.cpu().detach().numpy()
+                x_np_call_or_put = x_np[:, :, 0]
+                put_idx = np.argwhere(np.array(x_np_call_or_put).flatten() == 0)
+                call_idx = np.argwhere(np.array(x_np_call_or_put).flatten() == 1)
+                y_true = torch.squeeze(Y).detach().numpy()
+                y_true_put = np.delete(y_true, call_idx)
+                y_true_call = np.delete(y_true, put_idx)
 
-            list_y_true_put.append(y_true_put)
-            list_y_true_call.append(y_true_call)
+                n_true = torch.squeeze(N).detach().numpy().reshape(-1, 5)
+                n_true_put = np.delete(n_true, call_idx, axis=0)
+                n_true_call = np.delete(n_true, put_idx, axis=0)
 
-            list_n_true_put.append(n_true_put)
-            list_n_true_call.append(n_true_call)
+                list_y_true_put.append(y_true_put)
+                list_y_true_call.append(y_true_call)
 
-            put_scores = np.delete(scores, call_idx)
-            call_scores = np.delete(scores, put_idx)
-            list_score_put.append(put_scores)
-            list_score_call.append(call_scores)
+                list_n_true_put.append(n_true_put)
+                list_n_true_call.append(n_true_call)
 
-        # y_true, scores = self.stack_batches(list_y_true, list_y_score)
-        #
-        # metrics_logs = self._metric_container_dict[name](y_true, scores)
-        # list_y_true_put = np.array(list_y_true_put)
-        # list_y_true_call = np.array(list_y_true_call)
-        list_score_put = np.array(list_score_put)
-        list_score_call = np.array(list_score_call)
-        # put_validate_loss = np.power((list_y_true_put - list_score_put), 2).mean()
-        # call_validate_loss = np.power((list_y_true_call - list_score_call), 2).mean()
+                put_scores = np.delete(scores, call_idx)
+                call_scores = np.delete(scores, put_idx)
+                list_score_put.append(put_scores)
+                list_score_call.append(call_scores)
 
-        _p = np.array(list_n_true_put)
-        _c = np.array(list_n_true_call)
-        _p = _p.reshape(-1, len(self.next_day_features))
-        _c = _c.reshape(-1, len(self.next_day_features))
-        l_s_p = list_score_put
-        MSHE_put = 100 * (l_s_p * _p[:, 1] + _p[:, -1] * (_p[:, 2] - l_s_p * _p[:, 0]) - _p[:, -2]) / _p[:, 1]
-        MSHE_put = (MSHE_put ** 2).mean()
-        l_s_c = list_score_call
-        MSHE_call = 100 * (l_s_c * _c[:, 1] + _c[:, -1] * (_c[:, 2] - l_s_c * _c[:, 0]) - _c[:, -2]) / _c[:, 1]
-        MSHE_call = (MSHE_call ** 2).mean()
-        MSHE = (MSHE_put + MSHE_call) / 2
-        # logger.debug(f'the put validate loss is {put_validate_loss}')
-        # logger.debug(f'the call validate loss is {call_validate_loss}')
+            list_score_put = np.array(list_score_put)
+            list_score_call = np.array(list_score_call)
 
-        # mean_validate_loss = (put_validate_loss + call_validate_loss) / 2
+            _p = np.array(list_n_true_put)
+            _c = np.array(list_n_true_call)
+            _p = _p.reshape(-1, len(self.next_day_features))
+            _c = _c.reshape(-1, len(self.next_day_features))
+            l_s_p = list_score_put
+            MSHE_put = 100 * (l_s_p * _p[:, 1] + _p[:, -1] * (_p[:, 2] - l_s_p * _p[:, 0]) - _p[:, -2]) / _p[:, 1]
+            MSHE_put = (MSHE_put ** 2).mean()
+            l_s_c = list_score_call
+            MSHE_call = 100 * (l_s_c * _c[:, 1] + _c[:, -1] * (_c[:, 2] - l_s_c * _c[:, 0]) - _c[:, -2]) / _c[:, 1]
+            MSHE_call = (MSHE_call ** 2).mean()
+            MSHE = (MSHE_put + MSHE_call) / 2
+            MSHE_puts.append(MSHE_put)
+            MSHE_calls.append(MSHE_call)
+            MSHEs.append(MSHE)
+
+        MSHE_put=np.array(MSHE_puts).mean()
+        MSHE_call=np.array(MSHE_calls).mean()
+        MSHE=np.array(MSHEs).mean()
+
         put_best = self.history.best_info['put_best']
         call_best = self.history.best_info['call_best']
         mshe_best = self.history.best_info['mshe_best']
@@ -633,6 +604,75 @@ class TabModel(BaseEstimator):
 
         self.network.train()
         return
+
+    def predict(self, loader):
+        """
+        Predict an epoch and update metrics.
+
+        Parameters
+        ----------
+        name : str
+            Name of the validation set
+        loader : torch.utils.data.Dataloader
+                DataLoader with validation set
+        """
+        # Setting network on evaluation mode
+        self.network.eval()
+
+        list_y_true_put = []
+        list_y_true_call = []
+
+        list_n_true_put = []
+        list_n_true_call = []
+
+        list_score_put = []
+        list_score_call = []
+
+        # Main loop
+
+        for batch_idx, (X, Y, N) in tqdm(enumerate(loader), total=len(loader)):
+            X = torch.squeeze(X).to(self.device).float()
+            scores = self._predict_batch(X)
+
+            x_np = X.cpu().detach().numpy()
+            x_np_call_or_put = x_np[:, :, 0]
+            put_idx = np.argwhere(np.array(x_np_call_or_put).flatten() == 0)
+            call_idx = np.argwhere(np.array(x_np_call_or_put).flatten() == 1)
+            y_true = torch.squeeze(Y).detach().numpy()
+            y_true_put = np.delete(y_true, call_idx)
+            y_true_call = np.delete(y_true, put_idx)
+
+            n_true = torch.squeeze(N).detach().numpy().reshape(-1, 5)
+            n_true_put = np.delete(n_true, call_idx, axis=0)
+            n_true_call = np.delete(n_true, put_idx, axis=0)
+
+            list_y_true_put.append(y_true_put)
+            list_y_true_call.append(y_true_call)
+
+            list_n_true_put.append(n_true_put)
+            list_n_true_call.append(n_true_call)
+
+            put_scores = np.delete(scores, call_idx)
+            call_scores = np.delete(scores, put_idx)
+            list_score_put.append(put_scores)
+            list_score_call.append(call_scores)
+
+        list_score_put = np.array(list_score_put)
+        list_score_call = np.array(list_score_call)
+
+        _p = np.array(list_n_true_put)
+        _c = np.array(list_n_true_call)
+        _p = _p.reshape(-1, len(self.next_day_features))
+        _c = _c.reshape(-1, len(self.next_day_features))
+        l_s_p = list_score_put
+        MSHE_put = 100 * (l_s_p * _p[:, 1] + _p[:, -1] * (_p[:, 2] - l_s_p * _p[:, 0]) - _p[:, -2]) / _p[:, 1]
+        MSHE_put = (MSHE_put ** 2).mean()
+        l_s_c = list_score_call
+        MSHE_call = 100 * (l_s_c * _c[:, 1] + _c[:, -1] * (_c[:, 2] - l_s_c * _c[:, 0]) - _c[:, -2]) / _c[:, 1]
+        MSHE_call = (MSHE_call ** 2).mean()
+        MSHE = (MSHE_put + MSHE_call) / 2
+
+        return MSHE_put, MSHE_call, MSHE
 
     def _predict_batch(self, X):
         """

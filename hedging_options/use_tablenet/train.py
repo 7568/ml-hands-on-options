@@ -42,6 +42,8 @@ def get_args_parser():
     parser.add_argument('--drop_last', default=False, type=bool)
     parser.add_argument('--pin_memory', default=True, type=bool)
     parser.add_argument('--redirect_sys_stderr', default=False, type=bool)
+    parser.add_argument('--parquet_data_path',
+                        default='/home/liyu/data/hedging-option/china-market/h_sh_300/panel_parquet', type=str)
     parser.add_argument('--next_day_features', default=['S0_n', 'S1_n', 'V0_n', 'V1_n', 'On_ret'], type=list)
 
     return parser
@@ -61,9 +63,9 @@ def main(args):
         os.makedirs(f'{args.normal_type}/pid')
 
     if args.redirect_sys_stderr:
-        sys.stderr = open(f'{args.normal_type}/log/test002_N_STEPS_{args.n_steps}.log', 'a')
+        sys.stderr = open(f'{args.normal_type}/log/train_N_STEPS_{args.n_steps}.log', 'a')
     os.environ["CUDA_VISIBLE_DEVICES"] = str(args.cuda_id)
-    logger.set_logger_param(args.normal_type, args.n_steps, args.redirect_sys_stderr)
+    logger.set_logger_param(args.normal_type, args.n_steps, args.redirect_sys_stderr,'train')
 
     # from hedging_options.use_tablenet.pytorch_tabnet.augmentations import RegressionSMOTE
 
@@ -76,7 +78,7 @@ def main(args):
                                             "step_size": args.scheduler_step_size},
                           scheduler_fn=torch.optim.lr_scheduler.StepLR, epsilon=1e-15)
 
-    PARQUET_HOME_PATH = f'/home/liyu/data/hedging-option/china-market/h_sh_300/panel_parquet/{args.normal_type}/'
+    PARQUET_HOME_PATH = f'{args.parquet_data_path}/{args.normal_type}/'
     train_params = {
         'data_path': f'{PARQUET_HOME_PATH}/training/',
         'one_day_data_numbers': args.one_day_data_numbers,

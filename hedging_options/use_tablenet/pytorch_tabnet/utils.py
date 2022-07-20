@@ -9,6 +9,7 @@ import json
 from sklearn.utils import check_array
 import pandas as pd
 import warnings
+from hedging_options.use_tablenet.pytorch_tabnet.logger import logger
 
 
 class TorchDataset(Dataset):
@@ -94,6 +95,7 @@ class OptionPriceDataset(Dataset):
         #     return self.x, self.y
         if index == 0:
             np.random.shuffle(self.all_data_index)
+            # logger.debug(f'all_data_index : {self.all_data_index}')
         X = []
         Y = []
         N = []
