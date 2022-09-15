@@ -1,0 +1,7 @@
+#!/bin/bash
+par_1=`history`
+sleep 1
+par_2=`history`
+if ["$par_1"x = "$par_2"x];then
+    echo `par_2` >> his_log
+fi

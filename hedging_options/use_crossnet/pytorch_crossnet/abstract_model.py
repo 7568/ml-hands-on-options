@@ -703,7 +703,7 @@ class CrossModel(BaseEstimator):
     def _set_network(self):
         """Setup the network and explain matrix."""
         torch.manual_seed(self.seed)
-        self.network = tab_network.TabNet(
+        self.network = cross_network.TabNet(
             self.input_dim,
             self.output_dim,
             n_d=self.n_d,

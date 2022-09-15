@@ -1,0 +1,12 @@
+#!/bin/bash
+bash pid_to_file.sh
+sleep 1s
+while IFS= read -r line;
+do
+  PID=$line
+  PID_EXIST=$(ps aux | awk '{print $2}'| grep -w $PID)
+  if [ $PID_EXIST ];then
+    kill -9 ${PID}
+  fi
+done < pid.txt
+qazWSX%^&90}{][

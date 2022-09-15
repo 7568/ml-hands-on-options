@@ -1,9 +1,9 @@
 import torch
 import numpy as np
 from scipy.special import softmax
-from pytorch_tabnet.utils import PredictDataset, filter_weights
-from pytorch_tabnet.abstract_model import TabModel
-from pytorch_tabnet.multiclass_utils import infer_output_dim, check_output_dim
+from hedging_options.use_tabnet.pytorch_tabnet.utils import PredictDataset, filter_weights
+from hedging_options.use_tabnet.pytorch_tabnet.abstract_model import TabModel
+from hedging_options.use_tabnet.pytorch_tabnet.multiclass_utils import infer_output_dim, check_output_dim
 from torch.utils.data import DataLoader
 
 
@@ -52,7 +52,7 @@ class TabNetClassifier(TabModel):
         output_dim, train_labels = infer_output_dim(y_train)
         for X, y in eval_set:
             check_output_dim(train_labels, y)
-        self.output_dim = output_dim
+        # self.output_dim = output_dim
         self._default_metric = ('auc' if self.output_dim == 2 else 'accuracy')
         self.classes_ = train_labels
         self.target_mapper = {
@@ -131,7 +131,7 @@ class TabNetRegressor(TabModel):
                   f"but y_train.shape={y_train.shape} given.\n" + \
                   "Use reshape(-1, 1) for single regression."
             raise ValueError(msg)
-        self.output_dim = y_train.shape[1]
+        # self.output_dim = y_train.shape[1]
         self.preds_mapper = None
 
         self.updated_weights = weights

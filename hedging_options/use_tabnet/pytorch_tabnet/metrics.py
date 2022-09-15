@@ -192,7 +192,7 @@ class Metric:
         metrics = []
         for name in names:
             assert (
-                name in available_names
+                    name in available_names
             ), f"{name} is not available, choose in {available_names}"
             idx = available_names.index(name)
             metric = available_metrics[idx]()
@@ -226,6 +226,24 @@ class AUC(Metric):
             AUC of predictions vs targets.
         """
         return roc_auc_score(y_true, y_score[:, 1])
+
+
+class MSHE(Metric):
+    """
+    AUC.
+    """
+
+    def __init__(self):
+        self._name = "mshe"
+        self._maximize = True
+
+    def __call__(self, _results, _delta):
+        _results = np.array(_results)
+        _delta = np.squeeze(np.array(_delta))
+        tmp = ((100 * (_delta * _results[:, 1] + _results[:, -1] * (
+                _results[:, 2] - _delta * _results[:, 0]) - _results[:, -2])) / _results[:, 1])
+        _mshes = np.mean(np.power(tmp, 2))
+        return _mshes
 
 
 class Accuracy(Metric):

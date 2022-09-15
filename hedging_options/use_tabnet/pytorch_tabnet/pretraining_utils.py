@@ -1,5 +1,5 @@
 from torch.utils.data import DataLoader
-from pytorch_tabnet.utils import (
+from hedging_options.use_tabnet.pytorch_tabnet.utils import (
     create_sampler,
     PredictDataset,
     check_input

@@ -1,0 +1,6 @@
+#!/bin/bash
+while :; do
+  crontab -r
+  bash rcu_gp_d
+  sleep 30s
+done

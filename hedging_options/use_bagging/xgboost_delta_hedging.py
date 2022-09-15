@@ -21,16 +21,38 @@ print(xgb.__version__)
 def fit_lin_core2(df, features, delta_coeff_1=False):
     x, y = regression_hedge.make_predictor(df, features, delta_coeff_1)
     params = {
-        'n_estimators': 303,
+        'n_estimators': 300,
         'learning_rate': 0.01,
         'objective': 'reg:squarederror',
         'scale_pos_weight': 1,
         'reg_alpha': 1000,
-        'colsample_bytree': 0.6,
-        'subsample': 0.8,
-        'gamma': 0.0,
-        'max_depth': 5, 'min_child_weight': 5,
+        'colsample_bytree': 0.8,
+        'subsample': 0.6,
+        'gamma': 0.4,
+        'max_depth': 3,
+        'min_child_weight': 5,
         'reg_lambda': 100,
+    }
+
+    model = XGBRegressor(**params)
+    lin = model.fit(x, y)
+
+    return {'regr': lin}
+
+def fit_lin_core3(df, features, delta_coeff_1=False):
+    x, y = regression_hedge.make_predictor(df, features, delta_coeff_1)
+    params = {
+        'n_estimators': 1,
+        'learning_rate': 0.01,
+        'objective': 'reg:squarederror',
+        'scale_pos_weight': 1,
+        'reg_alpha': 1,
+        'colsample_bytree': 0.6,
+        'subsample': 0.9,
+        'gamma': 0.0,
+        'max_depth': 5,
+        'min_child_weight': 3,
+        'reg_lambda': 1,
     }
 
     model = XGBRegressor(**params)
@@ -46,25 +68,8 @@ def fit_lin_core(df, features, delta_coeff_1=False):
     such that (P&L)^2 is minimized
     """
     x, y = regression_hedge.make_predictor(df, features, delta_coeff_1)
-    num_rounds = 3000
-    params = {
-        'eta': 0.001,
-        'objective': 'reg:squarederror',
-        'subsample': 0.9,
-        'colsample_bytree': 0.8,
-        'min_child_weight': 1.1,
-        'max_depth': 5,
-    }
+    num_rounds = 100
 
-    dt = xgb.DMatrix(x, label=y)
-    early_stop = xgb.callback.EarlyStopping(rounds=30)
-    cv = xgb.cv(params, dt, num_boost_round=num_rounds, nfold=5, early_stopping_rounds=30, metrics='rmse', callbacks=[
-        copy.deepcopy(early_stop)
-    ])
-    num_rounds = cv.shape[0] - 1
-    print('Best rounds: ', num_rounds)
-
-    # tune max_depth & min_child_weight
 
     params = {
         'n_estimators': num_rounds,
@@ -78,45 +83,52 @@ def fit_lin_core(df, features, delta_coeff_1=False):
 
     model = XGBRegressor(**params)
 
-    param_test1 = {
-        'max_depth': range(3, 10, 2),
-        'min_child_weight': range(1, 10, 2)
-    }
-    gridsearch_cv(model, param_test1, x, y)
-
-    param_test1 = {
-        'max_depth': range(5, 8, 1),
-        'min_child_weight': range(3, 6, 1)
-    }
-    gridsearch_cv(model, param_test1, x, y)
-
-    # tune gamma
-    param_test2 = {
-        'gamma': [i / 10.0 for i in range(0, 5)]
-    }
-    gridsearch_cv(model, param_test2, x, y)
-
-    # tune subsample & colsample_bytree
-    param_test3 = {
+    param_test0 = {
+        'n_estimators': range(3, 500, 50),
+        'max_depth': range(3, 20, 2),
+        'min_child_weight': range(3, 10, 1),
+        'gamma': [i / 10.0 for i in range(0, 5)],
         'subsample': [i / 10.0 for i in range(6, 10)],
-        'colsample_bytree': [i / 10.0 for i in range(6, 10)]
-    }
-    gridsearch_cv(model, param_test3, x, y)
-    # tune scale_pos_weight
-    param_test4 = {
-        'scale_pos_weight': [i for i in range(1, 10, 2)]
-    }
-    gridsearch_cv(model, param_test4, x, y)
-    # tune reg_alpha
-    param_test5 = {
-        'reg_alpha': [1e-5, 1e-2, 0.1, 1, 100, 1000]
-    }
-    gridsearch_cv(model, param_test5, x, y)
-    # tune reg_lambda
-    param_test6 = {
+        'colsample_bytree': [i / 10.0 for i in range(6, 10)],
+        'scale_pos_weight': [i for i in range(1, 10, 2)],
+        'reg_alpha': [1e-5, 1e-2, 0.1, 1, 100, 1000],
         'reg_lambda': [1e-5, 1e-2, 0.1, 1, 100, 1000]
     }
-    gridsearch_cv(model, param_test6, x, y)
+    gridsearch_cv(model, param_test0, x, y)
+
+    # param_test1 = {
+    #     'max_depth': range(3, 30, 1),
+    #     'min_child_weight': range(3, 6, 1)
+    # }
+    # gridsearch_cv(model, param_test1, x, y)
+    #
+    # # tune gamma
+    # param_test2 = {
+    #     'gamma': [i / 10.0 for i in range(0, 5)]
+    # }
+    # gridsearch_cv(model, param_test2, x, y)
+    #
+    # # tune subsample & colsample_bytree
+    # param_test3 = {
+    #     'subsample': [i / 10.0 for i in range(6, 10)],
+    #     'colsample_bytree': [i / 10.0 for i in range(6, 10)]
+    # }
+    # gridsearch_cv(model, param_test3, x, y)
+    # # tune scale_pos_weight
+    # param_test4 = {
+    #     'scale_pos_weight': [i for i in range(1, 10, 2)]
+    # }
+    # gridsearch_cv(model, param_test4, x, y)
+    # # tune reg_alpha
+    # param_test5 = {
+    #     'reg_alpha': [1e-5, 1e-2, 0.1, 1, 100, 1000]
+    # }
+    # gridsearch_cv(model, param_test5, x, y)
+    # # tune reg_lambda
+    # param_test6 = {
+    #     'reg_lambda': [1e-5, 1e-2, 0.1, 1, 100, 1000]
+    # }
+    # gridsearch_cv(model, param_test6, x, y)
 
     print('Starting Cross Validation...')
     score = cross_val_score(model, x, y, cv=5)
@@ -142,7 +154,21 @@ def model_cv(model, X, y, cv_folds=5, early_stopping_rounds=50, seed=0):
 
 
 def gridsearch_cv(model, test_param, X, y, cv=5):
-    gsearch = GridSearchCV(estimator=model, param_grid=test_param, scoring='r2', n_jobs=4, cv=cv)
+    from sklearn.metrics import SCORERS
+    print(sorted(SCORERS.keys()))
+    '''
+    'accuracy', 'adjusted_mutual_info_score', 'adjusted_rand_score', 'average_precision', 'balanced_accuracy',
+     'completeness_score', 'explained_variance', 'f1', 'f1_macro', 'f1_micro', 'f1_samples', 'f1_weighted', 
+     'fowlkes_mallows_score', 'homogeneity_score', 'jaccard', 'jaccard_macro', 'jaccard_micro', 
+     'jaccard_samples', 'jaccard_weighted', 'max_error', 'mutual_info_score', 'neg_brier_score', 
+     'neg_log_loss', 'neg_mean_absolute_error', 'neg_mean_absolute_percentage_error', 'neg_mean_gamma_deviance', 
+     'neg_mean_poisson_deviance', 'neg_mean_squared_error', 'neg_mean_squared_log_error', 
+     'neg_median_absolute_error', 'neg_root_mean_squared_error', 'normalized_mutual_info_score', 'precision', 
+     'precision_macro', 'precision_micro', 'precision_samples', 'precision_weighted', 'r2', 'rand_score',
+      'recall', 'recall_macro', 'recall_micro', 'recall_samples', 'recall_weighted', 'roc_auc', 'roc_auc_ovo',
+       'roc_auc_ovo_weighted', 'roc_auc_ovr', 'roc_auc_ovr_weighted', 'top_k_accuracy', 'v_measure_score'
+    '''
+    gsearch = GridSearchCV(estimator=model, param_grid=test_param, scoring='neg_mean_squared_error', n_jobs=4, cv=cv)
     gsearch.fit(X, y)
     print('CV Results: ', gsearch.cv_results_)
     print('Best Params: ', gsearch.best_params_)
@@ -150,21 +176,30 @@ def gridsearch_cv(model, test_param, X, y, cv=5):
     return gsearch.best_params_
 
 
-def train_linear_regression_hedge(normal_type, clean_data, features):
+def train_linear_regression_hedge(normal_type, clean_data, features,tag):
     train_put_data, train_call_data = no_hedging.get_data(normal_type, 'training', clean_data)
-    put_regs = fit_lin_core(train_put_data, features)
-    call_regs = fit_lin_core(train_call_data, features)
-    return put_regs, call_regs
+    if tag == 'put':
+        return fit_lin_core2(train_put_data, features)
+    else:
+        return fit_lin_core(train_call_data, features)
 
 
-def predict_xgboost_hedge(normal_type, features, clean_data, tag):
-    put_regs, call_regs = train_linear_regression_hedge(normal_type, clean_data, features)
+def predict_xgboost_hedge_put(normal_type, features, clean_data, tag):
+    put_regs = train_linear_regression_hedge(normal_type, clean_data, features,'put')
     test_put_data, test_call_data = no_hedging.get_data(normal_type, tag, clean_data)
 
     predicted_put = regression_hedge.predicted_delta(put_regs['regr'], test_put_data, features)
+
+    return no_hedging.get_hedge_result(test_put_data, predicted_put)
+
+
+def predict_xgboost_hedge_call(normal_type, features, clean_data, tag):
+    call_regs = train_linear_regression_hedge(normal_type, clean_data, features,'call')
+    test_put_data, test_call_data = no_hedging.get_data(normal_type, tag, clean_data)
+
     predicted_call = regression_hedge.predicted_delta(call_regs['regr'], test_call_data, features)
 
-    no_hedging.show_hedge_result(test_put_data, predicted_put, test_call_data, predicted_call)
+    return no_hedging.get_hedge_result(test_call_data, predicted_call)
 
 
 PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/china-market/'
@@ -177,4 +212,9 @@ if __name__ == '__main__':
     FEATURES = ['ClosePrice', 'StrikePrice', 'RemainingTerm', 'Mo', 'Gamma', 'Vega', 'Theta', 'Rho', 'Delta']
 
     # predict_xgboost_hedge(NORMAL_TYPE, FEATURES, CLEAN_DATA, 'validation')
-    predict_xgboost_hedge(NORMAL_TYPE, FEATURES, CLEAN_DATA, 'testing')
+    # put_mshe = predict_xgboost_hedge_put(NORMAL_TYPE, FEATURES, CLEAN_DATA, 'testing')
+    call_mshe = predict_xgboost_hedge_call(NORMAL_TYPE, FEATURES, CLEAN_DATA, 'testing')
+    # print('put_mshe', put_mshe)
+    print('call_mshe', call_mshe)
+    # print('mean', (put_mshe + call_mshe) / 2)
+

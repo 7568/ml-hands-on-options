@@ -109,6 +109,12 @@ def no_hedge_result(NORMAL_TYPE,tag, clean_data):
     put_data, call_data = get_data(NORMAL_TYPE,tag, clean_data)
     show_hedge_result(put_data, 0, call_data, 0)
 
+def get_hedge_result(_results, _delta):
+    put_mshes = np.power((100 * (_delta * _results['S1_n'] + _results['on_ret'] * (
+            _results['V0_n'] - _delta * _results['S0_n']) - _results['V1_n'])) / _results['S1_n'],
+                         2).mean()
+
+    return round(put_mshes, 3)
 
 def show_hedge_result(put_results, put_delta, call_results, call_delta):
     put_mshes = np.power((100 * (put_delta * put_results['S1_n'] + put_results['on_ret'] * (
@@ -118,8 +124,14 @@ def show_hedge_result(put_results, put_delta, call_results, call_delta):
             call_results['V0_n'] - call_delta * call_results['S0_n']) - call_results['V1_n'])) / call_results['S1_n'],
                           2).mean()
 
-    print(round(call_mshes, 3), '\t', round(put_mshes, 3), '\t', round((put_mshes + call_mshes) / 2, 3))
+    print('call_mshes',round(call_mshes, 3), '\t', 'put_mshes',round(put_mshes, 3), '\t', 'mean',round((put_mshes + call_mshes) / 2, 3))
 
+# def show_hedge_result2(_results, _delta):
+#     put_mshes = np.power((100 * (_delta * _results['S1_n'] + _results['on_ret'] * (
+#             _results['V0_n'] - _delta * _results['S0_n']) - _results['V1_n'])) / _results['S1_n'],
+#                          2).mean()
+#
+#     print( '_mshes',round(put_mshes, 3))
 
 def reset_features(df):
     df['M'] = df['UnderlyingScrtClose'] / df['StrikePrice']
@@ -197,5 +209,6 @@ if __name__ == '__main__':
     CLEAN_DATA = False
     print(f'no_hedge_in_test , clean={CLEAN_DATA}')
     # no_hedge_in_training(CLEAN_DATA)
+    no_hedge_result(NORMAL_TYPE,'training', CLEAN_DATA)
     no_hedge_result(NORMAL_TYPE,'validation', CLEAN_DATA)
     no_hedge_result(NORMAL_TYPE,'testing', CLEAN_DATA)

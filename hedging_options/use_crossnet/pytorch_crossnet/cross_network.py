@@ -1,3 +1,8 @@
+import os
+import sys
+
+sys.path.append(os.path.dirname("../../*"))
+sys.path.append(os.path.dirname("../*"))
 import torch
 from torch.nn import Linear, BatchNorm1d, ReLU, LayerNorm
 import numpy as np

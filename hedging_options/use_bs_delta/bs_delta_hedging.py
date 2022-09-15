@@ -28,5 +28,6 @@ if __name__ == '__main__':
     CLEAN_DATA = False
     print(f'bs_delta_hedge_in_test , clean={CLEAN_DATA}')
     # bs_delta_hedge_in_training(CLEAN_DATA)
+    bs_delta_hedge_in_tag(NORMAL_TYPE, 'training', CLEAN_DATA)
     bs_delta_hedge_in_tag(NORMAL_TYPE, 'validation', CLEAN_DATA)
     bs_delta_hedge_in_tag(NORMAL_TYPE, 'testing', CLEAN_DATA)

@@ -25,7 +25,7 @@ from pathlib import Path
 # In[2]:
 
 
-
+os.environ["CUDA_VISIBLE_DEVICES"] = '7'
 
 # # Load data and split
 
@@ -78,6 +78,7 @@ cat_dims = [ categorical_dims[f] for i, f in enumerate(features) if f in categor
 
 # define your embedding sizes : here just a random choice
 cat_emb_dim = [5, 4, 3, 6, 2, 2, 1, 10]
+# cat_emb_dim = [1, 1, 1, 1, 1, 1, 1, 1]
 
 
 # # Network parameters
@@ -246,8 +247,10 @@ clf_xgb = XGBRegressor(max_depth=8,
     seed=None,)
 
 clf_xgb.fit(X_train, y_train,
-        eval_set=[(X_valid, y_valid)],
+        eval_set=[(X_valid, y_valid),(X_train, y_train)],
         early_stopping_rounds=40,
+        eval_name=['train', 'valid'],
+        eval_metric=['rmsle', 'mae', 'rmse', 'mse'],
         verbose=10)
 
 

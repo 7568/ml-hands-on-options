@@ -49,10 +49,105 @@ def get_args_parser():
     return parser
 
 
-def main(args):
+def train_puts(args):
     # utils.init_distributed_mode(args)
     # print("git:\n  {}\n".format(utils.get_sha()))
+    args.normal_type = f'{args.normal_type}_puts'
+    if not os.path.exists(args.normal_type):
+        os.makedirs(args.normal_type)
+    if not os.path.exists(f'{args.normal_type}/log'):
+        os.makedirs(f'{args.normal_type}/log')
+    if not os.path.exists(f'{args.normal_type}/pt'):
+        os.makedirs(f'{args.normal_type}/pt')
+    if not os.path.exists(f'{args.normal_type}/pid'):
+        os.makedirs(f'{args.normal_type}/pid')
 
+    if args.redirect_sys_stderr:
+        sys.stderr = open(f'{args.normal_type}/log/train_N_STEPS_{args.n_steps}.log', 'a')
+    os.environ["CUDA_VISIBLE_DEVICES"] = str(args.cuda_id)
+    logger.set_logger_param(args.normal_type, args.n_steps, args.redirect_sys_stderr,'train')
+
+    # from hedging_options.use_crossnet.pytorch_crossnet.augmentations import RegressionSMOTE
+
+    clf = CrossNetRegressor(device_name=args.device, n_steps=args.n_steps, input_dim=args.input_dim,
+                            output_dim=args.output_dim, n_a=args.n_a, n_d=args.n_d, lambda_sparse=1e-4, momentum=0.3,
+                            clip_value=args.clip_value,
+                            optimizer_fn=torch.optim.Adam,
+                            optimizer_params=dict(lr=args.l_r),
+                            scheduler_params={"gamma": args.scheduler_gamma,
+                                            "step_size": args.scheduler_step_size},
+                            scheduler_fn=torch.optim.lr_scheduler.StepLR, epsilon=1e-15)
+
+    PARQUET_HOME_PATH = f'{args.parquet_data_path}/{args.normal_type}/'
+    train_params = {
+        'data_path': f'{PARQUET_HOME_PATH}/training/',
+        'one_day_data_numbers': args.one_day_data_numbers,
+        'target_feature': 'ActualDelta',
+        'batch_size': args.batch_size,
+        'next_day_features': args.next_day_features
+    }
+    validate_params = {
+        'data_path': f'{PARQUET_HOME_PATH}/validation/',
+        'one_day_data_numbers': args.one_day_data_numbers,
+        'target_feature': 'ActualDelta',
+        'batch_size': args.batch_size,
+        'next_day_features': args.next_day_features
+    }
+
+    testing_params = {
+        'data_path': f'{PARQUET_HOME_PATH}/testing/',
+        'one_day_data_numbers': args.one_day_data_numbers,
+        'target_feature': 'ActualDelta',
+        'batch_size': args.batch_size,
+        'next_day_features': args.next_day_features
+    }
+
+    TRAIN_DATALOADER = DataLoader(
+        utils.OptionPriceDataset(**train_params),
+        # batch_size=args.batch_size,
+        num_workers=args.num_workers,
+        drop_last=args.drop_last,
+        pin_memory=args.pin_memory
+    )
+
+    VALIDATE_DATALOADER = DataLoader(
+        utils.OptionPriceDataset(**validate_params),
+        # batch_size=args.batch_size,
+        num_workers=args.num_workers,
+        drop_last=args.drop_last,
+        pin_memory=args.pin_memory
+    )
+    TESTING_DATALOADER = DataLoader(
+        utils.OptionPriceDataset(**testing_params),
+        # batch_size=args.batch_size,
+        num_workers=args.num_workers,
+        drop_last=args.drop_last,
+        pin_memory=args.pin_memory
+    )
+
+    # for i in range(10):
+    #     clf._train_epoch(train_dataloader)
+    # print(clf)
+    clf.fit(
+        train_dataloader=TRAIN_DATALOADER,
+        validate_dataloader=VALIDATE_DATALOADER,
+        testing_dataloader=TESTING_DATALOADER,
+        eval_name=['train', 'valid'],
+        eval_metric=['mse'],
+        max_epochs=args.max_epochs,
+        patience=50,
+        batch_size=args.batch_size, virtual_batch_size=128,
+        num_workers=args.num_workers,
+        drop_last=args.drop_last,
+        normal_type=args.normal_type,
+        next_day_features=args.next_day_features,
+    )
+
+
+def train_calls(args):
+    # utils.init_distributed_mode(args)
+    # print("git:\n  {}\n".format(utils.get_sha()))
+    args.normal_type = f'{args.normal_type}_calls'
     if not os.path.exists(args.normal_type):
         os.makedirs(args.normal_type)
     if not os.path.exists(f'{args.normal_type}/log'):
@@ -149,4 +244,5 @@ if __name__ == '__main__':
     ARGS = parser.parse_args()
     # if args.output_dir:
     #     Path(args.output_dir).mkdir(parents=True, exist_ok=True)
-    main(ARGS)
+    # train_puts(ARGS)
+    train_calls(ARGS)

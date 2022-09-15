@@ -1,24 +1,24 @@
 import torch
 import numpy as np
 from torch.utils.data import DataLoader
-from pytorch_tabnet import tab_network
-from pytorch_tabnet.utils import (
+from hedging_options.use_tabnet.pytorch_tabnet import tab_network
+from hedging_options.use_tabnet.pytorch_tabnet.utils import (
     create_explain_matrix,
     filter_weights,
     PredictDataset,
     check_input
 )
 from torch.nn.utils import clip_grad_norm_
-from pytorch_tabnet.pretraining_utils import (
+from hedging_options.use_tabnet.pytorch_tabnet.pretraining_utils import (
     create_dataloaders,
     validate_eval_set,
 )
-from pytorch_tabnet.metrics import (
+from hedging_options.use_tabnet.pytorch_tabnet.metrics import (
     UnsupMetricContainer,
     check_metrics,
     UnsupervisedLoss,
 )
-from pytorch_tabnet.abstract_model import TabModel
+from hedging_options.use_tabnet.pytorch_tabnet.abstract_model import TabModel
 
 
 class TabNetPretrainer(TabModel):

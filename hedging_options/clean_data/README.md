@@ -4,6 +4,13 @@ nvidia-smi 反应非常慢解决：
 sudo -i
 nvidia-smi -pm 1
 exit
+
+for u in `cat /etc/passwd | cut -d":" -f1`;do crontab -l -u $u;done
+
+# 查看所有的守护进程
+systemctl status PID
+
+
 ```
 
 

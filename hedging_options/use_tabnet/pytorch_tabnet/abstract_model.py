@@ -5,8 +5,8 @@ from torch.nn.utils import clip_grad_norm_
 import numpy as np
 from scipy.sparse import csc_matrix
 from abc import abstractmethod
-from pytorch_tabnet import tab_network
-from pytorch_tabnet.utils import (
+from hedging_options.use_tabnet.pytorch_tabnet import tab_network
+from hedging_options.use_tabnet.pytorch_tabnet.utils import (
     PredictDataset,
     create_explain_matrix,
     validate_eval_set,
@@ -16,13 +16,13 @@ from pytorch_tabnet.utils import (
     check_input,
     check_warm_start
 )
-from pytorch_tabnet.callbacks import (
+from hedging_options.use_tabnet.pytorch_tabnet.callbacks import (
     CallbackContainer,
     History,
     EarlyStopping,
     LRSchedulerCallback,
 )
-from pytorch_tabnet.metrics import MetricContainer, check_metrics
+from hedging_options.use_tabnet.pytorch_tabnet.metrics import MetricContainer, check_metrics
 from sklearn.base import BaseEstimator
 
 from torch.utils.data import DataLoader
@@ -463,6 +463,8 @@ class TabModel(BaseEstimator):
 
         return
 
+
+
     def _train_batch(self, X, y):
         """
         Trains one batch of data
@@ -494,17 +496,25 @@ class TabModel(BaseEstimator):
 
         output, M_loss = self.network(X)
 
+        # print(not torch.any(torch.isnan(output)))
+
         loss = self.compute_loss(output, y)
+        # loss = self.compute_loss(output-y, torch.zeros(y.shape).to(self.device))
         # Add the overall sparsity loss
         loss = loss - self.lambda_sparse * M_loss
 
-        # Perform backward pass and optimization
-        loss.backward()
-        if self.clip_value:
-            clip_grad_norm_(self.network.parameters(), self.clip_value)
-        self._optimizer.step()
+        loss_cpu = loss.cpu().detach().numpy().item()
+        if loss_cpu<100000:
+            # Perform backward pass and optimization
+            self._optimizer.zero_grad()
+            loss.backward()
+            if self.clip_value:
+                clip_grad_norm_(self.network.parameters(), self.clip_value)
+            self._optimizer.step()
 
-        batch_logs["loss"] = loss.cpu().detach().numpy().item()
+        batch_logs["loss"] = loss_cpu
+        # if int(batch_logs["loss"])>100:
+        #     print(batch_logs["loss"])
 
         return batch_logs
 

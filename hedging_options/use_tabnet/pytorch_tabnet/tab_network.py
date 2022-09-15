@@ -1,7 +1,7 @@
 import torch
 from torch.nn import Linear, BatchNorm1d, ReLU
 import numpy as np
-from pytorch_tabnet import sparsemax
+from hedging_options.use_tabnet.pytorch_tabnet import sparsemax
 
 
 def initialize_non_glu(module, input_dim, output_dim):
@@ -582,7 +582,7 @@ class TabNet(torch.nn.Module):
         )
 
     def forward(self, x):
-        x = self.embedder(x)
+        # x = self.embedder(x)
         return self.tabnet(x)
 
     def forward_masks(self, x):
