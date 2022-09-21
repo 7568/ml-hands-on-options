@@ -273,7 +273,6 @@ dependencies:
   - torchtext=0.6.0=py_1
   - torchvision=0.4.0=py36_cu100
   - pip:
-    - apex==0.1
     - blis==0.7.5
     - catalogue==2.0.6
     - coolname==1.1.0
