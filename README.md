@@ -22,3 +22,14 @@ use ML methods to  hands optons
 | 输出类型 | CSV格式（*.csv）                                             |
 | 选择字段 | 证券ID[SecurityID] 交易日期[TradingDate] 交易代码[Symbol] 交易所代码[ExchangeCode] <br /> 标的证券ID[UnderlyingSecurityID]  标的证券交易代码[UnderlyingSecuritySymbol]<br />合约简称[ShortName] 认购认沽[CallOrPut] 行权价[StrikePrice] 行权日[ExerciseDate] <br />收盘价[ClosePrice] 标的证券收盘价[UnderlyingScrtClose] 剩余年限[RemainingTerm]  <br />无风险利率(%)[RisklessRate] 历史波动率[HistoricalVolatility] 隐含波动率[ImpliedVolatility] <br />理论价格[TheoreticalPrice]  Delta[Delta] Gamma[Gamma] Vega[Vega] Theta[Theta] Rho[Rho] <br />连续股息率[DividendYeild] 数据类型[DataType] |
 
+| 下载表名 | 股指期权合约日交易衍生表                                  |
+| -------- | :----------------------------------------------------------- |
+| 数据区间 | 2013-11-29 至 2022-06-01                                     |
+| 选择代码 | 全部代码                                                     |
+| 输出类型 | CSV格式（*.csv）                                             |
+| 选择字段 | 证券ID[SecurityID] 交易所代码[ExchangeCode] 交易代码[Symbol] 合约简称[ShortName] 认购认沽[CallOrPut] 交易日期[TradingDate] 标的证券ID[UnderlyingSecurityID] 填充标识[Filling] 连续合约标识[ContinueSign] 主力合约标识[MainSign] 昨收盘价[PreClosePrice] 昨结算价[PreSettlePrice] 昨持仓量[PrePosition] 持仓量变化[PositionChange] 成交均价[AvgPrice] 涨跌幅(收盘价)(%)[ClosePriceChangeRatio] 涨跌幅(结算价)(%)[SettlePriceChangeRatio] 振幅(%)[Amplitude] 涨停价[LimitUp] 跌停价[LimitDown] 当日单张维持保证金[MaintainingMargin] 数据类型[DataType] 涨跌幅[ChangeRatio] |
+
+
+对于大多数比较新的显卡来说，直接安装最新版的驱动即可:
+
+sudo yum install nvidia-x11-drv nvidia-x11-drv-32bit

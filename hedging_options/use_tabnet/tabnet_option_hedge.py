@@ -15,11 +15,11 @@ sys.path.append(os.path.dirname("../../*"))
 sys.path.append(os.path.dirname("../*"))
 import numpy as np
 import pandas as pd
-import xgboost as xgb
+# import xgboost as xgb
 from hedging_options.no_hedging import no_hedging
 from hedging_options.use_linear_regression import regression_hedge
 from sklearn.model_selection import cross_val_score, GridSearchCV
-from xgboost.sklearn import XGBRegressor
+# from xgboost.sklearn import XGBRegressor
 from pytorch_tabnet.augmentations import RegressionSMOTE
 from pytorch_tabnet.tab_model import TabNetRegressor
 import torch.multiprocessing
@@ -31,7 +31,7 @@ def get_args_parser():
     parser = argparse.ArgumentParser('Set transformer detector', add_help=False)
     parser.add_argument('--normal_type', default='mean_norm_calls', type=str, help='mean_norm,min_max_norm')
     parser.add_argument('--device', default='cuda', type=str, help='cuda,cpu')
-    parser.add_argument('--cuda_id', default=7, type=int)
+    parser.add_argument('--cuda_id', default=0, type=int)
     parser.add_argument('--n_steps', default=6, type=int)
     parser.add_argument('--input_dim', default=[35, 100], type=list)
     parser.add_argument('--n_a', default=[35, 100], type=list)
@@ -55,7 +55,7 @@ def get_args_parser():
     return parser
 
 
-def make_predictor(df, features, args):
+def seperates_x_y(df, features, args):
     """
     If delta_coeff_1 is to be used, the target is different.
     These predictors are used for linear regressions.
@@ -73,8 +73,8 @@ def mshe(_delta, _results):
 
 
 def fit_tabnet(train_df, validation_df, features, args):
-    train_x, train_y = make_predictor(train_df, features, args)
-    validation_x, validation_y = make_predictor(validation_df, features, args)
+    train_x, train_y = seperates_x_y(train_df, features, args)
+    validation_x, validation_y = seperates_x_y(validation_df, features, args)
     cat_emb_dim = [5, 4, 3, 6, 2, 2, 1, 10]
     cat_idxs = 1
     # clf = TabNetRegressor(cat_dims=[], cat_emb_dim=cat_emb_dim, cat_idxs=cat_idxs)
@@ -129,7 +129,7 @@ def train_puts(normal_type, features, clean_data, tag, args):
 
 def train_calls(normal_type, features, clean_data, tag, args):
     call_regs = train_linear_regression_hedge(normal_type, clean_data, features, args, 'calls')
-    test_put_data, test_call_data = no_hedging.get_data(normal_type, tag, clean_data)
+    _, test_call_data = no_hedging.get_data(normal_type, tag, clean_data)
 
     predicted_call = regression_hedge.predicted_delta(call_regs['regr'], test_call_data, features)
 

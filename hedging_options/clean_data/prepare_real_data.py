@@ -9,6 +9,7 @@ from multiprocessing import Pool, cpu_count
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+import os
 
 from hedging_options.library import common as cm
 
@@ -254,8 +255,9 @@ def assemble_next_day_features_precess(param):
         _options['Mo'] = _options['UnderlyingScrtClose'] / _options['StrikePrice']
         _options['ActualDelta'] = (_options['ClosePrice_1'] - _options['on_ret'] * _options['ClosePrice']) / (
                 _options['UnderlyingScrtClose_1'] - _options['on_ret'] * _options['UnderlyingScrtClose'])
-        _options.drop(columns=['ClosePrice_1', 'UnderlyingScrtClose_1', 'ImpliedVolatility_1', 'Delta_1', 'Gamma_1', 'Vega_1',
-                  'Theta_1', 'Rho_1'])
+        _options.drop(
+            columns=['ClosePrice_1', 'UnderlyingScrtClose_1', 'ImpliedVolatility_1', 'Delta_1', 'Gamma_1', 'Vega_1',
+                     'Theta_1', 'Rho_1'])
         new_df = new_df.append(_options.iloc[:-1, :])  # 最后一天的数据不需要，因为既做不了训练集也做不了验证集
 
     return new_df
@@ -414,6 +416,44 @@ def combine_all_data():
     df_2 = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/IO_QUOTATIONBAS.csv')
     df_3 = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/IO_QUOTATIONDER.csv')
 
+    print(f'df_1.shape : {df_1.shape} , df_2.shape : {df_2.shape} , df_3.shape : {df_3.shape}')
+
+    fillings = df_3['Filling'].unique()  # 查看有哪些填充 0=正常交易日，填充，1=周一至周五的非节假日填充，2=周一至周五的节假日填充。
+    print(f'fillings : {fillings}')
+
+    # 数据类型：1=正式数据；2=仿真数据
+    data_type_1 = df_1['DataType'].unique()
+    print(f'data_type_1 : {data_type_1}')
+    data_type_2 = df_2['DataType'].unique()
+    print(f'data_type_2 : {data_type_2}')
+    data_type_3 = df_3['DataType'].unique()
+    print(f'data_type_3 : {data_type_3}')
+
+    # 查看 Filling=0 的个数
+    df3_filling_1 = df_3[df_3['Filling'] == 0]
+    print(f'df3_filling_1.shape[0] : {df3_filling_1.shape[0]}')
+    # 查看 Filling=2 的个数
+    df3_filling_2 = df_3[df_3['Filling'] == 2]
+    print(f'df3_filling_2.shape[0] : {df3_filling_2.shape[0]}')
+
+    # 查看不同 DataType 的个数
+    df1_data_type_1 = df_1[df_1['DataType'] == 1]
+    df1_data_type_2 = df_1[df_1['DataType'] == 2]
+    df2_data_type_1 = df_2[df_2['DataType'] == 1]
+    df2_data_type_2 = df_2[df_2['DataType'] == 2]
+    df3_data_type_1 = df_3[df_3['DataType'] == 1]
+    df3_data_type_2 = df_3[df_3['DataType'] == 2]
+    print(
+        f'df1_data_type_1.shape[0] : {df1_data_type_1.shape[0]} , df1_data_type_2.shape[0] : {df1_data_type_2.shape[0]}')
+    print(
+        f'df2_data_type_1.shape[0] : {df2_data_type_1.shape[0]} , df2_data_type_2.shape[0] : {df2_data_type_2.shape[0]}')
+    print(
+        f'df3_data_type_1.shape[0] : {df3_data_type_1.shape[0]} , df3_data_type_2.shape[0] : {df3_data_type_2.shape[0]}')
+
+    df_1 = df_1[['SecurityID', 'TradingDate', 'CallOrPut', 'StrikePrice', 'ClosePrice', 'UnderlyingScrtClose',
+                 'RemainingTerm', 'RisklessRate', 'HistoricalVolatility', 'ImpliedVolatility', 'TheoreticalPrice',
+                 'Delta', 'Gamma', 'Vega', 'Theta', 'Rho', 'DividendYeild']]
+
     df_2 = df_2[['SecurityID', 'TradingDate', 'OpenPrice', 'HighPrice', 'LowPrice',
                  'SettlePrice', 'Change1', 'Change2', 'Volume', 'Position', 'Amount']]
 
@@ -424,7 +464,17 @@ def combine_all_data():
     df = pd.merge(df_1, df_2, how='left', on=['TradingDate', 'SecurityID'])
     df = pd.merge(df, df_3, how='left', on=['TradingDate', 'SecurityID'])
 
+    if os.path.exists(f'{DATA_HOME_PATH}/h_sh_300/all_raw_data.csv'):
+        os.remove(f'{DATA_HOME_PATH}/h_sh_300/all_raw_data.csv')
     df.to_csv(f'{DATA_HOME_PATH}/h_sh_300/all_raw_data.csv', index=False)
+
+    if os.path.exists(f'{DATA_HOME_PATH}/h_sh_300/head_raw_data.csv'):
+        os.remove(f'{DATA_HOME_PATH}/h_sh_300/head_raw_data.csv')
+    df.head(300).to_csv(f'{DATA_HOME_PATH}/h_sh_300/head_raw_data.csv', index=False)
+
+    if os.path.exists(f'{DATA_HOME_PATH}/h_sh_300/tail_raw_data.csv'):
+        os.remove(f'{DATA_HOME_PATH}/h_sh_300/tail_raw_data.csv')
+    df.tail(300).to_csv(f'{DATA_HOME_PATH}/h_sh_300/tail_raw_data.csv', index=False)
 
     print('combine_all_data done!')
 
@@ -448,6 +498,11 @@ def depart_data():
     df = pd.read_csv(f'{DATA_HOME_PATH}/IO_QUOTATIONDER.csv')
     sh_zh_50_2 = df[df['UnderlyingSecurityID'] == 204000000015]
     h_sh_300_2 = df[df['UnderlyingSecurityID'] == 204000000140]
+
+    if not os.path.exists(f'{DATA_HOME_PATH}/sh_zh_50'):
+        os.mkdir(f'{DATA_HOME_PATH}/sh_zh_50')
+    if not os.path.exists(f'{DATA_HOME_PATH}/h_sh_300'):
+        os.mkdir(f'{DATA_HOME_PATH}/h_sh_300')
 
     sh_zh_50_0.to_csv(f'{DATA_HOME_PATH}/sh_zh_50/IO_PRICINGPARAMETER.csv', index=False)
     h_sh_300_0.to_csv(f'{DATA_HOME_PATH}/h_sh_300/IO_PRICINGPARAMETER.csv', index=False)
@@ -482,12 +537,11 @@ def remove_no_volume_data_2():
 
 DATA_HOME_PATH = '/home/liyu/data/hedging-option/china-market'
 if __name__ == '__main__':
-
-    # depart_data()
-    # combine_all_data()
+    depart_data()
+    combine_all_data()
     # #
     # #
     # remove_no_volume_data_2()
     # #
     # check_dirt_data()  # 查看是否还有为数据项为空的数据，如果还有请分析原因
-    assemble_next_day_features('h_sh_300', 'all_clean_data.csv')
+    # assemble_next_day_features('h_sh_300', 'all_clean_data.csv')
