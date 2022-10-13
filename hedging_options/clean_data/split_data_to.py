@@ -1,7 +1,11 @@
+import os
 import random
-
+import shutil
+from multiprocessing import Pool, cpu_count
 import pandas as pd
+import numpy as np
 from tqdm import tqdm
+from hedging_options.library import common as cm
 
 
 # Load_Clean_aux.py loads the clean data and implements some extra cleaning, before running linear regressions or ANNs.
@@ -31,61 +35,81 @@ from tqdm import tqdm
 # del df
 
 # 我们尽量将 training_set , validation_set , test_set 分成4：1：1。
-# 总共有 239447 条数据，包含的期权为4164个
+# 总共有 345442 条数据，包含的期权为 4492 个
 # 我们先将期权的id打乱，接着从中挨个取出期权，再设置0，1，2随机取样，来判断该期权是否是需要全部拿出来。
 # 在获取 validation_set 的时候，从df中取出该期权，如果取样是0就放入 training_set 中，
-# 否则就判断该期权的交易天数是否大于25，如果小于25就直接放入 validation_set，如果大于25，就从25天到到期那天之间取一个数，小于这个天数的放入training_set，大于这个天数的放入 validation_set
+# 否则就就从第2天到到期那天之间取一个数，小于这个天数的放入training_set，大于这个天数的放入 validation_set
 # 每一次都判断 validation_set 长度，如果长度大于 23000 条就跳出循环
 # 获取 test_set 方法同理
 
 def split_training_validation_test():
-    df = pd.read_csv(f'{PREPARE_HOME_PATH}/sh_zh_50.csv', parse_dates=[
-        'TradingDate', 'ExerciseDate'])
+    df = pd.read_csv(f'{PREPARE_HOME_PATH}/all_raw_data.csv', parse_dates=['TradingDate'])
     option_ids = df['SecurityID'].unique()
     print(len(option_ids))
     random.shuffle(option_ids)
-    training_set = pd.DataFrame(columns=df.columns)
-    validation_set = pd.DataFrame(columns=df.columns)
-    test_set = pd.DataFrame(columns=df.columns)
+    training_list = []
+    training_num = 0
+    validation_list = []
+    validation_num = 0
+    test_list = []
+    test_num = 0
+    # training_set = pd.DataFrame(columns=df.columns)
+    # validation_set = pd.DataFrame(columns=df.columns)
+    # test_set = pd.DataFrame(columns=df.columns)
     for option_id in tqdm(option_ids, total=len(option_ids)):
         _options = df[df['SecurityID'] == option_id]
-        if validation_set.shape[0] < 23000:
+        if validation_num < 23000:
             if random.choice([0, 1, 2]) == 0:
-                training_set = training_set.append(_options)
+                # training_set = training_set.append(_options)
+                training_list.append(_options)
+                training_num += _options.shape[0]
             else:
-                if _options.shape[0] < 25:
-                    validation_set = validation_set.append(_options)
-                else:
-                    s = random.choice(range(20, _options.shape[0] - 1))
-                    training_set = training_set.append(_options.iloc[:s])
-                    validation_set = validation_set.append(_options.iloc[s:])
-        elif (validation_set.shape[0] >= 23000) & (test_set.shape[0] < 23000):
+                s = random.choice(range(1, _options.shape[0] - 2))
+                sorted_options = _options.sort_values(by='TradingDate')
+                # training_set = training_set.append(sorted_options.iloc[:s])
+                training_list.append(sorted_options.iloc[:s])
+                training_num += sorted_options.iloc[:s].shape[0]
+                # validation_set = validation_set.append(sorted_options.iloc[s:])
+                validation_list.append(sorted_options.iloc[s:])
+                validation_num += sorted_options.iloc[s:].shape[0]
+        elif (validation_num >= 23000) & (test_num < 23000):
             if random.choice([0, 1, 2]) == 0:
-                training_set = training_set.append(_options)
+                # training_set = training_set.append(_options)
+                training_list.append(_options)
+                training_num += _options.shape[0]
             else:
-                if _options.shape[0] < 25:
-                    test_set = test_set.append(_options)
-                else:
-                    s = random.choice(range(20, _options.shape[0] - 1))
-                    training_set = training_set.append(_options.iloc[:s])
-                    test_set = test_set.append(_options.iloc[s:])
-        elif (test_set.shape[0] > 23000) & (validation_set.shape[0] > 23000):
-            training_set = training_set.append(_options)
+                s = random.choice(range(1, _options.shape[0] - 2))
+                sorted_options = _options.sort_values(by='TradingDate')
+                # training_set = training_set.append(sorted_options.iloc[:s])
+                training_list.append(sorted_options.iloc[:s])
+                training_num += sorted_options.iloc[:s].shape[0]
+                # test_set = test_set.append(sorted_options.iloc[s:])
+                test_list.append(sorted_options.iloc[s:])
+                test_num += sorted_options.iloc[s:].shape[0]
+        elif (test_num > 23000) & (validation_num > 23000):
+            # training_set = training_set.append(_options)
+            training_list.append(_options)
+            training_num += _options.shape[0]
 
+    print(f'training_num : {training_num} , validation_num : {validation_num},test_num : {test_num}')
+    training_set = pd.concat([pd.DataFrame(i, columns=df.columns) for i in training_list], ignore_index=True)
+    validation_set = pd.concat([pd.DataFrame(i, columns=df.columns) for i in validation_list], ignore_index=True)
+    test_set = pd.concat([pd.DataFrame(i, columns=df.columns) for i in test_list], ignore_index=True)
     print(training_set.shape[0])
     print(validation_set.shape[0])
     print(test_set.shape[0])
     if (training_set.shape[0] + validation_set.shape[0] + test_set.shape[0]) < df.shape[0]:
         print('error')
+    os.remove(f'{PREPARE_HOME_PATH}/training.csv')
+    os.remove(f'{PREPARE_HOME_PATH}/validation.csv')
+    os.remove(f'{PREPARE_HOME_PATH}/testing.csv')
     training_set.to_csv(f'{PREPARE_HOME_PATH}/training.csv', index=False)
     validation_set.to_csv(f'{PREPARE_HOME_PATH}/validation.csv', index=False)
     test_set.to_csv(f'{PREPARE_HOME_PATH}/testing.csv', index=False)
 
 
 def make_index(tag):
-
-    train_data = pd.read_csv(f'{PREPARE_HOME_PATH}/{tag}.csv', parse_dates=[
-        'TradingDate', 'ExerciseDate'])
+    train_data = pd.read_csv(f'{PREPARE_HOME_PATH}/{tag}.csv', parse_dates=['TradingDate'])
     option_ids = train_data['SecurityID'].unique()
     # train_data_index=pd.DataFrame(columns=['SecurityID','days'])
     train_data_index = []
@@ -100,9 +124,12 @@ def make_index(tag):
         f'{PREPARE_HOME_PATH}/h_sh_300_{tag}_index.csv', index=False)
 
 
-PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/china-market/sh_zh_50/'
+
+
+PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/china-market/h_sh_300/'
 if __name__ == '__main__':
+
     split_training_validation_test()
-    make_index('training')
-    make_index('validation')
-    make_index('testing')
+    # make_index('training')
+    # make_index('validation')
+    # make_index('testing')

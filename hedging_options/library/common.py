@@ -349,3 +349,15 @@ def chunks_np(data, cpu_num):
                 _end=len(data)
             _chunk.append(data[i:_end])
     return _chunk
+
+def my_log(func):
+    """
+    装饰器，用于打印日志
+    """
+
+    def inner():
+        print(func.__name__, 'start !\n')
+        func()
+        print(func.__name__, 'done !\n')
+
+    return inner
