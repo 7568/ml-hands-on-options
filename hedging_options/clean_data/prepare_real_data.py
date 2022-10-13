@@ -520,25 +520,25 @@ def depart_data():
     h_sh_300_2.to_csv(f'{DATA_HOME_PATH}/h_sh_300/IO_QUOTATIONDER.csv', index=False)
 
 
-def remove_no_volume_data_2():
-    df = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/all_raw_data.csv', parse_dates=['TradingDate'])
-    # df = df[df['TradingDate'] > pd.Timestamp('2020-01-01')]
-    print(df.shape)
-    # position_index = df[(df['Position'] < 1)].index
-
-    amount_index = df[(df['Amount'] < 0)].index  # 当天可以没有成交金额，因为有可能刚开出来，没交易，后面交易多了
-    remainingterm_index = df[(df['RemainingTerm'] == 0)].index  # 剩余年限为0
-    # preposition_index = df[(df['PrePosition'] == 0)].index
-    # df['PositionChange'] = df['Position'] - df['PrePosition']
-
-    print(f', amount_index : {amount_index.shape} , remainingterm_index :'
-          f' {remainingterm_index.shape}')
-    df = df.drop(index=amount_index.append(remainingterm_index).unique())
-    # df = df.drop(index=amount_index)
-    print(df.shape)
-    df.to_csv(f'{DATA_HOME_PATH}/h_sh_300/all_clean_data.csv', index=False)
-
-    print('remove_no_volume_data_2 done !')
+# def remove_no_volume_data_2():
+#     df = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/all_raw_data.csv', parse_dates=['TradingDate'])
+#     # df = df[df['TradingDate'] > pd.Timestamp('2020-01-01')]
+#     print(df.shape)
+#     # position_index = df[(df['Position'] < 1)].index
+#
+#     amount_index = df[(df['Amount'] < 0)].index  # 当天可以没有成交金额，因为有可能刚开出来，没交易，后面交易多了
+#     remainingterm_index = df[(df['RemainingTerm'] == 0)].index  # 剩余年限为0
+#     # preposition_index = df[(df['PrePosition'] == 0)].index
+#     # df['PositionChange'] = df['Position'] - df['PrePosition']
+#
+#     print(f', amount_index : {amount_index.shape} , remainingterm_index :'
+#           f' {remainingterm_index.shape}')
+#     df = df.drop(index=amount_index.append(remainingterm_index).unique())
+#     # df = df.drop(index=amount_index)
+#     print(df.shape)
+#     df.to_csv(f'{DATA_HOME_PATH}/h_sh_300/all_clean_data.csv', index=False)
+#
+#     print('remove_no_volume_data_2 done !')
 
 
 @cm.my_log
@@ -785,7 +785,7 @@ if __name__ == '__main__':
 
     append_before4_days_data()  # 将前4天的数据追加的当天，不够4天的用0填充
     get_expand_head()  # 查看填充效果
-    remove_no_volume_data_2()
+    # remove_no_volume_data_2()
     # #
     # check_dirt_data()  # 查看是否还有为数据项为空的数据，如果还有请分析原因
     # assemble_next_day_features('h_sh_300', 'all_clean_data.csv')
