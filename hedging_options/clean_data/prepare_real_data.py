@@ -123,8 +123,8 @@ def check_data():
 
 # 找出那些在重要参数表中剩余的还有空值的数据
 def check_dirt_data():
-    df = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/dirt_data.csv')
-    df = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/all_clean_data.csv')
+    df = pd.read_csv(f'{DATA_HOME_PATH}/dirt_data.csv')
+    df = pd.read_csv(f'{DATA_HOME_PATH}/all_clean_data.csv')
     print(len(df['SecurityID'].unique()))
     df = df.drop(columns=['ImpliedVolatility', 'DataType'])
     df = df.reset_index()
@@ -136,7 +136,7 @@ def check_dirt_data():
             _dirt_data.append(row.to_numpy())
     print(i)  # 还剩余632条数据，这些数据当天是有交易的，所以称为脏数据
     dirt_data = pd.DataFrame(_dirt_data, columns=df.columns)
-    dirt_data.to_csv(f'{DATA_HOME_PATH}/h_sh_300/dirt_data.csv', index=False)
+    dirt_data.to_csv(f'{DATA_HOME_PATH}/dirt_data.csv', index=False)
 
 
 # IO_PRICINGPARAMETER 是	股指期权合约定价重要参数表 2017-06-01 至 2022-06-01
@@ -313,13 +313,13 @@ def seperate_underlying_security():
     if not (sh_zh_50.shape[0] + h_sh_300.shape[0] == df.shape[0]):
         print('error')
     h_sh_300 = h_sh_300[h_sh_300['TradingDate'] > pd.Timestamp('2020-01-01')]
-    h_sh_300.to_csv(f'{DATA_HOME_PATH}/h_sh_300/raw_all.csv', index=False)
+    h_sh_300.to_csv(f'{DATA_HOME_PATH}/raw_all.csv', index=False)
     sh_zh_50.to_csv(f'{DATA_HOME_PATH}/sh_zh_50/raw_all.csv', index=False)
     print('done')
 
 
 def check_seperate_underlying_security():
-    h_sh_300 = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/all.csv')
+    h_sh_300 = pd.read_csv(f'{DATA_HOME_PATH}/all.csv')
     # sh_zh_50 = pd.read_csv(f'{DATA_HOME_PATH}/sh_zh_50/all.csv')
     print(h_sh_300.shape)
     # print(sh_zh_50.shape)
@@ -373,20 +373,20 @@ def check_sh_zh_50():
 
 
 def check_h_sh_300():
-    df = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/all.csv')
+    df = pd.read_csv(f'{DATA_HOME_PATH}/all.csv')
     print(df.shape)
 
 
 # 通过查看数据发现这些脏数据的剩余期限为0，所以可以直接删除
 def check_dirt_data_2():
-    df = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/dirt_data.csv')
+    df = pd.read_csv(f'{DATA_HOME_PATH}/dirt_data.csv')
     print(df.shape)
 
 
 def remove_remaining_term_0_data():
-    df = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/raw_all.csv', index_col=0)
+    df = pd.read_csv(f'{DATA_HOME_PATH}/raw_all.csv', index_col=0)
     df = df[df['RemainingTerm'] != 0]
-    df.to_csv(f'{DATA_HOME_PATH}/h_sh_300/all.csv', index=False)
+    df.to_csv(f'{DATA_HOME_PATH}/all.csv', index=False)
 
 
 def combine_all_data():
@@ -414,9 +414,9 @@ def combine_all_data():
     当日单张维持保证金[MaintainingMargin] 数据类型[DataType] 涨跌幅[ChangeRatio]
     :return:
     """
-    df_1 = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/IO_PRICINGPARAMETER.csv')
-    df_2 = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/IO_QUOTATIONBAS.csv')
-    df_3 = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/IO_QUOTATIONDER.csv')
+    df_1 = pd.read_csv(f'{DATA_HOME_PATH}/IO_PRICINGPARAMETER.csv')
+    df_2 = pd.read_csv(f'{DATA_HOME_PATH}/IO_QUOTATIONBAS.csv')
+    df_3 = pd.read_csv(f'{DATA_HOME_PATH}/IO_QUOTATIONDER.csv')
 
     print(f'df_1.shape : {df_1.shape} , df_2.shape : {df_2.shape} , df_3.shape : {df_3.shape}')
 
@@ -463,28 +463,34 @@ def combine_all_data():
                  'SettlePrice', 'Change1', 'Change2', 'Volume', 'Position', 'Amount']]
 
     df_3 = df_3[['SecurityID', 'TradingDate', 'ContinueSign', 'PreClosePrice', 'PreSettlePrice', 'PrePosition',
-                 'PositionChange',
+                 'PositionChange', 'MainSign',
                  'AvgPrice', 'ClosePriceChangeRatio', 'SettlePriceChangeRatio', 'Amplitude', 'LimitUp', 'LimitDown',
                  'MaintainingMargin', 'ChangeRatio']]
 
     df = pd.merge(df_1, df_2, how='left', on=['TradingDate', 'SecurityID'])
     df = pd.merge(df, df_3, how='left', on=['TradingDate', 'SecurityID'])
 
-    if os.path.exists(f'{DATA_HOME_PATH}/h_sh_300/all_raw_data.csv'):
-        os.remove(f'{DATA_HOME_PATH}/h_sh_300/all_raw_data.csv')
-    df.to_csv(f'{DATA_HOME_PATH}/h_sh_300/all_raw_data.csv', index=False)
+    if os.path.exists(f'{DATA_HOME_PATH}/all_raw_data.csv'):
+        os.remove(f'{DATA_HOME_PATH}/all_raw_data.csv')
+    df.to_csv(f'{DATA_HOME_PATH}/all_raw_data.csv', index=False)
 
-    if os.path.exists(f'{DATA_HOME_PATH}/h_sh_300/head_raw_data.csv'):
-        os.remove(f'{DATA_HOME_PATH}/h_sh_300/head_raw_data.csv')
-    df.head(300).to_csv(f'{DATA_HOME_PATH}/h_sh_300/head_raw_data.csv', index=False)
+    if os.path.exists(f'{DATA_HOME_PATH}/head_raw_data.csv'):
+        os.remove(f'{DATA_HOME_PATH}/head_raw_data.csv')
+    df.head(300).to_csv(f'{DATA_HOME_PATH}/head_raw_data.csv', index=False)
 
-    if os.path.exists(f'{DATA_HOME_PATH}/h_sh_300/tail_raw_data.csv'):
-        os.remove(f'{DATA_HOME_PATH}/h_sh_300/tail_raw_data.csv')
-    df.tail(300).to_csv(f'{DATA_HOME_PATH}/h_sh_300/tail_raw_data.csv', index=False)
+    if os.path.exists(f'{DATA_HOME_PATH}/tail_raw_data.csv'):
+        os.remove(f'{DATA_HOME_PATH}/tail_raw_data.csv')
+    df.tail(300).to_csv(f'{DATA_HOME_PATH}/tail_raw_data.csv', index=False)
 
     print('combine_all_data done!')
 
 
+def remove_file_if_exists(path):
+    if os.path.exists(path):
+        os.remove(path)
+
+
+@cm.my_log
 def depart_data():
     """
     将数据分成沪深300和上证50
@@ -510,6 +516,15 @@ def depart_data():
     if not os.path.exists(f'{DATA_HOME_PATH}/h_sh_300'):
         os.mkdir(f'{DATA_HOME_PATH}/h_sh_300')
 
+    remove_file_if_exists(f'{DATA_HOME_PATH}/sh_zh_50/IO_PRICINGPARAMETER.csv')
+    remove_file_if_exists(f'{DATA_HOME_PATH}/h_sh_300/IO_PRICINGPARAMETER.csv')
+
+    remove_file_if_exists(f'{DATA_HOME_PATH}/sh_zh_50/IO_QUOTATIONBAS.csv')
+    remove_file_if_exists(f'{DATA_HOME_PATH}/h_sh_300/IO_QUOTATIONBAS.csv')
+
+    remove_file_if_exists(f'{DATA_HOME_PATH}/sh_zh_50/IO_QUOTATIONDER.csv')
+    remove_file_if_exists(f'{DATA_HOME_PATH}/h_sh_300/IO_QUOTATIONDER.csv')
+
     sh_zh_50_0.to_csv(f'{DATA_HOME_PATH}/sh_zh_50/IO_PRICINGPARAMETER.csv', index=False)
     h_sh_300_0.to_csv(f'{DATA_HOME_PATH}/h_sh_300/IO_PRICINGPARAMETER.csv', index=False)
 
@@ -521,7 +536,7 @@ def depart_data():
 
 
 # def remove_no_volume_data_2():
-#     df = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/all_raw_data.csv', parse_dates=['TradingDate'])
+#     df = pd.read_csv(f'{DATA_HOME_PATH}/all_raw_data.csv', parse_dates=['TradingDate'])
 #     # df = df[df['TradingDate'] > pd.Timestamp('2020-01-01')]
 #     print(df.shape)
 #     # position_index = df[(df['Position'] < 1)].index
@@ -536,7 +551,7 @@ def depart_data():
 #     df = df.drop(index=amount_index.append(remainingterm_index).unique())
 #     # df = df.drop(index=amount_index)
 #     print(df.shape)
-#     df.to_csv(f'{DATA_HOME_PATH}/h_sh_300/all_clean_data.csv', index=False)
+#     df.to_csv(f'{DATA_HOME_PATH}/all_clean_data.csv', index=False)
 #
 #     print('remove_no_volume_data_2 done !')
 
@@ -546,11 +561,12 @@ def save_by_each_option():
     """
     将每一根合约单独保存
     """
-    df = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/all_raw_data.csv', parse_dates=['TradingDate'])
+    df = pd.read_csv(f'{DATA_HOME_PATH}/all_raw_data.csv', parse_dates=['TradingDate'])
     # df = df[df['TradingDate'] > pd.Timestamp('2020-01-01')]
     print(df.shape)
-    shutil.rmtree(f'{DATA_HOME_PATH}/h_sh_300/each_option')
-    os.mkdir(f'{DATA_HOME_PATH}/h_sh_300/each_option')
+    if os.path.exists(f'{DATA_HOME_PATH}/each_option'):
+        shutil.rmtree(f'{DATA_HOME_PATH}/each_option')
+    os.mkdir(f'{DATA_HOME_PATH}/each_option')
 
     option_ids = df['SecurityID'].unique()
 
@@ -560,7 +576,7 @@ def save_by_each_option():
         trade_days.append(_options.shape[0])
         sorted_options = _options.sort_values(by='TradingDate')
         sorted_options.to_csv(
-            f'{DATA_HOME_PATH}/h_sh_300/each_option/{str(sorted_options.iloc[0]["TradingDate"]).split(" ")[0]}_{option_id}.csv',
+            f'{DATA_HOME_PATH}/each_option/{str(sorted_options.iloc[0]["TradingDate"]).split(" ")[0]}_{option_id}.csv',
             index=False)
     print(trade_days)
 
@@ -571,11 +587,11 @@ def remove_filling_not0_data():
     删除非正常交易日的数据
     """
     print('start remove_filling_not0_data ')
-    df = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/all_raw_data.csv', parse_dates=['TradingDate'])
+    df = pd.read_csv(f'{DATA_HOME_PATH}/all_raw_data.csv', parse_dates=['TradingDate'])
     print(f'df.shape : {df.shape}')
     df = df[df['Filling'] == 0]
     print(f'df.shape : {df.shape}')
-    df.to_csv(f'{DATA_HOME_PATH}/h_sh_300/all_raw_data.csv', index=False)
+    df.to_csv(f'{DATA_HOME_PATH}/all_raw_data.csv', index=False)
     print('remove_filling_not0_data done')
 
 
@@ -596,7 +612,7 @@ def remove_end5_trade_date_data():
     删除最后交易日的数据
     """
 
-    df = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/all_raw_data.csv', parse_dates=['TradingDate'])
+    df = pd.read_csv(f'{DATA_HOME_PATH}/all_raw_data.csv', parse_dates=['TradingDate'])
     print(f'df.shape : {df.shape}')
     option_ids = df['SecurityID'].unique()
 
@@ -617,7 +633,7 @@ def remove_end5_trade_date_data():
     for _r in tqdm(r, total=len(r)):
         new_df = new_df.append(_r)
     print(f'new_df.shape : {new_df.shape} , df.shape[0]-option_ids.size()*5 :{df.shape[0] - option_ids.size * 5}')
-    new_df.to_csv(f'{DATA_HOME_PATH}/h_sh_300/all_raw_data.csv', index=False)
+    new_df.to_csv(f'{DATA_HOME_PATH}/all_raw_data.csv', index=False)
 
 
 @cm.my_log
@@ -625,9 +641,9 @@ def check_each_data_num_by_id():
     """
     检查每个表中的相同期权个数是否一致
     """
-    df_1 = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/IO_PRICINGPARAMETER.csv')
-    df_2 = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/IO_QUOTATIONBAS.csv')
-    df_3 = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/IO_QUOTATIONDER.csv')
+    df_1 = pd.read_csv(f'{DATA_HOME_PATH}/IO_PRICINGPARAMETER.csv')
+    df_2 = pd.read_csv(f'{DATA_HOME_PATH}/IO_QUOTATIONBAS.csv')
+    df_3 = pd.read_csv(f'{DATA_HOME_PATH}/IO_QUOTATIONDER.csv')
     df_1_ids = np.sort(df_1['SecurityID'].unique())
     df_2_ids = np.sort(df_2['SecurityID'].unique())
     df_3_ids = np.sort(df_3['SecurityID'].unique())
@@ -637,15 +653,14 @@ def check_each_data_num_by_id():
         df_3 = df_3[df_3['SecurityID'] != df_3_id]
     df_3_ids = np.sort(df_3['SecurityID'].unique())
     max_val = (df_3_ids - df_2_ids).max()
-    df_3.to_csv(f'{DATA_HOME_PATH}/h_sh_300/IO_QUOTATIONDER.csv')
+    df_3.to_csv(f'{DATA_HOME_PATH}/IO_QUOTATIONDER.csv')
     print(f'df_1_ids : {df_1_ids.size} , df_2_ids : {df_2_ids.size} , df_3_ids : {df_3_ids.size}')
 
 
 @cm.my_log
 def check_null_by_id():
-    print('start check_null_by_id ')
     contain_null_ids = []
-    df = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/all_raw_data.csv', parse_dates=['TradingDate'])
+    df = pd.read_csv(f'{DATA_HOME_PATH}/all_raw_data.csv', parse_dates=['TradingDate'])
     df.drop(columns=['ImpliedVolatility', 'ContinueSign'], axis=1, inplace=True)
     print(f'df.shape : {df.shape}')
     option_ids = df['SecurityID'].unique()
@@ -654,7 +669,6 @@ def check_null_by_id():
         if _options.isnull().values.any():
             contain_null_ids.append(option_id)
     print(f'contain_null_ids : {contain_null_ids}')
-    print('check_null_by_id done')
 
 
 @cm.my_log
@@ -662,7 +676,7 @@ def remove_real_trade_days_less28():
     """
     将有效交易天数小于28天的期权全部删除
     """
-    df = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/all_raw_data.csv', parse_dates=['TradingDate'])
+    df = pd.read_csv(f'{DATA_HOME_PATH}/all_raw_data.csv', parse_dates=['TradingDate'])
     print(f'df.shape : {df.shape}')
     option_ids = df['SecurityID'].unique()
     for option_id in tqdm(option_ids, total=len(option_ids)):
@@ -671,7 +685,7 @@ def remove_real_trade_days_less28():
         if trade_days < 28:
             df = df[df['SecurityID'] != option_id]
     print(f'df.shape : {df.shape}')
-    df.to_csv(f'{DATA_HOME_PATH}/h_sh_300/all_raw_data.csv', index=False)
+    df.to_csv(f'{DATA_HOME_PATH}/all_raw_data.csv', index=False)
 
 
 @cm.my_log
@@ -682,21 +696,21 @@ def check_volume():
     实际上只有当Volume为0的时候才会有 AvgPrice	,ClosePriceChangeRatio,	SettlePriceChangeRatio,	Amplitude
     ChangeRatio 数据为空，所以直接将他们填充为0就可以了
     """
-    df = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/all_raw_data.csv', parse_dates=['TradingDate'])
+    df = pd.read_csv(f'{DATA_HOME_PATH}/all_raw_data.csv', parse_dates=['TradingDate'])
     print(f'df.shape : {df.shape}')
-    avg_price = df['AvgPrice'].fillna(0)
-    close_price_change_ratio = df['ClosePriceChangeRatio'].fillna(0)
-    settle_price_change_ratio = df['SettlePriceChangeRatio'].fillna(0)
-    amplitude = df['Amplitude'].fillna(0)
-    change_ratio = df['ChangeRatio'].fillna(0)
-    position_change = df['PositionChange'].fillna(0)
-    df['AvgPrice'] = avg_price
-    df['ClosePriceChangeRatio'] = close_price_change_ratio
-    df['SettlePriceChangeRatio'] = settle_price_change_ratio
-    df['Amplitude'] = amplitude
-    df['ChangeRatio'] = change_ratio
-    df['PositionChange'] = position_change
-    df.to_csv(f'{DATA_HOME_PATH}/h_sh_300/all_raw_data.csv', index=False)
+    df['AvgPrice'].fillna(0, inplace=True)
+    df['ClosePriceChangeRatio'].fillna(0, inplace=True)
+    df['SettlePriceChangeRatio'].fillna(0, inplace=True)
+    df['Amplitude'].fillna(0, inplace=True)
+    df['ChangeRatio'].fillna(0, inplace=True)
+    df['PositionChange'].fillna(0, inplace=True)
+    # df['AvgPrice'] = avg_price
+    # df['ClosePriceChangeRatio'] = close_price_change_ratio
+    # df['SettlePriceChangeRatio'] = settle_price_change_ratio
+    # df['Amplitude'] = amplitude
+    # df['ChangeRatio'] = change_ratio
+    # df['PositionChange'] = position_change
+    df.to_csv(f'{DATA_HOME_PATH}/all_raw_data.csv', index=False)
 
 
 def do_append_before4_days_data(param):
@@ -722,13 +736,14 @@ def append_before4_days_data():
     将每条数据的前4天的数据拼接到当前，如果没有前4天的数据就用0填充
     """
     df = pd.read_csv(f'{DATA_HOME_PATH}/all_raw_data.csv', parse_dates=['TradingDate'])
-    df.drop(columns=['ImpliedVolatility', 'ContinueSign'], axis=1, inplace=True)
+    # df.drop(columns=['ImpliedVolatility', 'ContinueSign'], axis=1, inplace=True)
     option_ids = df['SecurityID'].unique()
     print('option_ids num : ', len(option_ids))
     print(f'df.shape : {df.shape}')
 
     before_0_column = ['StrikePrice', 'ClosePrice', 'UnderlyingScrtClose', 'RisklessRate', 'HistoricalVolatility',
-                       'TheoreticalPrice', 'Delta', 'Gamma', 'Vega', 'Theta', 'Rho', 'DividendYeild', 'OpenPrice',
+                       'TheoreticalPrice', 'Delta', 'Gamma', 'Vega', 'Theta', 'Rho', 'DividendYeild', 'MainSign',
+                       'OpenPrice','PositionChange',
                        'HighPrice', 'LowPrice', 'SettlePrice', 'Change1', 'Change2', 'Volume', 'Position', 'Amount',
                        'AvgPrice', 'ClosePriceChangeRatio', 'SettlePriceChangeRatio', 'Amplitude', 'LimitUp',
                        'LimitDown', 'MaintainingMargin', 'ChangeRatio']
@@ -770,22 +785,95 @@ def get_expand_head():
     df.head(300).to_csv(f'{DATA_HOME_PATH}/sub_expand_df_data.csv', index=False)
 
 
+
+
+
+
+def do_append_next_option_price(param):
+    df = param['df']
+    option_ids = param['option_ids']
+    sorted_options_list = []
+    for option_id in tqdm(option_ids, total=len(option_ids)):
+        _options = df[df['SecurityID'] == option_id]
+        sorted_options = _options.sort_values(by='TradingDate', ignore_index=True)
+        for i in range(sorted_options.shape[0] - 1):
+            sorted_options.loc[i, 'target'] = sorted_options.copy().iloc[i + 1]['OpenPrice']
+        sorted_options_list.append(sorted_options)
+    return pd.concat([_r for _r in sorted_options_list], ignore_index=True)
+
+
+@cm.my_log
+def append_next_option_price():
+    """
+    得到下一天的期权数据，也就是数据集中的target数据
+    """
+    df = pd.read_csv(f'{DATA_HOME_PATH}/all_expand_df_data.csv', parse_dates=['TradingDate'])
+    df['target']=0
+    option_ids = df['SecurityID'].unique()
+    cpu_num = cpu_count() - 16
+    if cpu_num > len(df):
+        cpu_num = len(df)
+    data_chunks = cm.chunks_np(option_ids, cpu_num)
+    param = []
+    for data_chunk in tqdm(data_chunks, total=len(data_chunks)):
+        ARGS_ = dict(option_ids=data_chunk, df=df)
+        param.append(ARGS_)
+    with Pool(cpu_num) as p:
+        r = p.map(do_append_next_option_price, param)
+        p.close()
+        p.join()
+
+    expand_df = pd.concat(r, ignore_index=True)
+    print(f'expand_df.shape : {expand_df.shape} , df.shape :{df.shape}')
+    expand_df.to_csv(f'{DATA_HOME_PATH}/all_expand_df_data.csv', index=False)
+
+
+@cm.my_log
+def hand_category_data():
+    """
+    处理数据中的分类数据，目前 all_raw_data.csv 中的 column 为
+    'SecurityID', 'TradingDate', 'CallOrPut', 'StrikePrice', 'ClosePrice', 'UnderlyingScrtClose', 'RemainingTerm',
+     'RisklessRate', 'HistoricalVolatility', 'ImpliedVolatility', 'TheoreticalPrice', 'Delta', 'Gamma', 'Vega',
+     'Theta', 'Rho', 'DividendYeild', 'TradingDayStatusID', 'Filling','MainSign', 'OpenPrice', 'HighPrice', 'LowPrice',
+     'SettlePrice', 'Change1', 'Change2', 'Volume', 'Position', 'Amount', 'ContinueSign', 'PreClosePrice',
+     'PreSettlePrice', 'PrePosition', 'PositionChange', 'AvgPrice', 'ClosePriceChangeRatio', 'SettlePriceChangeRatio',
+     'Amplitude', 'LimitUp', 'LimitDown', 'MaintainingMargin', 'ChangeRatio'
+     其中 'SecurityID', 'TradingDate', 'ImpliedVolatility', 'TradingDayStatusID', 'Filling', 'ChangeRatio' 不参与训练
+     由于在训练之前会将前4天的数据加到当天，所以 'PreClosePrice', 'PreSettlePrice', 'PrePosition',也不再需要
+     所以参与训练的 column 为
+     'CallOrPut', 'StrikePrice', 'ClosePrice', 'UnderlyingScrtClose', 'RemainingTerm',
+     'RisklessRate', 'HistoricalVolatility', 'TheoreticalPrice', 'Delta', 'Gamma', 'Vega',
+     'Theta', 'Rho', 'DividendYeild', 'MainSign','OpenPrice', 'HighPrice', 'LowPrice',
+     'SettlePrice', 'Change1', 'Change2', 'Volume', 'Position', 'Amount', 'ContinueSign',  'PositionChange',
+     'AvgPrice', 'ClosePriceChangeRatio', 'SettlePriceChangeRatio',
+     'Amplitude', 'LimitUp', 'LimitDown', 'MaintainingMargin', 'ChangeRatio'
+
+     在剩余的 column 中分类数据有'CallOrPut（C为认沽，P为认购）' , 'MainSign（是否是主力合约，1是，2否）'
+    """
+    df = pd.read_csv(f'{DATA_HOME_PATH}/all_raw_data.csv', parse_dates=['TradingDate'])
+    df['CallOrPut'].replace(to_replace='C', value=0, inplace=True)
+    df['CallOrPut'].replace(to_replace='P', value=1, inplace=True)
+    df['MainSign'].replace(to_replace=2, value=0, inplace=True)
+    df.to_csv(f'{DATA_HOME_PATH}/all_raw_data.csv', index=False)
+
+
 DATA_HOME_PATH = '/home/liyu/data/hedging-option/china-market'
+OPTION_SYMBOL = 'h_sh_300'
 if __name__ == '__main__':
-    depart_data()
-    check_each_data_num_by_id()
-    combine_all_data()
+    # depart_data()
+    DATA_HOME_PATH = DATA_HOME_PATH + "/" + OPTION_SYMBOL + "/"
+    # check_each_data_num_by_id()
+    # combine_all_data()
+    # # #
+    # remove_filling_not0_data()  # 删除原始表中节假日填充的数据
+    # remove_real_trade_days_less28()  # 将合约交易天数小于28天的删除
+    # remove_end5_trade_date_data()  # 将每份期权合约交易的最后5天的数据删除
+    # check_volume()  # 将成交量为0的数据中存在nan的地方填充0
+    # check_null_by_id()  # 查看是否还有nan数据
+    # save_by_each_option()  # 便于查看每份期权合约的每天交易信息
 
-    remove_filling_not0_data()  # 删除原始表中节假日填充的数据
-    remove_real_trade_days_less28()  # 将合约交易天数小于28天的删除
-    remove_end5_trade_date_data()  # 将每份期权合约交易的最后5天的数据删除
-    check_volume()  # 将成交量为0的数据中存在nan的地方填充0
-    check_null_by_id()  # 查看是否还有nan数据
-    save_by_each_option()  # 便于查看每份期权合约的每天交易信息
+    # hand_category_data()
 
-    append_before4_days_data()  # 将前4天的数据追加的当天，不够4天的用0填充
+    append_before4_days_data()  # 将前4天的数据追加到当天，不够4天的用0填充
+    append_next_option_price()# 得到下一天的期权价格数据，也就是数据集中的target数据
     get_expand_head()  # 查看填充效果
-    # remove_no_volume_data_2()
-    # #
-    # check_dirt_data()  # 查看是否还有为数据项为空的数据，如果还有请分析原因
-    # assemble_next_day_features('h_sh_300', 'all_clean_data.csv')

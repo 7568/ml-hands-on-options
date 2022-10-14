@@ -9,7 +9,8 @@ import pandas as pd
 # This file contains functions that calculate and inspect the hedging error.
 
 def print_removal(before_size, cur_size, ori_size, issue):
-    print(f'{issue}. {before_size - cur_size} samples ({(before_size - cur_size)/before_size* 100:.2f}%) are removed. We have {cur_size / ori_size * 100:.2f}% of original data left, yielding a size of {cur_size}.')
+    print(
+        f'{issue}. {before_size - cur_size} samples ({(before_size - cur_size) / before_size * 100:.2f}%) are removed. We have {cur_size / ori_size * 100:.2f}% of original data left, yielding a size of {cur_size}.')
 
 
 def calc_pnl(
@@ -24,7 +25,7 @@ def calc_pnl(
     s0, s1 = df['S0_n'], df['S1_n']
     v0, v1 = df['V0_n'], df[V1]
     on_return = df['on_ret']
-    
+
     v1_hat = (v0 - delta * s0) * on_return + delta * s1
     return (v1_hat - v1)
 
@@ -49,16 +50,16 @@ def store_pnl(
     df_res['PNL'] = calc_pnl(df, delta, V1=V1)
     df_res['M0'] = df['M0'].copy()
     df_res['tau0'] = df['tau0'].copy()
-    
+
     df_res['testperiod'] = np.nan
     # In addition, we want to record which test period the pnl is from.
     max_period = max([int(s[6:]) for s in df.columns if 'period' in s])
     for i in range(0, max_period + 1):
         bl = df['period{}'.format(i)] == 2
         df_res.loc[bl, 'testperiod'] = i
-        
+
     df_res.to_csv(pnl_path)
-    
+
 
 def calc_pnl_two_assets(df, delta, eta, V1='V1_n'):
     """ 
@@ -88,16 +89,15 @@ def store_pnl_two_assets(df, delta, eta, pnl_path, V1='V1_n'):
     df_res['PNL'] = calc_pnl_two_assets(df, delta, eta, V1=V1)
     df_res['M0'] = df['M0'].copy()
     df_res['tau0'] = df['tau0'].copy()
-    
+
     df_res['testperiod'] = np.nan
     # In addition, we want to record which test period the pnl is from.
     max_period = max([int(s[6:]) for s in df.columns if 'period' in s])
     for i in range(0, max_period + 1):
         bl = df['period{}'.format(i)] == 2
         df_res.loc[bl, 'testperiod'] = i
-        
-    df_res.to_csv(pnl_path)
 
+    df_res.to_csv(pnl_path)
 
 
 class Inspector:
@@ -107,11 +107,10 @@ class Inspector:
     def loadPnl(self, path, measure, op_type=None):
         df = pd.read_csv(path, index_col=0)
 
-
         bl = self.choose_op_type(df, op_type)
 
         if measure == 'mse':
-            return (df.loc[bl, 'PNL']**2).mean()
+            return (df.loc[bl, 'PNL'] ** 2).mean()
         elif measure == 'mean':
             return (df.loc[bl, 'PNL']).mean()
         elif measure == 'median':
@@ -123,16 +122,14 @@ class Inspector:
         else:
             raise NotImplementedError('The given measure is not implemented!')
 
-            
     def choose_op_type(self, df, op_type):
         if op_type == 'call':
             bl = df['cp_int'] == 0
         elif op_type == 'put':
             bl = df['cp_int'] == 1
-        else: 
+        else:
             bl = df['cp_int'].notna()
         return bl
-
 
     def evalPnls(self, df_dirs, aggregating, measure, op_type=None):
         """
@@ -154,24 +151,23 @@ class Inspector:
                     filename = os.fsdecode(directory + file)
                     if filename.endswith(".csv"):
                         res.append(self.loadPnl(filename, measure, op_type))
-                
+
                 if aggregating is 'mean':
                     df_res.loc[r, (c, 'Absolute')] = sum(res) / len(res)
                 else:
                     raise NotImplementedError('The given aggregating is not implemented!')
             else:
                 df_res.loc[r, c] = np.nan
-        
+
         bs_name = [x for x in df_dirs.index.tolist() if 'BS_Benchmark' in x][0]
         for c in cols:
             tmp = (df_res.loc[:, (c, 'Absolute')] - df_res.loc[bs_name, (c, 'Absolute')]) / \
-                df_res.loc[bs_name, (c, 'Absolute')] * 100.
+                  df_res.loc[bs_name, (c, 'Absolute')] * 100.
             tmp = tmp.astype(np.float)
             df_res.loc[:, (c, '%Change')] = tmp.round(2)
-            df_res.loc[:, (c, 'Absolute')] = (100*df_res.loc[:, (c, 'Absolute')]).astype(np.float).round(3)   #JR 
+            df_res.loc[:, (c, 'Absolute')] = (100 * df_res.loc[:, (c, 'Absolute')]).astype(np.float).round(3)  # JR
 
         return df_res
-    
 
     def eval_single_exp(self, dirs_dict, measure, op_type=None):
         """
@@ -186,13 +182,12 @@ class Inspector:
                     filename = os.fsdecode(directory + file)
                     if filename.endswith(".csv"):
                         res.append(self.loadPnl(filename, measure, op_type))
-                
+
                 df_res[y] = res
             else:
                 df_res[y] = np.nan
-        
+
         return df_res
-        
 
 
 class PnlLoader:
@@ -226,13 +221,13 @@ class PnlLoader:
                 df_add = pd.read_csv(filename, index_col=0)
                 df_add.drop(columns=['testperiod'], inplace=True)
                 # for simulation data, we use `testperiod` to index test sets.
-                df_add['testperiod'] = i 
+                df_add['testperiod'] = i
                 df = df.append(df_add)
             df = df.reset_index()
             self.pnl[name] = df
 
 
-#used mostly for plots. summarizes MSHEs for different models
+# used mostly for plots. summarizes MSHEs for different models
 class LocalInspector(PnlLoader):
 
     def plug_existing(self, pnl):
@@ -243,7 +238,7 @@ class LocalInspector(PnlLoader):
             bl = df['cp_int'] == 0
         elif op_type == 'put':
             bl = df['cp_int'] == 1
-        else: 
+        else:
             bl = df['cp_int'].notna()
         return bl
 
@@ -258,9 +253,9 @@ class LocalInspector(PnlLoader):
                 bl_ = self.choose_op_type(pnl, op_type)
                 bl = bl & bl_
                 self.record.loc[i, 'num_samples'] = bl.sum()
-                self.record.loc[i, key] = (pnl.loc[bl, 'PNL']**2).mean()
+                self.record.loc[i, key] = (pnl.loc[bl, 'PNL'] ** 2).mean()
 
-        return self.record   
+        return self.record
 
 
 def compare_pair(daily_mshe, first, second, trunc_qs):
@@ -269,13 +264,13 @@ def compare_pair(daily_mshe, first, second, trunc_qs):
     diff = daily_mshe[first] - daily_mshe[second]
     for q in trunc_qs:
         cap = diff.abs().quantile(q)
-        
+
         truncated_diff = np.maximum(np.minimum(diff, cap), -cap)
         zscore = truncated_diff.mean() / truncated_diff.std() * np.sqrt(N)
         print(f'Mean difference is {truncated_diff.mean()}')
         print(f'Std is {truncated_diff.std()}')
         print(f'Z-score after truncating at {q} is {zscore}')
-        
+
         truncated_diff.plot()
         plt.show()
         truncated_diff.plot(kind='hist', logy=True, bins=100)
@@ -287,7 +282,8 @@ def truncate_daily_mshe(daily_mshe, first, second, q):
     cap = diff.abs().quantile(q)
     truncated_diff = np.maximum(np.minimum(diff, cap), -cap)
     return truncated_diff
-        
+
+
 def get_zscore(daily_mshe, first, second, q):
     N = daily_mshe.shape[0]
     truncated_diff = truncate_daily_mshe(daily_mshe, first, second, q)
@@ -298,10 +294,9 @@ def get_zscore(daily_mshe, first, second, q):
 def get_z_confidence(daily_mshe, first, second, q):
     N = daily_mshe.shape[0]
     truncated_diff = truncate_daily_mshe(daily_mshe, first, second, q)
-    up = truncated_diff.mean() + 2* truncated_diff.std() / np.sqrt(N)
-    down = truncated_diff.mean() - 2* truncated_diff.std() / np.sqrt(N)
+    up = truncated_diff.mean() + 2 * truncated_diff.std() / np.sqrt(N)
+    down = truncated_diff.mean() - 2 * truncated_diff.std() / np.sqrt(N)
     return down, up
-
 
 
 def chunks(data, cpu_num):
@@ -310,7 +305,7 @@ def chunks(data, cpu_num):
     y = 0
     if int(len(data) / cpu_num) != len(data) / cpu_num:
         y = x + 1
-        count_y = len(data) - x*cpu_num
+        count_y = len(data) - x * cpu_num
         count_x = cpu_num - count_y
 
     _chunk = []
@@ -322,10 +317,11 @@ def chunks(data, cpu_num):
     if int(len(data) / cpu_num) != len(data) / cpu_num:
         for i in range(x * count_x, len(data), y):
             _end = i + y
-            if _end>len(data):
-                _end=len(data)
+            if _end > len(data):
+                _end = len(data)
             _chunk.append(data.iloc[i:_end])
     return _chunk
+
 
 def chunks_np(data, cpu_num):
     x = int(len(data) / cpu_num)
@@ -333,7 +329,7 @@ def chunks_np(data, cpu_num):
     y = 0
     if int(len(data) / cpu_num) != len(data) / cpu_num:
         y = x + 1
-        count_y = len(data) - x*cpu_num
+        count_y = len(data) - x * cpu_num
         count_x = cpu_num - count_y
 
     _chunk = []
@@ -345,19 +341,20 @@ def chunks_np(data, cpu_num):
     if int(len(data) / cpu_num) != len(data) / cpu_num:
         for i in range(x * count_x, len(data), y):
             _end = i + y
-            if _end>len(data):
-                _end=len(data)
+            if _end > len(data):
+                _end = len(data)
             _chunk.append(data[i:_end])
     return _chunk
+
 
 def my_log(func):
     """
     装饰器，用于打印日志
     """
 
-    def inner():
-        print(func.__name__, 'start !\n')
-        func()
-        print(func.__name__, 'done !\n')
+    def inner(*args):
+        print('\n',func.__name__, 'start !')
+        func(*args)
+        print(func.__name__, 'done !','\n')
 
     return inner

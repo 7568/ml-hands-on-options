@@ -8,31 +8,10 @@ from tqdm import tqdm
 from hedging_options.library import common as cm
 
 
-# Load_Clean_aux.py loads the clean data and implements some extra cleaning, before running linear regressions or ANNs.
-# Append the library path to PYTHONPATH, so library can be imported.
-# sys.path.append(os.path.dirname(os.getcwd()))
+def remove_file_if_exists(path):
+    if os.path.exists(path):
+        os.remove(path)
 
-
-#        ['index', 'SecurityID', 'TradingDate', 'Symbol', 'ExchangeCode',
-#        'UnderlyingSecurityID', 'UnderlyingSecuritySymbol', 'ShortName',
-#        'CallOrPut', 'StrikePrice', 'ExerciseDate', 'ClosePrice',
-#        'UnderlyingScrtClose', 'RemainingTerm', 'RisklessRate',
-#        'HistoricalVolatility', 'ImpliedVolatility', 'TheoreticalPrice',
-#        'Delta', 'Gamma', 'Vega', 'Theta', 'Rho', 'DividendYeild', 'DataType',
-#        'ImpliedVolatility_1', 'Delta_1', 'Gamma_1', 'Vega_1', 'Theta_1',
-#        'Rho_1', 'ClosePrice_1', 'UnderlyingScrtClose_1']
-# Remove samples of period time less 30 day from training and validation sets.
-# 由于将来我们的数据还要分成训练集和验证集，所以时间跨度只有15天是不够的，因此这里将时间跨度设置为25天,小于25天且大于15天的全部用来训练。
-# df_large, df_small = laux.choose_period_span_for_china(df, 25)
-# print(f'df_large.shape : {df_large.shape}')
-# print(f'df_small.shape : {df_small.shape}')
-# bl = ['SecurityID', 'TradingDate', 'CallOrPut', 'ClosePrice_1', 'UnderlyingScrtClose_1', 'Delta', 'Gamma', 'Vega',
-#       'Theta', 'Rho', 'Delta_1', 'Gamma_1', 'Vega_1', 'Theta_1', 'Rho_1']
-# df_large_train = df_large.loc[bl]
-# df_large_ = df_small.loc[bl]
-# df_train = laux.make_features(df_large_train)
-# df_large = laux.make_features(df_large_train)
-# del df
 
 # 我们尽量将 training_set , validation_set , test_set 分成4：1：1。
 # 总共有 345442 条数据，包含的期权为 4492 个
@@ -41,9 +20,8 @@ from hedging_options.library import common as cm
 # 否则就就从第2天到到期那天之间取一个数，小于这个天数的放入training_set，大于这个天数的放入 validation_set
 # 每一次都判断 validation_set 长度，如果长度大于 23000 条就跳出循环
 # 获取 test_set 方法同理
-
 def split_training_validation_test():
-    df = pd.read_csv(f'{PREPARE_HOME_PATH}/all_raw_data.csv', parse_dates=['TradingDate'])
+    df = pd.read_csv(f'{PREPARE_HOME_PATH}/all_expand_df_data.csv', parse_dates=['TradingDate'])
     option_ids = df['SecurityID'].unique()
     print(len(option_ids))
     random.shuffle(option_ids)
@@ -100,9 +78,9 @@ def split_training_validation_test():
     print(test_set.shape[0])
     if (training_set.shape[0] + validation_set.shape[0] + test_set.shape[0]) < df.shape[0]:
         print('error')
-    os.remove(f'{PREPARE_HOME_PATH}/training.csv')
-    os.remove(f'{PREPARE_HOME_PATH}/validation.csv')
-    os.remove(f'{PREPARE_HOME_PATH}/testing.csv')
+    remove_file_if_exists(f'{PREPARE_HOME_PATH}/training.csv')
+    remove_file_if_exists(f'{PREPARE_HOME_PATH}/validation.csv')
+    remove_file_if_exists(f'{PREPARE_HOME_PATH}/testing.csv')
     training_set.to_csv(f'{PREPARE_HOME_PATH}/training.csv', index=False)
     validation_set.to_csv(f'{PREPARE_HOME_PATH}/validation.csv', index=False)
     test_set.to_csv(f'{PREPARE_HOME_PATH}/testing.csv', index=False)
@@ -124,12 +102,64 @@ def make_index(tag):
         f'{PREPARE_HOME_PATH}/h_sh_300_{tag}_index.csv', index=False)
 
 
+@cm.my_log
+def normalize_data(normal_type):
+    """
+    """
+    training_df = pd.read_csv(f'{PREPARE_HOME_PATH}/training.csv', parse_dates=['TradingDate'])
+    validation_df = pd.read_csv(f'{PREPARE_HOME_PATH}/validation.csv', parse_dates=['TradingDate'])
+    testing_df = pd.read_csv(f'{PREPARE_HOME_PATH}/testing.csv', parse_dates=['TradingDate'])
+
+    no_need_columns = ['SecurityID','Filling', 'TradingDate', 'ImpliedVolatility', 'ContinueSign', 'TradingDayStatusID']
+    training_df.drop(columns=no_need_columns, axis=1, inplace=True)
+    validation_df.drop(columns=no_need_columns, axis=1, inplace=True)
+    testing_df.drop(columns=no_need_columns, axis=1, inplace=True)
+
+    cat_solumns = ['CallOrPut', 'MainSign']
+    for i in cat_solumns:
+        training_df[i] = training_df[i].astype('int')
+        validation_df[i] = validation_df[i].astype('int')
+        testing_df[i] = testing_df[i].astype('int')
+
+    for j in training_df.columns:
+        if not (j in cat_solumns):
+            training_df[j] = training_df[j].astype('float64')
+            validation_df[j] = validation_df[j].astype('float64')
+            testing_df[j] = testing_df[j].astype('float64')
+    for k in tqdm(training_df.columns, total=len(training_df.columns)):
+        if k =='target':
+            continue
+        if validation_df[k].dtype == 'float64':
+            for df in [training_df, validation_df, testing_df]:
+                _df = df[k]
+                max = _df.max()
+                min = _df.min()
+                if max > 1 or min < -1:
+                    if normal_type == 'min_max_norm':
+                        df[k] = (_df - min) / (max - min)
+                    else:
+                        mean = _df.mean()
+                        std = _df.std()
+                        df[k] = (_df - mean) / std
+
+    remove_file_if_exists(f'{PREPARE_HOME_PATH}/{normal_type}/training.csv')
+    remove_file_if_exists(f'{PREPARE_HOME_PATH}/{normal_type}/validation.csv')
+    remove_file_if_exists(f'{PREPARE_HOME_PATH}/{normal_type}/testing.csv')
+    if not os.path.exists(f'{PREPARE_HOME_PATH}/{normal_type}/'):
+        os.mkdir(f'{PREPARE_HOME_PATH}/{normal_type}/')
+    training_df.to_csv(f'{PREPARE_HOME_PATH}/{normal_type}/training.csv', index=False)
+    validation_df.to_csv(f'{PREPARE_HOME_PATH}/{normal_type}/validation.csv', index=False)
+    testing_df.to_csv(f'{PREPARE_HOME_PATH}/{normal_type}/testing.csv', index=False)
+    testing_df.head().to_csv(f'{PREPARE_HOME_PATH}/{normal_type}/testing_head.csv', index=False)
 
 
 PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/china-market/h_sh_300/'
 if __name__ == '__main__':
-
-    split_training_validation_test()
+    # split_training_validation_test()
+    NORMAL_TYPE = 'min_max_norm'
+    normalize_data(NORMAL_TYPE)
+    NORMAL_TYPE = 'mean_norm'
+    normalize_data(NORMAL_TYPE)
     # make_index('training')
     # make_index('validation')
     # make_index('testing')
