@@ -21,7 +21,7 @@ def remove_file_if_exists(path):
 # 每一次都判断 validation_set 长度，如果长度大于 23000 条就跳出循环
 # 获取 test_set 方法同理
 def split_training_validation_test():
-    df = pd.read_csv(f'{PREPARE_HOME_PATH}/all_expand_df_data.csv', parse_dates=['TradingDate'])
+    df = pd.read_csv(f'{PREPARE_HOME_PATH}/scaled_expand_df_data.csv', parse_dates=['TradingDate'])
     option_ids = df['SecurityID'].unique()
     print(len(option_ids))
     random.shuffle(option_ids)
@@ -110,7 +110,8 @@ def normalize_data(normal_type):
     validation_df = pd.read_csv(f'{PREPARE_HOME_PATH}/validation.csv', parse_dates=['TradingDate'])
     testing_df = pd.read_csv(f'{PREPARE_HOME_PATH}/testing.csv', parse_dates=['TradingDate'])
 
-    no_need_columns = ['SecurityID','Filling', 'TradingDate', 'ImpliedVolatility', 'ContinueSign', 'TradingDayStatusID']
+    no_need_columns = ['SecurityID', 'Filling', 'TradingDate', 'ImpliedVolatility', 'ContinueSign',
+                       'TradingDayStatusID']
     training_df.drop(columns=no_need_columns, axis=1, inplace=True)
     validation_df.drop(columns=no_need_columns, axis=1, inplace=True)
     testing_df.drop(columns=no_need_columns, axis=1, inplace=True)
@@ -127,20 +128,27 @@ def normalize_data(normal_type):
             validation_df[j] = validation_df[j].astype('float64')
             testing_df[j] = testing_df[j].astype('float64')
     for k in tqdm(training_df.columns, total=len(training_df.columns)):
-        if k =='target':
+        if normal_type == 'no_norm':
+            break
+        if k in ['target', 'real_hedging_rate']:
             continue
         if validation_df[k].dtype == 'float64':
-            for df in [training_df, validation_df, testing_df]:
-                _df = df[k]
-                max = _df.max()
-                min = _df.min()
-                if max > 1 or min < -1:
-                    if normal_type == 'min_max_norm':
-                        df[k] = (_df - min) / (max - min)
-                    else:
-                        mean = _df.mean()
-                        std = _df.std()
-                        df[k] = (_df - mean) / std
+            # for df in [training_df, validation_df, testing_df]:
+            df = training_df
+            _df = df[k]
+            max = _df.max()
+            min = _df.min()
+            if max > 1 or min < -1:
+                if normal_type == 'min_max_norm':
+                    df[k] = (_df - min) / (max - min)
+                    validation_df[k] = (validation_df[k] - min) / (max - min)
+                    testing_df[k] = (testing_df[k] - min) / (max - min)
+                else:
+                    mean = _df.mean()
+                    std = _df.std()
+                    df[k] = (_df - mean) / std
+                    validation_df[k] = (validation_df[k] - mean) / std
+                    testing_df[k] = (testing_df[k] - mean) / std
 
     remove_file_if_exists(f'{PREPARE_HOME_PATH}/{normal_type}/training.csv')
     remove_file_if_exists(f'{PREPARE_HOME_PATH}/{normal_type}/validation.csv')
@@ -153,13 +161,82 @@ def normalize_data(normal_type):
     testing_df.head().to_csv(f'{PREPARE_HOME_PATH}/{normal_type}/testing_head.csv', index=False)
 
 
+@cm.my_log
+def save_head():
+    training_df = pd.read_csv(f'{PREPARE_HOME_PATH}/training.csv', parse_dates=['TradingDate'])
+    validation_df = pd.read_csv(f'{PREPARE_HOME_PATH}/validation.csv', parse_dates=['TradingDate'])
+    testing_df = pd.read_csv(f'{PREPARE_HOME_PATH}/testing.csv', parse_dates=['TradingDate'])
+
+    training_df.head().to_csv(f'{PREPARE_HOME_PATH}/sub_training.csv', index=False)
+    validation_df.head().to_csv(f'{PREPARE_HOME_PATH}/sub_validation.csv', index=False)
+    testing_df.head().to_csv(f'{PREPARE_HOME_PATH}/sub_testing.csv', index=False)
+
+@cm.my_log
+def split_training_validation_test_by_date():
+    """
+    首先按照时间排序，从小到大，开始为第0天的数据
+    然后从5到15之间随机选一个数，比如是8，那么8之前的数据放入训练集中，第8个数据放入测试集中，
+    然后将第9天的数据当作第0天的数据开始下一轮的分配
+    :return:
+    training_data.shape:(276698, 170) , validation_data.shape:(34494, 170) , testing_data.shape:(34250, 170)
+    """
+
+    df = pd.read_csv(f'{PREPARE_HOME_PATH}/all_expand_df_data.csv', parse_dates=['TradingDate'])
+
+    trading_date = df.sort_values(by=['TradingDate'])['TradingDate'].unique()
+    training_data_sets = []
+    validation_data_sets = []
+    testing_data_sets = []
+    index = 0
+    while index < len(trading_date):
+        choice_index = random.choice(range(5, 12))
+        if (index + choice_index) > len(trading_date):
+            training_data_dates = trading_date[index:]
+            training_data_sets.append(df[df['TradingDate'].isin(training_data_dates)])
+            index = index + choice_index
+            continue
+        else:
+            training_data_dates = trading_date[index:index + choice_index]
+        training_data_sets.append(df[df['TradingDate'].isin(training_data_dates)])
+        if (index + choice_index) == len(trading_date):
+            validation_data_sets.append(df[df['TradingDate'] == trading_date[index + choice_index]])
+            index = index + choice_index + 1
+            continue
+        choice_validation = random.choice([0, 1])
+        if choice_validation == 1:
+            validation_data_sets.append(df[df['TradingDate'] == trading_date[index + choice_index]])
+            testing_data_sets.append(df[df['TradingDate'] == trading_date[index + choice_index+1]])
+        else:
+            testing_data_sets.append(df[df['TradingDate'] == trading_date[index + choice_index]])
+            validation_data_sets.append(df[df['TradingDate'] == trading_date[index + choice_index+1]])
+        index = index + choice_index + 2
+    training_data = pd.concat(training_data_sets)
+    validation_data = pd.concat(validation_data_sets)
+    testing_data = pd.concat(testing_data_sets)
+    print(f'df.shape:{df.shape}')
+    print(f'training_data.shape:{training_data.shape} , validation_data.shape:{validation_data.shape} ,'
+        f' testing_data.shape:{testing_data.shape}')
+    print(f'all.shape:{training_data.shape[0] + validation_data.shape[0] + testing_data.shape[0]}')
+    if (training_data.shape[0] + validation_data.shape[0] + testing_data.shape[0]) != df.shape[0]:
+        raise Exception('error')
+    remove_file_if_exists(f'{PREPARE_HOME_PATH}/training.csv')
+    remove_file_if_exists(f'{PREPARE_HOME_PATH}/validation.csv')
+    remove_file_if_exists(f'{PREPARE_HOME_PATH}/testing.csv')
+    training_data.to_csv(f'{PREPARE_HOME_PATH}/training.csv', index=False)
+    validation_data.to_csv(f'{PREPARE_HOME_PATH}/validation.csv', index=False)
+    testing_data.to_csv(f'{PREPARE_HOME_PATH}/testing.csv', index=False)
+
 PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/china-market/h_sh_300/'
 if __name__ == '__main__':
     # split_training_validation_test()
-    NORMAL_TYPE = 'min_max_norm'
-    normalize_data(NORMAL_TYPE)
+    split_training_validation_test_by_date()
+    # save_head() # 方便查看，不修改数据
     NORMAL_TYPE = 'mean_norm'
     normalize_data(NORMAL_TYPE)
+    # NORMAL_TYPE = 'min_max_norm'
+    # normalize_data(NORMAL_TYPE)
+    # NORMAL_TYPE = 'no_norm'
+    # normalize_data(NORMAL_TYPE)
     # make_index('training')
     # make_index('validation')
     # make_index('testing')

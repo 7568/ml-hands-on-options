@@ -511,10 +511,13 @@ def depart_data():
     sh_zh_50_2 = df[df['UnderlyingSecurityID'] == 204000000015]
     h_sh_300_2 = df[df['UnderlyingSecurityID'] == 204000000140]
 
-    if not os.path.exists(f'{DATA_HOME_PATH}/sh_zh_50'):
-        os.mkdir(f'{DATA_HOME_PATH}/sh_zh_50')
-    if not os.path.exists(f'{DATA_HOME_PATH}/h_sh_300'):
-        os.mkdir(f'{DATA_HOME_PATH}/h_sh_300')
+    if os.path.exists(f'{DATA_HOME_PATH}/sh_zh_50'):
+        shutil.rmtree(f'{DATA_HOME_PATH}/sh_zh_50')
+    if os.path.exists(f'{DATA_HOME_PATH}/h_sh_300'):
+        shutil.rmtree(f'{DATA_HOME_PATH}/h_sh_300')
+
+    os.mkdir(f'{DATA_HOME_PATH}/sh_zh_50')
+    os.mkdir(f'{DATA_HOME_PATH}/h_sh_300')
 
     remove_file_if_exists(f'{DATA_HOME_PATH}/sh_zh_50/IO_PRICINGPARAMETER.csv')
     remove_file_if_exists(f'{DATA_HOME_PATH}/h_sh_300/IO_PRICINGPARAMETER.csv')
@@ -743,7 +746,7 @@ def append_before4_days_data():
 
     before_0_column = ['StrikePrice', 'ClosePrice', 'UnderlyingScrtClose', 'RisklessRate', 'HistoricalVolatility',
                        'TheoreticalPrice', 'Delta', 'Gamma', 'Vega', 'Theta', 'Rho', 'DividendYeild', 'MainSign',
-                       'OpenPrice','PositionChange',
+                       'OpenPrice', 'PositionChange',
                        'HighPrice', 'LowPrice', 'SettlePrice', 'Change1', 'Change2', 'Volume', 'Position', 'Amount',
                        'AvgPrice', 'ClosePriceChangeRatio', 'SettlePriceChangeRatio', 'Amplitude', 'LimitUp',
                        'LimitDown', 'MaintainingMargin', 'ChangeRatio']
@@ -785,11 +788,7 @@ def get_expand_head():
     df.head(300).to_csv(f'{DATA_HOME_PATH}/sub_expand_df_data.csv', index=False)
 
 
-
-
-
-
-def do_append_next_option_price(param):
+def do_append_next_price(param):
     df = param['df']
     option_ids = param['option_ids']
     sorted_options_list = []
@@ -797,20 +796,21 @@ def do_append_next_option_price(param):
         _options = df[df['SecurityID'] == option_id]
         sorted_options = _options.sort_values(by='TradingDate', ignore_index=True)
         for i in range(sorted_options.shape[0] - 1):
-            sorted_options.loc[i, 'target'] = sorted_options.copy().iloc[i + 1]['OpenPrice']
+            sorted_options.loc[i, 'C_1'] = sorted_options.copy().iloc[i + 1]['ClosePrice']
+            sorted_options.loc[i, 'S_1'] = sorted_options.copy().iloc[i + 1]['UnderlyingScrtClose']
         sorted_options_list.append(sorted_options)
     return pd.concat([_r for _r in sorted_options_list], ignore_index=True)
 
 
 @cm.my_log
-def append_next_option_price():
+def append_next_price():
     """
-    得到下一天的期权数据，也就是数据集中的target数据
+    得到下一天的期权数据，和标的资产的数据，也就是数据集中的target数据，和S1
     """
     df = pd.read_csv(f'{DATA_HOME_PATH}/all_expand_df_data.csv', parse_dates=['TradingDate'])
-    df['target']=0
+    df['target'] = 0
     option_ids = df['SecurityID'].unique()
-    cpu_num = cpu_count() - 16
+    cpu_num = cpu_count() - 1
     if cpu_num > len(df):
         cpu_num = len(df)
     data_chunks = cm.chunks_np(option_ids, cpu_num)
@@ -819,13 +819,35 @@ def append_next_option_price():
         ARGS_ = dict(option_ids=data_chunk, df=df)
         param.append(ARGS_)
     with Pool(cpu_num) as p:
-        r = p.map(do_append_next_option_price, param)
+        r = p.map(do_append_next_price, param)
         p.close()
         p.join()
 
     expand_df = pd.concat(r, ignore_index=True)
     print(f'expand_df.shape : {expand_df.shape} , df.shape :{df.shape}')
     expand_df.to_csv(f'{DATA_HOME_PATH}/all_expand_df_data.csv', index=False)
+
+
+@cm.my_log
+def append_real_hedging_rate():
+    """
+    根据论文中的描述，真实的对冲比率是使得 \delte * S_1 + (1 + r_onr * \Deltat) * (C_0 - \delta * S_0) - C_1 = 0
+    其中r_onr为银行存款年利率，\Deltat=1/253
+    那么 \delta = (C_1 - R * C_0)/(S_1 - R * S_0) , 其中 R = 1 + r_onr * \Deltat
+    C_0 : 当天期权收盘价格
+    C_1 : 明天期权收盘价格
+    S_0 : 当天标的资产收盘价格
+    S_1 : 明天标的资产收盘价格
+    """
+    scaled_expand_df = pd.read_csv(f'{DATA_HOME_PATH}/all_expand_df_data.csv', parse_dates=['TradingDate'])
+    R = 1 + scaled_expand_df['RisklessRate'] / 253
+    C_0 = scaled_expand_df['ClosePrice']
+    C_1 = scaled_expand_df['C_1']
+    S_0 = scaled_expand_df['UnderlyingScrtClose']
+    S_1 = scaled_expand_df['S_1']
+    real_hedging_rate = (C_1 - R * C_0) / (S_1 - R * S_0)
+    scaled_expand_df['real_hedging_rate'] = real_hedging_rate
+    scaled_expand_df.to_csv(f'{DATA_HOME_PATH}/all_expand_df_data.csv', index=False)
 
 
 @cm.my_log
@@ -860,20 +882,18 @@ def hand_category_data():
 DATA_HOME_PATH = '/home/liyu/data/hedging-option/china-market'
 OPTION_SYMBOL = 'h_sh_300'
 if __name__ == '__main__':
-    # depart_data()
+    depart_data()
     DATA_HOME_PATH = DATA_HOME_PATH + "/" + OPTION_SYMBOL + "/"
-    # check_each_data_num_by_id()
-    # combine_all_data()
-    # # #
-    # remove_filling_not0_data()  # 删除原始表中节假日填充的数据
-    # remove_real_trade_days_less28()  # 将合约交易天数小于28天的删除
-    # remove_end5_trade_date_data()  # 将每份期权合约交易的最后5天的数据删除
-    # check_volume()  # 将成交量为0的数据中存在nan的地方填充0
-    # check_null_by_id()  # 查看是否还有nan数据
-    # save_by_each_option()  # 便于查看每份期权合约的每天交易信息
-
-    # hand_category_data()
-
+    check_each_data_num_by_id()
+    combine_all_data()
+    remove_filling_not0_data()  # 删除原始表中节假日填充的数据
+    remove_real_trade_days_less28()  # 将合约交易天数小于28天的删除
+    remove_end5_trade_date_data()  # 将每份期权合约交易的最后5天的数据删除
+    check_volume()  # 将成交量为0的数据中存在nan的地方填充0
+    check_null_by_id()  # 查看是否还有nan数据
+    save_by_each_option()  # 便于查看每份期权合约的每天交易信息
+    hand_category_data()
     append_before4_days_data()  # 将前4天的数据追加到当天，不够4天的用0填充
-    append_next_option_price()# 得到下一天的期权价格数据，也就是数据集中的target数据
-    get_expand_head()  # 查看填充效果
+    append_next_price()  # 得到下一天的价格数据，包括期权的价格数据和标的资产的价格数据
+    append_real_hedging_rate()  # 得到得到真实的对冲比例
+    # get_expand_head()  # 查看填充效果

@@ -152,7 +152,7 @@ class Inspector:
                     if filename.endswith(".csv"):
                         res.append(self.loadPnl(filename, measure, op_type))
 
-                if aggregating is 'mean':
+                if aggregating == 'mean':
                     df_res.loc[r, (c, 'Absolute')] = sum(res) / len(res)
                 else:
                     raise NotImplementedError('The given aggregating is not implemented!')
