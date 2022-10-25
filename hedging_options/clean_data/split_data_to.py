@@ -134,7 +134,8 @@ def normalize_data(normal_type):
     for k in tqdm(training_df.columns, total=len(training_df.columns)):
         if normal_type == 'no_norm':
             break
-        if k in ['TradingDate', 'C_1', 'S_1', 'real_hedging_rate']:
+        # if k in ['TradingDate', 'C_1', 'S_1', 'real_hedging_rate']:
+        if k in ['TradingDate']:
             continue
         if validation_df[k].dtype == 'float64':
             # for df in [training_df, validation_df, testing_df]:
