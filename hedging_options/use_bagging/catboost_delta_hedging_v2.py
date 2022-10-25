@@ -22,7 +22,10 @@ if __name__ == '__main__':
     training_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/training.csv')
     validation_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/validation.csv')
     testing_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/testing.csv')
-
+    no_need_columns = ['TradingDate']
+    training_df.drop(columns=no_need_columns, axis=1, inplace=True)
+    validation_df.drop(columns=no_need_columns, axis=1, inplace=True)
+    testing_df.drop(columns=no_need_columns, axis=1, inplace=True)
     params = {
         'iterations': 2000,
         'depth': 12,
@@ -34,19 +37,19 @@ if __name__ == '__main__':
         'early_stopping_rounds': 20
 
     }
-    train_pool = Pool(training_df.iloc[:, :-1],
-                      np.array(training_df['target']).reshape(-1, 1),
+    train_pool = Pool(training_df.iloc[:, :-3],
+                      np.array(training_df['C_1']).reshape(-1, 1),
                       cat_features=['CallOrPut', 'MainSign'])
-    validation_pool = Pool(validation_df.iloc[:, :-1],
-                      np.array(validation_df['target']).reshape(-1, 1),
+    validation_pool = Pool(validation_df.iloc[:, :-3],
+                      np.array(validation_df['C_1']).reshape(-1, 1),
                       cat_features=['CallOrPut', 'MainSign'])
-    test_pool = Pool(testing_df.iloc[:, :-1],
+    test_pool = Pool(testing_df.iloc[:, :-3],
                       cat_features=['CallOrPut', 'MainSign'])
     model = CatBoostRegressor(**params)
     model.fit(train_pool, eval_set=validation_pool)
     # make the prediction using the resulting model
     y_test_hat = model.predict(test_pool)
 
-    error_in_test = mean_squared_error(y_test_hat, np.array(testing_df['target']).reshape(-1, 1))
+    error_in_test = mean_squared_error(y_test_hat, np.array(testing_df['C_1']).reshape(-1, 1))
     print(f'error_in_test : {error_in_test}')
     # result 0.40784974689433334

@@ -26,6 +26,11 @@ if __name__ == '__main__':
     training_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/training.csv')
     validation_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/validation.csv')
     testing_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/testing.csv')
+    normal_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/normal_data.csv')
+    no_need_columns = ['TradingDate']
+    training_df.drop(columns=no_need_columns, axis=1, inplace=True)
+    validation_df.drop(columns=no_need_columns, axis=1, inplace=True)
+    testing_df.drop(columns=no_need_columns, axis=1, inplace=True)
 
     params = {
         'max_depth': 12,
@@ -39,13 +44,13 @@ if __name__ == '__main__':
 
     }
     model = xgb.XGBRegressor(**params)
-    model.fit(training_df.iloc[:, :-2].to_numpy(), np.array(training_df['target']).reshape(-1, 1),
-              eval_set=[(validation_df.iloc[:, :-2].to_numpy(), np.array(validation_df['target']).reshape(-1, 1))],
+    model.fit(training_df.iloc[:, :-3].to_numpy(), np.array(training_df['C_1']).reshape(-1, 1),
+              eval_set=[(validation_df.iloc[:, :-3].to_numpy(), np.array(validation_df['C_1']).reshape(-1, 1))],
               early_stopping_rounds=20)
 
     # Predict on x_test
-    y_test_hat = model.predict(testing_df.iloc[:, :-2].to_numpy())
+    y_test_hat = model.predict(testing_df.iloc[:, :-3].to_numpy())
 
-    error_in_test = mean_squared_error(y_test_hat, np.array(testing_df['target']).reshape(-1, 1))
+    error_in_test = mean_squared_error(y_test_hat, np.array(testing_df['C_1']).reshape(-1, 1))
     print(f'error_in_test : {error_in_test}')
     # result 0.45952154426524405

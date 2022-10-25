@@ -798,7 +798,7 @@ def do_append_next_price(param):
         for i in range(sorted_options.shape[0] - 1):
             sorted_options.loc[i, 'C_1'] = sorted_options.copy().iloc[i + 1]['ClosePrice']
             sorted_options.loc[i, 'S_1'] = sorted_options.copy().iloc[i + 1]['UnderlyingScrtClose']
-        sorted_options_list.append(sorted_options)
+        sorted_options_list.append(sorted_options.iloc[:-1])
     return pd.concat([_r for _r in sorted_options_list], ignore_index=True)
 
 
@@ -808,7 +808,6 @@ def append_next_price():
     得到下一天的期权数据，和标的资产的数据，也就是数据集中的target数据，和S1
     """
     df = pd.read_csv(f'{DATA_HOME_PATH}/all_expand_df_data.csv', parse_dates=['TradingDate'])
-    df['target'] = 0
     option_ids = df['SecurityID'].unique()
     cpu_num = cpu_count() - 1
     if cpu_num > len(df):
@@ -891,9 +890,10 @@ if __name__ == '__main__':
     remove_end5_trade_date_data()  # 将每份期权合约交易的最后5天的数据删除
     check_volume()  # 将成交量为0的数据中存在nan的地方填充0
     check_null_by_id()  # 查看是否还有nan数据
-    save_by_each_option()  # 便于查看每份期权合约的每天交易信息
+    # save_by_each_option()  # 便于查看每份期权合约的每天交易信息
     hand_category_data()
     append_before4_days_data()  # 将前4天的数据追加到当天，不够4天的用0填充
     append_next_price()  # 得到下一天的价格数据，包括期权的价格数据和标的资产的价格数据
     append_real_hedging_rate()  # 得到得到真实的对冲比例
+    check_null_by_id()
     # get_expand_head()  # 查看填充效果

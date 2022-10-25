@@ -23,6 +23,10 @@ if __name__ == '__main__':
     training_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/training.csv')
     validation_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/validation.csv')
     testing_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/testing.csv')
+    no_need_columns = ['TradingDate']
+    training_df.drop(columns=no_need_columns, axis=1, inplace=True)
+    validation_df.drop(columns=no_need_columns, axis=1, inplace=True)
+    testing_df.drop(columns=no_need_columns, axis=1, inplace=True)
 
     params = {'objective': 'regression',
               'boosting': 'gbdt',
@@ -37,14 +41,14 @@ if __name__ == '__main__':
               'metric': {'l2'}
               }
 
-    train_data = lgb.Dataset(training_df.iloc[:, :-1],
-                             np.array(training_df['target']).reshape(-1, 1))
+    train_data = lgb.Dataset(training_df.iloc[:, :-3],
+                             np.array(training_df['C_1']).reshape(-1, 1))
     num_round = 50000
-    validation_data = lgb.Dataset(validation_df.iloc[:, :-1],
-                                  np.array(validation_df['target']).reshape(-1, 1))
+    validation_data = lgb.Dataset(validation_df.iloc[:, :-3],
+                                  np.array(validation_df['C_1']).reshape(-1, 1))
     bst = lgb.train(params, train_data, num_round, valid_sets=validation_data, early_stopping_rounds=20)
-    y_test_hat = bst.predict(testing_df.iloc[:, :-1], num_iteration=bst.best_iteration)
+    y_test_hat = bst.predict(testing_df.iloc[:, :-3], num_iteration=bst.best_iteration)
 
-    error_in_test = mean_squared_error(y_test_hat, np.array(testing_df['target']).reshape(-1, 1))
+    error_in_test = mean_squared_error(y_test_hat, np.array(testing_df['C_1']).reshape(-1, 1))
     print(f'error_in_test : {error_in_test}')
     # result 0.4315025889686754

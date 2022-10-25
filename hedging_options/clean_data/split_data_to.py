@@ -110,27 +110,31 @@ def normalize_data(normal_type):
     validation_df = pd.read_csv(f'{PREPARE_HOME_PATH}/validation.csv', parse_dates=['TradingDate'])
     testing_df = pd.read_csv(f'{PREPARE_HOME_PATH}/testing.csv', parse_dates=['TradingDate'])
 
-    no_need_columns = ['SecurityID', 'Filling', 'TradingDate', 'ImpliedVolatility', 'ContinueSign',
+    no_need_columns = ['SecurityID', 'Filling', 'ImpliedVolatility', 'ContinueSign',
                        'TradingDayStatusID']
     training_df.drop(columns=no_need_columns, axis=1, inplace=True)
     validation_df.drop(columns=no_need_columns, axis=1, inplace=True)
     testing_df.drop(columns=no_need_columns, axis=1, inplace=True)
 
-    cat_solumns = ['CallOrPut', 'MainSign']
-    for i in cat_solumns:
+    cat_columns = ['CallOrPut', 'MainSign', 'TradingDate']
+    normal_data = []
+
+    for i in cat_columns:
+        if i == 'TradingDate':
+            continue
         training_df[i] = training_df[i].astype('int')
         validation_df[i] = validation_df[i].astype('int')
         testing_df[i] = testing_df[i].astype('int')
 
     for j in training_df.columns:
-        if not (j in cat_solumns):
+        if not (j in cat_columns):
             training_df[j] = training_df[j].astype('float64')
             validation_df[j] = validation_df[j].astype('float64')
             testing_df[j] = testing_df[j].astype('float64')
     for k in tqdm(training_df.columns, total=len(training_df.columns)):
         if normal_type == 'no_norm':
             break
-        if k in ['target', 'real_hedging_rate']:
+        if k in ['TradingDate', 'C_1', 'S_1', 'real_hedging_rate']:
             continue
         if validation_df[k].dtype == 'float64':
             # for df in [training_df, validation_df, testing_df]:
@@ -143,22 +147,28 @@ def normalize_data(normal_type):
                     df[k] = (_df - min) / (max - min)
                     validation_df[k] = (validation_df[k] - min) / (max - min)
                     testing_df[k] = (testing_df[k] - min) / (max - min)
+                    normal_data.append([f'{k}_max', max])
+                    normal_data.append([f'{k}_min', min])
                 else:
                     mean = _df.mean()
                     std = _df.std()
                     df[k] = (_df - mean) / std
                     validation_df[k] = (validation_df[k] - mean) / std
                     testing_df[k] = (testing_df[k] - mean) / std
+                    normal_data.append([f'{k}_mean', mean])
+                    normal_data.append([f'{k}_std', std])
 
     remove_file_if_exists(f'{PREPARE_HOME_PATH}/{normal_type}/training.csv')
     remove_file_if_exists(f'{PREPARE_HOME_PATH}/{normal_type}/validation.csv')
     remove_file_if_exists(f'{PREPARE_HOME_PATH}/{normal_type}/testing.csv')
+    remove_file_if_exists(f'{PREPARE_HOME_PATH}/{normal_type}/normal_data.csv')
     if not os.path.exists(f'{PREPARE_HOME_PATH}/{normal_type}/'):
         os.mkdir(f'{PREPARE_HOME_PATH}/{normal_type}/')
     training_df.to_csv(f'{PREPARE_HOME_PATH}/{normal_type}/training.csv', index=False)
     validation_df.to_csv(f'{PREPARE_HOME_PATH}/{normal_type}/validation.csv', index=False)
     testing_df.to_csv(f'{PREPARE_HOME_PATH}/{normal_type}/testing.csv', index=False)
-    testing_df.head().to_csv(f'{PREPARE_HOME_PATH}/{normal_type}/testing_head.csv', index=False)
+    pd.DataFrame(data=[{i[0]: i[1] for i in normal_data}]).to_csv(f'{PREPARE_HOME_PATH}/{normal_type}/normal_data.csv',
+                                                                  index=False)
 
 
 @cm.my_log
@@ -170,6 +180,7 @@ def save_head():
     training_df.head().to_csv(f'{PREPARE_HOME_PATH}/sub_training.csv', index=False)
     validation_df.head().to_csv(f'{PREPARE_HOME_PATH}/sub_validation.csv', index=False)
     testing_df.head().to_csv(f'{PREPARE_HOME_PATH}/sub_testing.csv', index=False)
+
 
 @cm.my_log
 def split_training_validation_test_by_date():
@@ -205,17 +216,17 @@ def split_training_validation_test_by_date():
         choice_validation = random.choice([0, 1])
         if choice_validation == 1:
             validation_data_sets.append(df[df['TradingDate'] == trading_date[index + choice_index]])
-            testing_data_sets.append(df[df['TradingDate'] == trading_date[index + choice_index+1]])
+            testing_data_sets.append(df[df['TradingDate'] == trading_date[index + choice_index + 1]])
         else:
             testing_data_sets.append(df[df['TradingDate'] == trading_date[index + choice_index]])
-            validation_data_sets.append(df[df['TradingDate'] == trading_date[index + choice_index+1]])
+            validation_data_sets.append(df[df['TradingDate'] == trading_date[index + choice_index + 1]])
         index = index + choice_index + 2
     training_data = pd.concat(training_data_sets)
     validation_data = pd.concat(validation_data_sets)
     testing_data = pd.concat(testing_data_sets)
     print(f'df.shape:{df.shape}')
     print(f'training_data.shape:{training_data.shape} , validation_data.shape:{validation_data.shape} ,'
-        f' testing_data.shape:{testing_data.shape}')
+          f' testing_data.shape:{testing_data.shape}')
     print(f'all.shape:{training_data.shape[0] + validation_data.shape[0] + testing_data.shape[0]}')
     if (training_data.shape[0] + validation_data.shape[0] + testing_data.shape[0]) != df.shape[0]:
         raise Exception('error')
@@ -226,13 +237,35 @@ def split_training_validation_test_by_date():
     validation_data.to_csv(f'{PREPARE_HOME_PATH}/validation.csv', index=False)
     testing_data.to_csv(f'{PREPARE_HOME_PATH}/testing.csv', index=False)
 
+
+@cm.my_log
+def check_null(normal_type):
+    training_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{normal_type}/training.csv', parse_dates=['TradingDate'])
+    validation_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{normal_type}/validation.csv', parse_dates=['TradingDate'])
+    testing_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{normal_type}/testing.csv', parse_dates=['TradingDate'])
+    df = pd.concat((training_df, validation_df, testing_df))
+    trading_date = df.sort_values(by=['TradingDate'])['TradingDate'].unique()
+    for date in tqdm(trading_date, total=trading_date.shape[0]):
+        if df[df['TradingDate'] == date].isnull().values.any():
+            raise Exception(f'{date} error!')
+
+    # print(f'df.shape : {df.shape}')
+    # option_ids = df['SecurityID'].unique()
+    # for option_id in tqdm(option_ids, total=len(option_ids)):
+    #     _options = df[df['SecurityID'] == option_id]
+    #     if _options.isnull().values.any():
+    #         contain_null_ids.append(option_id)
+    # print(f'contain_null_ids : {contain_null_ids}')
+
+
 PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/china-market/h_sh_300/'
 if __name__ == '__main__':
     # split_training_validation_test()
-    split_training_validation_test_by_date()
+    # split_training_validation_test_by_date()
     # save_head() # 方便查看，不修改数据
     NORMAL_TYPE = 'mean_norm'
     normalize_data(NORMAL_TYPE)
+    check_null(NORMAL_TYPE)
     # NORMAL_TYPE = 'min_max_norm'
     # normalize_data(NORMAL_TYPE)
     # NORMAL_TYPE = 'no_norm'
