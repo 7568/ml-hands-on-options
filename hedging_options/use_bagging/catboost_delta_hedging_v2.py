@@ -27,29 +27,31 @@ if __name__ == '__main__':
     validation_df.drop(columns=no_need_columns, axis=1, inplace=True)
     testing_df.drop(columns=no_need_columns, axis=1, inplace=True)
     params = {
-        'iterations': 2000,
+        'iterations': 20,
         'depth': 12,
         'learning_rate': 0.01,
         'loss_function': 'RMSE',
         'verbose': True,
         'task_type': "GPU",
         'devices': '0',
-        'early_stopping_rounds': 20
+        'early_stopping_rounds': 5
 
     }
+    target_fea = 'C_1'
     train_pool = Pool(training_df.iloc[:, :-3],
-                      np.array(training_df['C_1']).reshape(-1, 1),
+                      np.array(training_df[target_fea]).reshape(-1, 1),
                       cat_features=['CallOrPut', 'MainSign'])
     validation_pool = Pool(validation_df.iloc[:, :-3],
-                      np.array(validation_df['C_1']).reshape(-1, 1),
-                      cat_features=['CallOrPut', 'MainSign'])
+                           np.array(validation_df[target_fea]).reshape(-1, 1),
+                           cat_features=['CallOrPut', 'MainSign'])
     test_pool = Pool(testing_df.iloc[:, :-3],
-                      cat_features=['CallOrPut', 'MainSign'])
+                     cat_features=['CallOrPut', 'MainSign'])
+
     model = CatBoostRegressor(**params)
     model.fit(train_pool, eval_set=validation_pool)
     # make the prediction using the resulting model
     y_test_hat = model.predict(test_pool)
 
-    error_in_test = mean_squared_error(y_test_hat, np.array(testing_df['C_1']).reshape(-1, 1))
+    error_in_test = mean_squared_error(y_test_hat, np.array(testing_df[target_fea]).reshape(-1, 1))
     print(f'error_in_test : {error_in_test}')
     # result 0.40784974689433334

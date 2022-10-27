@@ -17,7 +17,6 @@ print(xgb.__version__)
 sys.path.append(os.path.dirname("../../*"))
 sys.path.append(os.path.dirname("../*"))
 
-
 PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/china-market/h_sh_300/'
 if __name__ == '__main__':
     NORMAL_TYPE = 'mean_norm'
@@ -40,18 +39,19 @@ if __name__ == '__main__':
         'colsample_bytree': 0.75,
         'reg_alpha': 0.5,
         'reg_lambda': 0.5,
-        'n_estimators': 100,
+        'n_estimators': 10,
         # 'val_metric' : mean_squared_error,
 
     }
+    target_fea = 'C_1'
     model = xgb.XGBRegressor(**params)
-    model.fit(training_df.iloc[:, :-3].to_numpy(), np.array(training_df['C_1']).reshape(-1, 1),
-              eval_set=[(validation_df.iloc[:, :-3].to_numpy(), np.array(validation_df['C_1']).reshape(-1, 1))],
-              early_stopping_rounds=20,eval_metric='rmse')
+    model.fit(training_df.iloc[:, :-3].to_numpy(), np.array(training_df[target_fea]).reshape(-1, 1),
+              eval_set=[(validation_df.iloc[:, :-3].to_numpy(), np.array(validation_df[target_fea]).reshape(-1, 1))],
+              early_stopping_rounds=20, eval_metric='rmse')
 
     # Predict on x_test
-    y_test_hat = model.predict(testing_df.iloc[:, :-3].to_numpy())
+    y_test_hat = model.predict(np.ascontiguousarray(testing_df.iloc[:, :-3].to_numpy()))
 
-    error_in_test = mean_squared_error(y_test_hat, np.array(testing_df['C_1']).reshape(-1, 1))
+    error_in_test = mean_squared_error(y_test_hat, np.array(testing_df[target_fea]).reshape(-1, 1))
     print(f'error_in_test : {error_in_test}')
     #  error_in_test : 0.04834734940222341

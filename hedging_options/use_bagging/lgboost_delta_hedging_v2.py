@@ -10,6 +10,7 @@ import os
 import numpy as np
 import pandas as pd
 import lightgbm as lgb
+from lightgbm import early_stopping
 from sklearn.metrics import mean_squared_error
 
 sys.path.append(os.path.dirname("../../*"))
@@ -37,18 +38,20 @@ if __name__ == '__main__':
               'lambda_l2': 0.5,
               'feature_fraction': 0.75,
               'bagging_fraction': 0.75,
-              'bagging_freq ': 1,
-              'metric': {'l2'}
+              # 'bagging_freq ': 1,
+              'metric': {'l2'},
+              'force_col_wise': True,
               }
 
-    train_data = lgb.Dataset(training_df.iloc[:, :-3],
-                             np.array(training_df['C_1']).reshape(-1, 1))
-    num_round = 50000
-    validation_data = lgb.Dataset(validation_df.iloc[:, :-3],
-                                  np.array(validation_df['C_1']).reshape(-1, 1))
-    bst = lgb.train(params, train_data, num_round, valid_sets=validation_data, early_stopping_rounds=20)
+    num_round = 5
+    early_s_n = 20
+    target_fea = 'C_1'
+    train_data = lgb.Dataset(training_df.iloc[:, :-3], training_df[target_fea])
+    validation_data = lgb.Dataset(validation_df.iloc[:, :-3], validation_df[target_fea])
+
+    bst = lgb.train(params, train_data, num_round, valid_sets=[validation_data], callbacks=[early_stopping(early_s_n)])
     y_test_hat = bst.predict(testing_df.iloc[:, :-3], num_iteration=bst.best_iteration)
 
-    error_in_test = mean_squared_error(y_test_hat, np.array(testing_df['C_1']).reshape(-1, 1))
+    error_in_test = mean_squared_error(y_test_hat, testing_df[target_fea])
     print(f'error_in_test : {error_in_test}')
     # result 0.4315025889686754
