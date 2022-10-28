@@ -30,7 +30,12 @@ if __name__ == '__main__':
     training_df.drop(columns=no_need_columns, axis=1, inplace=True)
     validation_df.drop(columns=no_need_columns, axis=1, inplace=True)
     testing_df.drop(columns=no_need_columns, axis=1, inplace=True)
-
+    cat_features = ['CallOrPut', 'MainSign']
+    for i in range(1, 5):
+        cat_features.append(f'MainSign_{i}')
+    training_df = training_df.astype({j: int for j in cat_features})
+    validation_df = training_df.astype({j: int for j in cat_features})
+    testing_df = training_df.astype({j: int for j in cat_features})
     params = {
         'max_depth': 12,
         'learning_rate': 0.01,
@@ -39,7 +44,7 @@ if __name__ == '__main__':
         'colsample_bytree': 0.75,
         'reg_alpha': 0.5,
         'reg_lambda': 0.5,
-        'n_estimators': 10,
+        'n_estimators': 5000,
         # 'val_metric' : mean_squared_error,
 
     }
@@ -54,4 +59,4 @@ if __name__ == '__main__':
 
     error_in_test = mean_squared_error(y_test_hat, np.array(testing_df[target_fea]).reshape(-1, 1))
     print(f'error_in_test : {error_in_test}')
-    #  error_in_test : 0.04834734940222341
+    #  error_in_test : 0.0006481963118092908

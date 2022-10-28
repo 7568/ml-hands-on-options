@@ -27,7 +27,7 @@ if __name__ == '__main__':
     validation_df.drop(columns=no_need_columns, axis=1, inplace=True)
     testing_df.drop(columns=no_need_columns, axis=1, inplace=True)
     params = {
-        'iterations': 20,
+        'iterations': 20000,
         'depth': 12,
         'learning_rate': 0.01,
         'loss_function': 'RMSE',
@@ -38,14 +38,20 @@ if __name__ == '__main__':
 
     }
     target_fea = 'C_1'
+    cat_features = ['CallOrPut', 'MainSign']
+    for i in range(1, 5):
+        cat_features.append(f'MainSign_{i}')
+    training_df = training_df.astype({j: int for j in cat_features})
+    validation_df = training_df.astype({j: int for j in cat_features})
+    testing_df = training_df.astype({j: int for j in cat_features})
     train_pool = Pool(training_df.iloc[:, :-3],
                       np.array(training_df[target_fea]).reshape(-1, 1),
-                      cat_features=['CallOrPut', 'MainSign'])
+                      cat_features=cat_features)
     validation_pool = Pool(validation_df.iloc[:, :-3],
                            np.array(validation_df[target_fea]).reshape(-1, 1),
-                           cat_features=['CallOrPut', 'MainSign'])
+                           cat_features=cat_features)
     test_pool = Pool(testing_df.iloc[:, :-3],
-                     cat_features=['CallOrPut', 'MainSign'])
+                     cat_features=cat_features)
 
     model = CatBoostRegressor(**params)
     model.fit(train_pool, eval_set=validation_pool)
@@ -54,4 +60,4 @@ if __name__ == '__main__':
 
     error_in_test = mean_squared_error(y_test_hat, np.array(testing_df[target_fea]).reshape(-1, 1))
     print(f'error_in_test : {error_in_test}')
-    # result 0.40784974689433334
+    # error_in_test : 0.003250597951709926

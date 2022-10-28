@@ -877,9 +877,22 @@ def hand_category_data():
     df['MainSign'].replace(to_replace=2, value=0, inplace=True)
     df.to_csv(f'{DATA_HOME_PATH}/all_raw_data.csv', index=False)
 
+@cm.my_log
+def retype_cat_columns():
+    """
+     将分类数据设置成int型
+    :return:
+    """
+    df = pd.read_csv(f'{DATA_HOME_PATH}/all_raw_data.csv', parse_dates=['TradingDate'])
+    cat_features = ['CallOrPut', 'MainSign']
+    for i in range(1, 5):
+        cat_features.append(f'MainSign_{i}')
+    df = df.astype({j: int for j in cat_features})
+    df.to_csv(f'{DATA_HOME_PATH}/all_raw_data.csv', index=False)
 
 DATA_HOME_PATH = '/home/liyu/data/hedging-option/china-market'
 OPTION_SYMBOL = 'h_sh_300'
+
 if __name__ == '__main__':
     depart_data()
     DATA_HOME_PATH = DATA_HOME_PATH + "/" + OPTION_SYMBOL + "/"
@@ -896,4 +909,5 @@ if __name__ == '__main__':
     append_next_price()  # 得到下一天的价格数据，包括期权的价格数据和标的资产的价格数据
     append_real_hedging_rate()  # 得到得到真实的对冲比例
     check_null_by_id()
+    retype_cat_columns() # 将分类数据设置成int型
     # get_expand_head()  # 查看填充效果
