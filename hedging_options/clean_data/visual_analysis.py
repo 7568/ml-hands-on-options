@@ -3,7 +3,7 @@
 Created by louis at 2022/10/11
 Description:
 """
-
+import math
 from multiprocessing import Pool, cpu_count
 
 import numpy as np
@@ -55,15 +55,20 @@ def test002():
     :return: 生成一个柱状图，横轴日期，纵轴当前日期存在的期权的数量，并保存
     """
     df = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/all_raw_data.csv', parse_dates=['TradingDate'])
-    df = df[df['TradingDate'] > pd.Timestamp('2020-01-01')]
+    # df = df[df['TradingDate'] > pd.Timestamp('2020-01-01')]
     print(df.shape)
     trading_dates = df['TradingDate'].unique()
     start_dic = {}
+    nums=[]
     for trading_date in tqdm(trading_dates, total=len(trading_dates)):
         _options = df[df['TradingDate'] == trading_date]
         trading_date_str = str(trading_date)
         if start_dic.get(trading_date_str) is None:
             start_dic[trading_date_str] = _options.shape[0]
+            nums.append(_options.shape[0])
+    nums = np.array(nums)
+    print(nums.max())
+    print(nums>100)
     fig = plt.figure(figsize=(100, 50))
     ax = fig.add_subplot()
     ax.set_title(f'aaa')
@@ -142,6 +147,6 @@ def test004():
 DATA_HOME_PATH = '/home/liyu/data/hedging-option/china-market'
 if __name__ == '__main__':
     # test001()
-    # test002()
+    test002()
     # test003()
-    test004()
+    # test004()

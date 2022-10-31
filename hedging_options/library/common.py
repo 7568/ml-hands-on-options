@@ -353,8 +353,8 @@ def my_log(func):
     """
 
     def inner(*args):
-        print('\n',func.__name__, 'start !')
+        print('\n', func.__name__, 'start ! args:', [i for i in args])
         func(*args)
-        print(func.__name__, 'done !','\n')
+        print(func.__name__, 'done !', '\n')
 
     return inner
