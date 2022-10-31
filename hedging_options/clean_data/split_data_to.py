@@ -116,7 +116,8 @@ def normalize_data(normal_type):
     validation_df.drop(columns=no_need_columns, axis=1, inplace=True)
     testing_df.drop(columns=no_need_columns, axis=1, inplace=True)
 
-    cat_columns = ['CallOrPut', 'MainSign', 'TradingDate']
+    cat_columns = ['CallOrPut', 'MainSign', 'MainSign_1', 'MainSign_2', 'MainSign_3', 'MainSign_4', 'TradingDate',
+                   'up_and_down']
     normal_data = []
 
     for i in cat_columns:
@@ -193,7 +194,7 @@ def split_training_validation_test_by_date():
     training_data.shape:(276698, 170) , validation_data.shape:(34494, 170) , testing_data.shape:(34250, 170)
     """
 
-    df = pd.read_csv(f'{PREPARE_HOME_PATH}/all_expand_df_data.csv', parse_dates=['TradingDate'])
+    df = pd.read_csv(f'{PREPARE_HOME_PATH}/all_raw_data.csv', parse_dates=['TradingDate'])
 
     trading_date = df.sort_values(by=['TradingDate'])['TradingDate'].unique()
     training_data_sets = []
@@ -262,7 +263,7 @@ def check_null(normal_type):
 PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/china-market/h_sh_300/'
 if __name__ == '__main__':
     # split_training_validation_test()
-    # split_training_validation_test_by_date()
+    split_training_validation_test_by_date()
     # save_head() # 方便查看，不修改数据
     NORMAL_TYPE = 'mean_norm'
     normalize_data(NORMAL_TYPE)

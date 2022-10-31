@@ -3,21 +3,27 @@
 Created by louis at 2022/6/13
 Description:
 """
-import copy
-import math
-import sys
-import os
-import numpy as np
-import pandas as pd
-import lightgbm as lgb
-from lightgbm import early_stopping
-from sklearn.metrics import mean_squared_error
+import argparse
 
-sys.path.append(os.path.dirname("../../*"))
-sys.path.append(os.path.dirname("../*"))
+import lightgbm as lgb
+import pandas as pd
+from lightgbm import early_stopping
+
+import util
+
+
+def init_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--log_to_file', action='store_true')
+    opt = parser.parse_args()
+    return opt
+
 
 PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/china-market/h_sh_300/'
 if __name__ == '__main__':
+    opt = init_parser()
+    if opt.log_to_file:
+        logger = util.init_log('lgboost_delta_hedging_v2')
     # NORMAL_TYPE = 'min_max_norm'
     # NORMAL_TYPE = 'no_norm'
     NORMAL_TYPE = 'mean_norm'
@@ -34,8 +40,8 @@ if __name__ == '__main__':
     training_df = training_df.astype({j: int for j in cat_features})
     validation_df = training_df.astype({j: int for j in cat_features})
     testing_df = training_df.astype({j: int for j in cat_features})
-    params = {'objective': 'regression',
-              'boosting': 'gbdt',
+    params = {'objective': 'binary',
+              # 'boosting': 'gbdt',
               'learning_rate': 0.01,
               'max_depth': -1,
               'num_leaves': 2 ** 8,
@@ -44,20 +50,29 @@ if __name__ == '__main__':
               'feature_fraction': 0.75,
               'bagging_fraction': 0.75,
               'bagging_freq': 20,
-              'metric': {'l2'},
               'force_col_wise': True,
+              'metric': 'auc',
               }
 
-    num_round = 5000
+    num_round = 50000
     early_s_n = 10
-    target_fea = 'C_1'
-    train_data = lgb.Dataset(training_df.iloc[:, :-3], training_df[target_fea])
-    validation_data = lgb.Dataset(validation_df.iloc[:, :-3], validation_df[target_fea])
-
+    target_fea = 'up_and_down'
+    last_x_index = -6
+    train_data = lgb.Dataset(training_df.iloc[:, :last_x_index], training_df[target_fea])
+    validation_data = lgb.Dataset(validation_df.iloc[:, :last_x_index], validation_df[target_fea])
     bst = lgb.train(params, train_data, num_round, valid_sets=[validation_data], verbose_eval=True,
                     callbacks=[early_stopping(early_s_n)], categorical_feature=cat_features)
-    y_test_hat = bst.predict(testing_df.iloc[:, :-3], num_iteration=bst.best_iteration)
+    util.remove_file_if_exists(f'lgboostClassifier')
+    bst.save_model('lgboostClassifier',num_iteration=bst.best_iteration)
+    bst_from_file = lgb.Booster(model_file='lgboostClassifier')
+    y_test_hat = bst_from_file.predict(testing_df.iloc[:, :last_x_index], num_iteration=bst.best_iteration)
 
-    error_in_test = mean_squared_error(y_test_hat, testing_df[target_fea])
-    print(f'error_in_test : {error_in_test}')
-    # result 0.0041245230662759974
+
+    util.eval_accuracy(testing_df[target_fea], y_test_hat > 0.5)
+
+    """
+    Early stopping, best iteration is:
+[4771]	valid_0's auc: 0.99999
+预测为1 且实际为1 ，看涨的准确率: 0.9997289421969235
+预测为0中实际为1的概率，即期权实际是涨，但是被漏掉的概率 : 0.12194980822642508
+    """

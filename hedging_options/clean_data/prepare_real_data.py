@@ -775,12 +775,12 @@ def append_before4_days_data(ord_1, ord_2):
 
     expand_df = pd.concat(r, ignore_index=True)
     print(f'expand_df.shape : {expand_df.shape} , df.shape :{df.shape}')
-    expand_df.to_csv(f'{DATA_HOME_PATH}/all_expand_df_data_{ord_2}.csv', index=False)
+    expand_df.to_csv(f'{DATA_HOME_PATH}/all_raw_data_{ord_2}.csv', index=False)
 
 
 @cm.my_log
 def get_expand_head(ord):
-    df = pd.read_csv(f'{DATA_HOME_PATH}/all_expand_df_data_{ord}.csv', parse_dates=['TradingDate'])
+    df = pd.read_csv(f'{DATA_HOME_PATH}/all_raw_data_{ord}.csv', parse_dates=['TradingDate'])
     option_ids = df['SecurityID'].unique()
     print('option_ids num : ', len(option_ids))
     print(f'df.shape : {df.shape}')
@@ -796,10 +796,12 @@ def do_append_next_price(param):
     for option_id in tqdm(option_ids, total=len(option_ids)):
         _options = df[df['SecurityID'] == option_id]
         sorted_options = _options.sort_values(by='TradingDate', ignore_index=True)
-        for i in range(sorted_options.shape[0] - 1):
+        for i in range(sorted_options.shape[0] - 2):
             sorted_options.loc[i, 'C_1'] = sorted_options.copy().iloc[i + 1]['OpenPrice']
             sorted_options.loc[i, 'S_1'] = sorted_options.copy().iloc[i + 1]['UnderlyingScrtClose']
-        sorted_options_list.append(sorted_options.iloc[:-1])
+            sorted_options.loc[i, 'C_2'] = sorted_options.copy().iloc[i + 2]['OpenPrice']
+            sorted_options.loc[i, 'S_2'] = sorted_options.copy().iloc[i + 2]['UnderlyingScrtClose']
+        sorted_options_list.append(sorted_options.iloc[:-2])
     return pd.concat([_r for _r in sorted_options_list], ignore_index=True)
 
 
@@ -808,9 +810,9 @@ def append_next_price(ord_1, ord_2):
     """
     得到下一天的期权数据，和标的资产的数据，也就是数据集中的target数据，和S1
     """
-    df = pd.read_csv(f'{DATA_HOME_PATH}/all_expand_df_data_{ord_1}.csv', parse_dates=['TradingDate'])
+    df = pd.read_csv(f'{DATA_HOME_PATH}/all_raw_data_{ord_1}.csv', parse_dates=['TradingDate'])
     option_ids = df['SecurityID'].unique()
-    cpu_num = cpu_count() - 1
+    cpu_num = int(cpu_count()*0.8)
     if cpu_num > len(df):
         cpu_num = len(df)
     data_chunks = cm.chunks_np(option_ids, cpu_num)
@@ -825,7 +827,7 @@ def append_next_price(ord_1, ord_2):
 
     expand_df = pd.concat(r, ignore_index=True)
     print(f'expand_df.shape : {expand_df.shape} , df.shape :{df.shape}')
-    expand_df.to_csv(f'{DATA_HOME_PATH}/all_expand_df_data_{ord_2}.csv', index=False)
+    expand_df.to_csv(f'{DATA_HOME_PATH}/all_raw_data_{ord_2}.csv', index=False)
 
 
 @cm.my_log
@@ -839,7 +841,7 @@ def append_real_hedging_rate(ord_1, ord_2):
     S_0 : 当天标的资产收盘价格
     S_1 : 明天标的资产收盘价格
     """
-    scaled_expand_df = pd.read_csv(f'{DATA_HOME_PATH}/all_expand_df_data_{ord_1}.csv', parse_dates=['TradingDate'])
+    scaled_expand_df = pd.read_csv(f'{DATA_HOME_PATH}/all_raw_data_{ord_1}.csv', parse_dates=['TradingDate'])
     R = 1 + scaled_expand_df['RisklessRate'] / 253
     C_0 = scaled_expand_df['ClosePrice']
     C_1 = scaled_expand_df['C_1']
@@ -847,24 +849,34 @@ def append_real_hedging_rate(ord_1, ord_2):
     S_1 = scaled_expand_df['S_1']
     real_hedging_rate = (C_1 - R * C_0) / (S_1 - R * S_0)
     scaled_expand_df['real_hedging_rate'] = real_hedging_rate
-    scaled_expand_df.to_csv(f'{DATA_HOME_PATH}/all_expand_df_data_{ord_2}.csv', index=False)
+    scaled_expand_df.to_csv(f'{DATA_HOME_PATH}/all_raw_data_{ord_2}.csv', index=False)
 
 
 @cm.my_log
-def append_up_and_down(ord_1, ord_2, rate=0.1):
+def append_payoff_rate(ord_1, ord_2,rate=0.1):
     """
-    如果期权的价格在明天涨幅超过 rate 就认为期权涨，up_and_down=1
-    # 如果期权的价格在明天跌幅超过 rate 就认为期权跌，up_and_down=0
+    如果我在今天开盘进行交易，那么我只能使用昨天的数据，而且今天买，明天卖
+    得到收益比率
+    如果期权的价格在明天涨幅超过 10% 就认为期权涨，up_and_down=1
+    # 如果期权的价格在明天涨幅在10% ～ 20% 就认为期权涨，up_and_down=2
+    # 如果期权的价格在明天涨幅20% ～ 30% 就认为期权涨，up_and_down=3
+    # 如果期权的价格在明天涨幅30% ～ 40% 就认为期权涨，up_and_down=4
+    # 如果期权的价格在明天涨幅40% ～ 50% 就认为期权涨，up_and_down=5
+    # 如果期权的价格在明天涨幅50% ～ 100% 就认为期权涨，up_and_down=6
+    # 如果期权的价格在明天涨幅100% ～ 200% 就认为期权涨，up_and_down=7
+    # 如果期权的价格在明天涨幅200% ～ 400% 就认为期权涨，up_and_down=8
+    # 如果期权的价格在明天涨幅400% ～ 1000% 就认为期权涨，up_and_down=9
+    # 如果期权的价格在明天涨幅大于 1000% 就认为期权涨，up_and_down=10
     否则就认为没变化，up_and_down=0
     """
-    scaled_expand_df = pd.read_csv(f'{DATA_HOME_PATH}/all_expand_df_data_{ord_1}.csv', parse_dates=['TradingDate'])
-    scaled_expand_df['up_and_down'] = 0
-    C_0 = scaled_expand_df['ClosePrice']
-    C_1 = scaled_expand_df['C_1']
-    _ra = C_1 / C_0
-    scaled_expand_df.iloc[_ra > (1 + rate), 'up_and_down'] = 1
-    # scaled_expand_df.iloc[_ra < (1 - rate), 'up_and_down'] = -1
-    scaled_expand_df.to_csv(f'{DATA_HOME_PATH}/all_expand_df_data_{ord_2}.csv', index=False)
+    df = pd.read_csv(f'{DATA_HOME_PATH}/all_raw_data_{ord_1}.csv', parse_dates=['TradingDate'])
+    df['up_and_down'] = 0
+    C_1 = df['C_1']
+    C_2 = df['C_2']
+    _ra = C_2 / C_1
+    df.loc[_ra > (1 + rate), 'up_and_down'] = 1
+    # df.iloc[_ra < (1 - rate), 'up_and_down'] = -1
+    df.to_csv(f'{DATA_HOME_PATH}/all_raw_data_{ord_2}.csv', index=False)
 
 
 @cm.my_log
@@ -910,25 +922,38 @@ def retype_cat_columns(ord_1, ord_2):
     df.to_csv(f'{DATA_HOME_PATH}/all_raw_data_{ord_2}.csv', index=False)
 
 
+
+@cm.my_log
+def rename_raw_data(ord_1):
+    """
+     将分类数据设置成int型
+    :return:
+    """
+    # df = pd.read_csv(f'{DATA_HOME_PATH}/all_raw_data_{ord_1}.csv', parse_dates=['TradingDate'])
+    os.rename(f'{DATA_HOME_PATH}/all_raw_data_{ord_1}.csv',f'{DATA_HOME_PATH}/all_raw_data.csv')
+
+
 DATA_HOME_PATH = '/home/liyu/data/hedging-option/china-market'
 OPTION_SYMBOL = 'h_sh_300'
 
 if __name__ == '__main__':
-    depart_data(1)
+    # depart_data(1)
     DATA_HOME_PATH = DATA_HOME_PATH + "/" + OPTION_SYMBOL + "/"
-    check_each_data_num_by_id(1)
-    combine_all_data(1, 3)
-    remove_filling_not0_data(3, 4)  # 删除原始表中节假日填充的数据
-    remove_real_trade_days_less28(4, 5)  # 将合约交易天数小于28天的删除
-    remove_end5_trade_date_data(5, 6)  # 将每份期权合约交易的最后5天的数据删除
-    check_volume(6, 7)  # 将成交量为0的数据中存在nan的地方填充0
-    check_null_by_id(7)  # 查看是否还有nan数据
-    # save_by_each_option()  # 便于查看每份期权合约的每天交易信息
-    hand_category_data(7, 9)
-    append_before4_days_data(9, 10)  # 将前4天的数据追加到当天，不够4天的用0填充
-    append_next_price(10, 11)  # 得到下一天的价格数据，包括期权的价格数据和标的资产的价格数据
-    append_real_hedging_rate(11, 12)  # 得到得到真实的对冲比例
-    append_up_and_down(12, '12_1')  # 得到期权是涨还是跌
+    # check_each_data_num_by_id(1)
+    # combine_all_data(1, 3)
+    # remove_filling_not0_data(3, 4)  # 删除原始表中节假日填充的数据
+    # remove_real_trade_days_less28(4, 5)  # 将合约交易天数小于28天的删除
+    # remove_end5_trade_date_data(5, 6)  # 将每份期权合约交易的最后5天的数据删除
+    # check_volume(6, 7)  # 将成交量为0的数据中存在nan的地方填充0
+    # check_null_by_id(7)  # 查看是否还有nan数据
+    # # save_by_each_option()  # 便于查看每份期权合约的每天交易信息
+    # hand_category_data(7, 9)
+    # append_before4_days_data(9, 10)  # 将前4天的数据追加到当天，不够4天的用0填充
+    # append_next_price(10, 11)  # 得到下一天的价格数据，包括期权的价格数据和标的资产的价格数据
+    # append_real_hedging_rate(11, 12)  # 得到得到真实的对冲比例
+    append_payoff_rate(12, '12_1')  # 得到期权是涨还是跌
     check_null_by_id('12_1')
     retype_cat_columns('12_1', 13)  # 将分类数据设置成int型
     # get_expand_head()  # 查看填充效果
+    
+    rename_raw_data(13)

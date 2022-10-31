@@ -59,7 +59,7 @@ def test002():
     print(df.shape)
     trading_dates = df['TradingDate'].unique()
     start_dic = {}
-    nums=[]
+    nums = []
     for trading_date in tqdm(trading_dates, total=len(trading_dates)):
         _options = df[df['TradingDate'] == trading_date]
         trading_date_str = str(trading_date)
@@ -68,7 +68,7 @@ def test002():
             nums.append(_options.shape[0])
     nums = np.array(nums)
     print(nums.max())
-    print(nums>100)
+    print(nums > 100)
     fig = plt.figure(figsize=(100, 50))
     ax = fig.add_subplot()
     ax.set_title(f'aaa')
@@ -102,7 +102,7 @@ def test003():
     option_ids = df['SecurityID'].unique()
     for option_id in tqdm(option_ids, total=len(option_ids)):
         _options = df[df['SecurityID'] == option_id]
-        continue_sign= _options['ContinueSign'].unique()
+        continue_sign = _options['ContinueSign'].unique()
         if continue_sign.shape[0] > 1:
             raise RuntimeError('continue_sign error')
 
@@ -119,6 +119,7 @@ def test003():
         plt.savefig(f'{DATA_HOME_PATH}/h_sh_300/{continue_sign[0]}/{option_id}_position_remaining.png')
         plt.close()
     print('save position_remaining done!')
+
 
 def test004():
     """
@@ -140,13 +141,57 @@ def test004():
     ax.set_title(f'aaa')
     ax.set_xlabel('date')
     ax.set_ylabel('start options number')
-    ax.hist(trade_days,bins=100)
+    ax.hist(trade_days, bins=100)
 
     plt.show()
+
+
+def test005():
+    """
+    分析期权回报率分布
+    """
+    df = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/all_raw_data_12.csv', parse_dates=['TradingDate'])
+    df.loc[df['OpenPrice'] == 0] = 1000000
+    C_0 = df['OpenPrice']
+    C_1 = df['C_1']
+    _ra = C_1 / C_0
+    print('不涨 不跌', (np.array(_ra == 1).astype(int).sum()) / len(_ra))
+    print('涨', (np.array(_ra > 1).astype(int).sum()) / len(_ra))
+    print('涨0.1倍', (np.array(_ra > 1.1).astype(int).sum()) / len(_ra))
+    print('涨0.2倍', (np.array(_ra > 1.2).astype(int).sum()) / len(_ra))
+    print('涨0.4倍', (np.array(_ra > 1.4).astype(int).sum()) / len(_ra))
+    print('涨0.5倍', (np.array(_ra > 1.5).astype(int).sum()) / len(_ra))
+    print('涨0.8倍', (np.array(_ra > 1.8).astype(int).sum()) / len(_ra))
+    print('涨1倍', (np.array(_ra > 2).astype(int).sum()) / len(_ra))
+    print('涨2倍', (np.array(_ra > 3).astype(int).sum()) / len(_ra))
+    print('涨3倍', (np.array(_ra > 4).astype(int).sum()) / len(_ra))
+    print('涨10倍', (np.array(_ra > 11).astype(int).sum()) / len(_ra))
+
+    print('跌', (np.array(_ra < 1).astype(int).sum()) / len(_ra))
+    print('跌10%', (np.array(_ra < 0.9).astype(int).sum()) / len(_ra))
+    print('跌20%', (np.array(_ra < 0.8).astype(int).sum()) / len(_ra))
+    print('跌30%', (np.array(_ra < 0.7).astype(int).sum()) / len(_ra))
+    print('跌50%', (np.array(_ra < 0.5).astype(int).sum()) / len(_ra))
+    print('跌80%', (np.array(_ra < 0.2).astype(int).sum()) / len(_ra))
+    print('跌90%', (np.array(_ra < 0.1).astype(int).sum()) / len(_ra))
+
+    print(np.array(_ra < 1).astype(int).sum() / len(_ra))
+    print(np.array(_ra < 0.25).astype(int).sum() / len(_ra))
+    _ra[_ra > 2] = 2
+    fig = plt.figure()
+    ax = fig.add_subplot()
+    ax.set_title(f'aaa')
+    ax.set_xlabel('date')
+    ax.set_ylabel('start options number')
+    ax.hist(_ra, bins=100)
+
+    plt.show()
+
 
 DATA_HOME_PATH = '/home/liyu/data/hedging-option/china-market'
 if __name__ == '__main__':
     # test001()
-    test002()
+    # test002()
     # test003()
     # test004()
+    test005()
