@@ -3,14 +3,13 @@
 Created by louis at 2022/11/1
 Description:
 """
-import util
+import lightgbm as lgb
 import numpy as np
 import pandas as pd
-from catboost import CatBoostClassifier, Pool
-import lightgbm as lgb
-import pandas as pd
-from lightgbm import early_stopping
 import xgboost as xgb
+from catboost import CatBoostClassifier, Pool
+
+import util
 
 
 def xgboost_predict(x, y_true):
@@ -47,8 +46,9 @@ if __name__ == '__main__':
     df = df.astype({j: int for j in cat_features})
     target_fea = 'up_and_down'
     last_x_index = -6
-    xgboost_predict(np.ascontiguousarray(df.iloc[:, :last_x_index].to_numpy()), np.array(df[target_fea]))
-
-    lgboost_predict(df.iloc[:, :last_x_index],df[target_fea])
+    last_x_index = 36+31*4
+    # xgboost_predict(np.ascontiguousarray(df.iloc[:, :last_x_index].to_numpy()), np.array(df[target_fea]))
+    #
+    # lgboost_predict(df.iloc[:, :last_x_index],df[target_fea])
 
     catboost_predict(df.iloc[:, :last_x_index], np.array(df[target_fea]).reshape(-1, 1), cat_features)

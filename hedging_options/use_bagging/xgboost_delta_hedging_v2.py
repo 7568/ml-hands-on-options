@@ -41,8 +41,8 @@ if __name__ == '__main__':
     for i in range(1, 5):
         cat_features.append(f'MainSign_{i}')
     training_df = training_df.astype({j: int for j in cat_features})
-    validation_df = training_df.astype({j: int for j in cat_features})
-    testing_df = training_df.astype({j: int for j in cat_features})
+    validation_df = validation_df.astype({j: int for j in cat_features})
+    testing_df = testing_df.astype({j: int for j in cat_features})
     params = {
         'max_depth': 12,
         'learning_rate': 0.01,
@@ -51,7 +51,7 @@ if __name__ == '__main__':
         'colsample_bytree': 0.75,
         'reg_alpha': 0.5,
         'reg_lambda': 0.5,
-        'n_estimators': 50000,
+        'n_estimators': 10000,
         # 'val_metric' : 'accu',
 
     }

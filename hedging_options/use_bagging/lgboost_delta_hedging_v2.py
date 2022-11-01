@@ -38,8 +38,8 @@ if __name__ == '__main__':
     for i in range(1, 5):
         cat_features.append(f'MainSign_{i}')
     training_df = training_df.astype({j: int for j in cat_features})
-    validation_df = training_df.astype({j: int for j in cat_features})
-    testing_df = training_df.astype({j: int for j in cat_features})
+    validation_df = validation_df.astype({j: int for j in cat_features})
+    testing_df = testing_df.astype({j: int for j in cat_features})
     params = {'objective': 'binary',
               # 'boosting': 'gbdt',
               'learning_rate': 0.01,
@@ -51,10 +51,10 @@ if __name__ == '__main__':
               'bagging_fraction': 0.75,
               'bagging_freq': 20,
               'force_col_wise': True,
-              'metric': 'auc',
+              # 'metric': 'auc',
               }
 
-    num_round = 50000
+    num_round = 10000
     early_s_n = 10
     target_fea = 'up_and_down'
     last_x_index = -6

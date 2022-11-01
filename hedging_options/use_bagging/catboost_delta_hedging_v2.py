@@ -37,7 +37,7 @@ if __name__ == '__main__':
     validation_df.drop(columns=no_need_columns, axis=1, inplace=True)
     testing_df.drop(columns=no_need_columns, axis=1, inplace=True)
     params = {
-        'iterations': 8000,
+        'iterations': 500,
         'depth': 12,
         'learning_rate': 0.01,
         # 'loss_function': '',
@@ -57,8 +57,8 @@ if __name__ == '__main__':
     for i in range(1, (day_num+1)):
         cat_features.append(f'MainSign_{i}')
     training_df = training_df.astype({j: int for j in cat_features})
-    validation_df = training_df.astype({j: int for j in cat_features})
-    testing_df = training_df.astype({j: int for j in cat_features})
+    validation_df = validation_df.astype({j: int for j in cat_features})
+    testing_df = testing_df.astype({j: int for j in cat_features})
     target_fea = 'up_and_down'
     last_x_index = 36+31*day_num
     print(training_df.columns.size - (36+31*day_num))
