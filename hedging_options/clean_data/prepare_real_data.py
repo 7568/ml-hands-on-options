@@ -950,7 +950,7 @@ if __name__ == '__main__':
     # append_before4_days_data(9, 10)  # 将前4天的数据追加到当天，不够4天的用0填充
     # append_next_price(10, 11)  # 得到下一天的价格数据，包括期权的价格数据和标的资产的价格数据
     # append_real_hedging_rate(11, 12)  # 得到得到真实的对冲比例
-    append_payoff_rate(12, '12_1', 0.5)  # 得到期权是涨还是跌
+    append_payoff_rate(12, '12_1', 0.05)  # 得到期权是涨还是跌
     check_null_by_id('12_1')
     retype_cat_columns('12_1', 13)  # 将分类数据设置成int型
     # get_expand_head()  # 查看填充效果

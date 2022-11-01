@@ -37,7 +37,7 @@ if __name__ == '__main__':
     validation_df.drop(columns=no_need_columns, axis=1, inplace=True)
     testing_df.drop(columns=no_need_columns, axis=1, inplace=True)
     params = {
-        'iterations': 500,
+        'iterations': 50000,
         'depth': 12,
         'learning_rate': 0.01,
         # 'loss_function': '',
@@ -83,10 +83,13 @@ if __name__ == '__main__':
     else:
         from_file = model
     # make the prediction using the resulting model
+    y_validation_hat = from_file.predict(validation_pool)
     y_test_hat = from_file.predict(test_pool)
-    y_true=np.array(testing_df[target_fea]).reshape(-1, 1)
+    y_validation_true=np.array(validation_df[target_fea]).reshape(-1, 1)
+    y_test_true=np.array(testing_df[target_fea]).reshape(-1, 1)
 
-    util.eval_accuracy(y_true,y_test_hat)
+    util.eval_accuracy(y_validation_true,y_validation_hat)
+    util.eval_accuracy(y_test_true,y_test_hat)
     # acc = accuracy_score(y_test_hat, np.array(testing_df[target_fea]).reshape(-1, 1))
     # print(f'accuracy_score : {acc}')
     """

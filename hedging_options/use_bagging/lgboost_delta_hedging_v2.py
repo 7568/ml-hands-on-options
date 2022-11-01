@@ -7,7 +7,7 @@ import argparse
 
 import lightgbm as lgb
 import pandas as pd
-from lightgbm import early_stopping
+from lightgbm import early_stopping, log_evaluation
 
 import util
 
@@ -54,14 +54,14 @@ if __name__ == '__main__':
               # 'metric': 'auc',
               }
 
-    num_round = 10000
+    num_round = 50000
     early_s_n = 10
     target_fea = 'up_and_down'
     last_x_index = -6
     train_data = lgb.Dataset(training_df.iloc[:, :last_x_index], training_df[target_fea])
     validation_data = lgb.Dataset(validation_df.iloc[:, :last_x_index], validation_df[target_fea])
-    bst = lgb.train(params, train_data, num_round, valid_sets=[validation_data], verbose_eval=True,
-                    callbacks=[early_stopping(early_s_n)], categorical_feature=cat_features)
+    bst = lgb.train(params, train_data, num_round, valid_sets=[validation_data],
+                    callbacks=[early_stopping(early_s_n),log_evaluation()])
     if opt.log_to_file:
 
         util.remove_file_if_exists(f'lgboostClassifier')
@@ -69,9 +69,11 @@ if __name__ == '__main__':
         bst_from_file = lgb.Booster(model_file='lgboostClassifier')
     else:
         bst_from_file = bst
+    y_validation_hat = bst_from_file.predict(validation_df.iloc[:, :last_x_index], num_iteration=bst.best_iteration)
     y_test_hat = bst_from_file.predict(testing_df.iloc[:, :last_x_index], num_iteration=bst.best_iteration)
 
 
+    util.eval_accuracy(validation_df[target_fea], y_validation_hat > 0.5)
     util.eval_accuracy(testing_df[target_fea], y_test_hat > 0.5)
 
     """
