@@ -760,7 +760,7 @@ def append_before4_days_data(ord_1, ord_2):
     df[before_3_column] = 0
     df[before_4_column] = 0
     before_columns = [before_1_column, before_2_column, before_3_column, before_4_column]
-    cpu_num = int(cpu_count()*0.8)
+    cpu_num = int(cpu_count() * 0.8)
     if cpu_num > len(df):
         cpu_num = len(df)
     data_chunks = cm.chunks_np(option_ids, cpu_num)
@@ -812,7 +812,7 @@ def append_next_price(ord_1, ord_2):
     """
     df = pd.read_csv(f'{DATA_HOME_PATH}/all_raw_data_{ord_1}.csv', parse_dates=['TradingDate'])
     option_ids = df['SecurityID'].unique()
-    cpu_num = int(cpu_count()*0.8)
+    cpu_num = int(cpu_count() * 0.8)
     if cpu_num > len(df):
         cpu_num = len(df)
     data_chunks = cm.chunks_np(option_ids, cpu_num)
@@ -853,7 +853,7 @@ def append_real_hedging_rate(ord_1, ord_2):
 
 
 @cm.my_log
-def append_payoff_rate(ord_1, ord_2,rate=0.1):
+def append_payoff_rate(ord_1, ord_2, shreshold_rate=0.1):
     """
     如果我在今天开盘进行交易，那么我只能使用昨天的数据，而且今天买，明天卖
     得到收益比率
@@ -874,7 +874,7 @@ def append_payoff_rate(ord_1, ord_2,rate=0.1):
     C_1 = df['C_1']
     C_2 = df['C_2']
     _ra = C_2 / C_1
-    df.loc[_ra > (1 + rate), 'up_and_down'] = 1
+    df.loc[_ra > (1 + shreshold_rate), 'up_and_down'] = 1
     # df.iloc[_ra < (1 - rate), 'up_and_down'] = -1
     df.to_csv(f'{DATA_HOME_PATH}/all_raw_data_{ord_2}.csv', index=False)
 
@@ -915,12 +915,11 @@ def retype_cat_columns(ord_1, ord_2):
     :return:
     """
     df = pd.read_csv(f'{DATA_HOME_PATH}/all_raw_data_{ord_1}.csv', parse_dates=['TradingDate'])
-    cat_features = ['CallOrPut', 'MainSign','up_and_down']
+    cat_features = ['CallOrPut', 'MainSign', 'up_and_down']
     for i in range(1, 5):
         cat_features.append(f'MainSign_{i}')
     df = df.astype({j: int for j in cat_features})
     df.to_csv(f'{DATA_HOME_PATH}/all_raw_data_{ord_2}.csv', index=False)
-
 
 
 @cm.my_log
@@ -930,7 +929,7 @@ def rename_raw_data(ord_1):
     :return:
     """
     # df = pd.read_csv(f'{DATA_HOME_PATH}/all_raw_data_{ord_1}.csv', parse_dates=['TradingDate'])
-    os.rename(f'{DATA_HOME_PATH}/all_raw_data_{ord_1}.csv',f'{DATA_HOME_PATH}/all_raw_data.csv')
+    os.rename(f'{DATA_HOME_PATH}/all_raw_data_{ord_1}.csv', f'{DATA_HOME_PATH}/all_raw_data.csv')
 
 
 DATA_HOME_PATH = '/home/liyu/data/hedging-option/china-market'
@@ -951,9 +950,9 @@ if __name__ == '__main__':
     # append_before4_days_data(9, 10)  # 将前4天的数据追加到当天，不够4天的用0填充
     # append_next_price(10, 11)  # 得到下一天的价格数据，包括期权的价格数据和标的资产的价格数据
     # append_real_hedging_rate(11, 12)  # 得到得到真实的对冲比例
-    append_payoff_rate(12, '12_1')  # 得到期权是涨还是跌
+    append_payoff_rate(12, '12_1', 0.5)  # 得到期权是涨还是跌
     check_null_by_id('12_1')
     retype_cat_columns('12_1', 13)  # 将分类数据设置成int型
     # get_expand_head()  # 查看填充效果
-    
+
     rename_raw_data(13)

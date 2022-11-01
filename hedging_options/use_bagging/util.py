@@ -21,8 +21,6 @@ def touch(fname, times=None):
         fhandle.close()
 
 def init_log(file_name='tmp'):
-    logger = logging.getLogger()
-    logger.setLevel(level=logging.DEBUG)
     if not os.path.exists(f'log/'):
         os.mkdir(f'log/')
     if not os.path.exists(f'log/{file_name}_std_out.log'):
@@ -31,6 +29,8 @@ def init_log(file_name='tmp'):
         touch(f'log/{file_name}_debug_info.log')
     sys.stderr = open(f'log/{file_name}_std_out.log', 'a')
     sys.stdout = open(f'log/{file_name}_std_out.log', 'a')
+    logger = logging.getLogger()
+    logger.setLevel(level=logging.DEBUG)
     handler = logging.FileHandler(f'log/{file_name}_debug_info.log')
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     handler.setFormatter(formatter)

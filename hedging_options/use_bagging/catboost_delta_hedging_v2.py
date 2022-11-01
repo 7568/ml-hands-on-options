@@ -4,23 +4,20 @@ Created by louis at 2022/6/13
 Description:
 """
 import argparse
-import copy
-import math
 import sys
-import os
+
 import numpy as np
 import pandas as pd
-from sklearn.metrics import mean_squared_error, confusion_matrix, accuracy_score
 from catboost import CatBoostClassifier, Pool
-import util
+from sklearn.metrics import accuracy_score
 
+import util
 
 
 def init_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('--log_to_file', action='store_true')
-    opt = parser.parse_args()
-    return opt
+    return parser.parse_args()
 
 
 PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/china-market/h_sh_300/'
@@ -33,17 +30,20 @@ if __name__ == '__main__':
     training_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/training.csv')
     validation_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/validation.csv')
     testing_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/testing.csv')
+    LATEST_DATA_PATH = f'/home/liyu/data/hedging-option/latest-china-market/h_sh_300/'
+    testing_df = pd.read_csv(f'{LATEST_DATA_PATH}/{NORMAL_TYPE}/predict_latest.csv')
     no_need_columns = ['TradingDate']
     training_df.drop(columns=no_need_columns, axis=1, inplace=True)
     validation_df.drop(columns=no_need_columns, axis=1, inplace=True)
     testing_df.drop(columns=no_need_columns, axis=1, inplace=True)
     params = {
-        'iterations': 50000,
+        'iterations': 8000,
         'depth': 12,
         'learning_rate': 0.01,
         # 'loss_function': '',
-        'verbose': True,
+        # 'verbose': False,
         'task_type': "GPU",
+        'logging_level':'Verbose',
         'devices': '6',
         'early_stopping_rounds': 5,
         # 'eval_metric':'Accuracy'
@@ -54,8 +54,8 @@ if __name__ == '__main__':
     # cat_features = ['CallOrPut']
     day_num=4
 
-    # for i in range(1, (day_num+1)):
-    #     cat_features.append(f'MainSign_{i}')
+    for i in range(1, (day_num+1)):
+        cat_features.append(f'MainSign_{i}')
     training_df = training_df.astype({j: int for j in cat_features})
     validation_df = training_df.astype({j: int for j in cat_features})
     testing_df = training_df.astype({j: int for j in cat_features})
@@ -72,13 +72,16 @@ if __name__ == '__main__':
                      cat_features=cat_features)
 
     model = CatBoostClassifier(**params)
-    model.fit(train_pool, eval_set=validation_pool)
-    util.remove_file_if_exists(f'CatBoostClassifier')
-    model.save_model("CatBoostClassifier")
+    model.fit(train_pool, eval_set=validation_pool,log_cerr=sys.stderr,log_cout=sys.stdout)
+    if opt.log_to_file:
+        util.remove_file_if_exists(f'CatBoostClassifier')
+        model.save_model("CatBoostClassifier")
 
-    from_file = CatBoostClassifier()
+        from_file = CatBoostClassifier()
 
-    from_file.load_model("CatBoostClassifier")
+        from_file.load_model("CatBoostClassifier")
+    else:
+        from_file = model
     # make the prediction using the resulting model
     y_test_hat = from_file.predict(test_pool)
     y_true=np.array(testing_df[target_fea]).reshape(-1, 1)

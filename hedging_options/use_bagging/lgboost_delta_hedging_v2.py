@@ -62,9 +62,13 @@ if __name__ == '__main__':
     validation_data = lgb.Dataset(validation_df.iloc[:, :last_x_index], validation_df[target_fea])
     bst = lgb.train(params, train_data, num_round, valid_sets=[validation_data], verbose_eval=True,
                     callbacks=[early_stopping(early_s_n)], categorical_feature=cat_features)
-    util.remove_file_if_exists(f'lgboostClassifier')
-    bst.save_model('lgboostClassifier',num_iteration=bst.best_iteration)
-    bst_from_file = lgb.Booster(model_file='lgboostClassifier')
+    if opt.log_to_file:
+
+        util.remove_file_if_exists(f'lgboostClassifier')
+        bst.save_model('lgboostClassifier',num_iteration=bst.best_iteration)
+        bst_from_file = lgb.Booster(model_file='lgboostClassifier')
+    else:
+        bst_from_file = bst
     y_test_hat = bst_from_file.predict(testing_df.iloc[:, :last_x_index], num_iteration=bst.best_iteration)
 
 

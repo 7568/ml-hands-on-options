@@ -159,6 +159,8 @@ def normalize_data(normal_type):
                     testing_df[k] = (testing_df[k] - mean) / std
                     normal_data.append([f'{k}_mean', mean])
                     normal_data.append([f'{k}_std', std])
+            else:
+                print(f'{k} do not normalize')
 
     remove_file_if_exists(f'{PREPARE_HOME_PATH}/{normal_type}/training.csv')
     remove_file_if_exists(f'{PREPARE_HOME_PATH}/{normal_type}/validation.csv')
@@ -241,6 +243,33 @@ def split_training_validation_test_by_date():
 
 
 @cm.my_log
+def split_training_validation_test_by_date_2():
+    """
+    首先按照时间排序，从小到大，开始为第0天的数据
+    前 80% 的数据用来训练，后 20% 中前 10% 用来做验证集，后10% 用来做测试集
+    :return:
+    """
+
+    df = pd.read_csv(f'{PREPARE_HOME_PATH}/all_raw_data.csv', parse_dates=['TradingDate'])
+
+    trading_date = df.sort_values(by=['TradingDate'])['TradingDate'].unique()
+    training_end_index = int(trading_date.shape[0] * 0.8)
+    validation_end_index = int(trading_date.shape[0] * 0.9)
+    training_data_dates = trading_date[:training_end_index]
+    validation_data_dates = trading_date[training_end_index:validation_end_index]
+    testing_data_dates = trading_date[validation_end_index:]
+    training_data = df[df['TradingDate'].isin(training_data_dates)]
+    validation_data = df[df['TradingDate'].isin(validation_data_dates)]
+    testing_data = df[df['TradingDate'].isin(testing_data_dates)]
+    remove_file_if_exists(f'{PREPARE_HOME_PATH}/training.csv')
+    remove_file_if_exists(f'{PREPARE_HOME_PATH}/validation.csv')
+    remove_file_if_exists(f'{PREPARE_HOME_PATH}/testing.csv')
+    training_data.to_csv(f'{PREPARE_HOME_PATH}/training.csv', index=False)
+    validation_data.to_csv(f'{PREPARE_HOME_PATH}/validation.csv', index=False)
+    testing_data.to_csv(f'{PREPARE_HOME_PATH}/testing.csv', index=False)
+
+
+@cm.my_log
 def check_null(normal_type):
     training_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{normal_type}/training.csv', parse_dates=['TradingDate'])
     validation_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{normal_type}/validation.csv', parse_dates=['TradingDate'])
@@ -263,7 +292,8 @@ def check_null(normal_type):
 PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/china-market/h_sh_300/'
 if __name__ == '__main__':
     # split_training_validation_test()
-    split_training_validation_test_by_date()
+    # split_training_validation_test_by_date()
+    split_training_validation_test_by_date_2()
     # save_head() # 方便查看，不修改数据
     NORMAL_TYPE = 'mean_norm'
     normalize_data(NORMAL_TYPE)

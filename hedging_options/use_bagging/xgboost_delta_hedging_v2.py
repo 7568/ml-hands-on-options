@@ -61,10 +61,14 @@ if __name__ == '__main__':
     model.fit(training_df.iloc[:, :last_x_index].to_numpy(), np.array(training_df[target_fea]).reshape(-1, 1),
               eval_set=[(validation_df.iloc[:, :last_x_index].to_numpy(), np.array(validation_df[target_fea]).reshape(-1, 1))],
               early_stopping_rounds=20)
-    util.remove_file_if_exists(f'XGBClassifier')
-    model.save_model('XGBClassifier')
-    model_from_file = xgb.XGBClassifier()
-    model_from_file.load_model('XGBClassifier')
+    if opt.log_to_file:
+
+        util.remove_file_if_exists(f'XGBClassifier')
+        model.save_model('XGBClassifier')
+        model_from_file = xgb.XGBClassifier()
+        model_from_file.load_model('XGBClassifier')
+    else:
+        model_from_file = model
     # Predict on x_test
     y_test_hat = model_from_file.predict(np.ascontiguousarray(testing_df.iloc[:, :last_x_index].to_numpy()))
     util.eval_accuracy(np.array(testing_df[target_fea]).reshape(-1, 1), y_test_hat)
