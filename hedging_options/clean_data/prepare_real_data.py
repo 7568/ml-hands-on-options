@@ -853,7 +853,7 @@ def append_real_hedging_rate(ord_1, ord_2):
 
 
 @cm.my_log
-def append_payoff_rate(ord_1, ord_2, shreshold_rate=0.1):
+def append_payoff_rate(ord_1, ord_2):
     """
     # 如果我在今天开盘进行交易，那么我只能使用昨天的数据，而且今天买，明天卖
 
@@ -868,19 +868,28 @@ def append_payoff_rate(ord_1, ord_2, shreshold_rate=0.1):
 
         我们将计算对冲比例问题划分为两个相关的小问题，一个是，判断是否需要进行对冲，
     另一个是如果需要对冲，那么再来计算对冲比例，
+
         我们暂时只研究第一个问题
 
-    如果期权的价格在明天涨幅超过 10% 就认为期权涨，up_and_down=2
-    如果期权的价格在明天跌幅超过 10% 就认为期权跌，up_and_down=4
-    否则就认为没变化，up_and_down=1
+        在第一个问题中，其实我们只关心明天期权价格是否涨价，因为我今天卖了一份期权，明天要将它买回来，
+    如果明天涨价了，而此时我又没有进行对冲，那么我就亏了。所以我关心我的预测中，那些涨价的期权是否
+    全部被预测了出来。而且我还其实不是很关心那些看跌的期权都否被认为了看涨，因为即使我将实际会跌的期权
+    进行了对冲，无非就是这些原本会赚前的机会消失了，而我不会因此亏钱。当然最好的情况是能全都预测准确。
+
+        （假如一个真实为跌
+    的期权，而我认为它会涨，此时我进行了对冲，如果该期权是看涨期权，那么我就需要买入标的资产，如果该
+    期权为看跌期权，那么我就需要卖出标的资产。）
+
+    如果期权的价格在明天涨，就设置up_and_down=1
+    否则就认为没变化，up_and_down=0
     """
     df = pd.read_csv(f'{DATA_HOME_PATH}/all_raw_data_{ord_1}.csv', parse_dates=['TradingDate'])
     df['up_and_down'] = 0
-    C_1 = df['C_0']
-    C_2 = df['C_1']
-    _ra = C_2 / C_1
-    df.loc[_ra > (1 + shreshold_rate), 'up_and_down'] = 1
-    df.loc[_ra < (1 - shreshold_rate), 'up_and_down'] = 2
+    C_0 = df['C_0']
+    C_1 = df['C_1']
+    _ra = C_1 / C_0
+    df.loc[_ra > 1, 'up_and_down'] = 1
+    # df.loc[_ra < (1 - shreshold_rate), 'up_and_down'] = 2
     # df.iloc[_ra < (1 - rate), 'up_and_down'] = -1
     df.to_csv(f'{DATA_HOME_PATH}/all_raw_data_{ord_2}.csv', index=False)
 
@@ -954,9 +963,9 @@ if __name__ == '__main__':
     # # save_by_each_option()  # 便于查看每份期权合约的每天交易信息
     # hand_category_data(7, 9)
     # append_before4_days_data(9, 10)  # 将前4天的数据追加到当天，不够4天的用0填充
-    append_next_price(10, 11)  # 得到下一天的价格数据，包括期权的价格数据和标的资产的价格数据
-    append_real_hedging_rate(11, 12)  # 得到得到真实的对冲比例
-    append_payoff_rate(12, '12_1', 0.05)  # 得到期权是涨还是跌，或者是不涨不跌
+    # append_next_price(10, 11)  # 得到下一天的价格数据，包括期权的价格数据和标的资产的价格数据
+    # append_real_hedging_rate(11, 12)  # 得到得到真实的对冲比例
+    append_payoff_rate(12, '12_1')  # 得到期权是涨还是跌
     check_null_by_id('12_1')
     retype_cat_columns('12_1', 13)  # 将分类数据设置成int型
     # get_expand_head()  # 查看填充效果
