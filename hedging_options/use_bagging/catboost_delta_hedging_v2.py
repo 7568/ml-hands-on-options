@@ -94,9 +94,9 @@ if __name__ == '__main__':
     y_test_true=np.array(testing_df[target_fea]).reshape(-1, 1)
     y_latest_true=np.array(latest_df[target_fea]).reshape(-1, 1)
 
-    util.eval_accuracy(y_validation_true,y_validation_hat)
-    util.eval_accuracy(y_test_true,y_test_hat)
-    util.eval_accuracy(y_latest_true,y_latest_hat)
+    util.binary_eval_accuracy(y_validation_true,y_validation_hat)
+    util.binary_eval_accuracy(y_test_true,y_test_hat)
+    util.binary_eval_accuracy(y_latest_true,y_latest_hat)
     # acc = accuracy_score(y_test_hat, np.array(testing_df[target_fea]).reshape(-1, 1))
     # print(f'accuracy_score : {acc}')
     """

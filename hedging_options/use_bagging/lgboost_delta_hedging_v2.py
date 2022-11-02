@@ -44,7 +44,7 @@ if __name__ == '__main__':
     validation_df = validation_df.astype({j: int for j in cat_features})
     testing_df = testing_df.astype({j: int for j in cat_features})
     latest_df = latest_df.astype({j: int for j in cat_features})
-    params = {'objective': 'multiclass',
+    params = {'objective': 'binary',
               # 'boosting': 'gbdt',
               'learning_rate': 0.01,
               'max_depth': -1,
@@ -55,8 +55,8 @@ if __name__ == '__main__':
               'bagging_fraction': 0.75,
               'bagging_freq': 20,
               'force_col_wise': True,
-              'metric': 'multi_logloss',
-              'num_classes': 3
+              # 'metric': 'multi_logloss',
+              # 'num_classes': 3
               }
 
     num_round = 50000
@@ -78,9 +78,9 @@ if __name__ == '__main__':
     y_test_hat = bst_from_file.predict(testing_df.iloc[:, :last_x_index], num_iteration=bst.best_iteration)
     y_latest_hat = bst_from_file.predict(latest_df.iloc[:, :last_x_index], num_iteration=bst.best_iteration)
 
-    util.eval_accuracy(validation_df[target_fea], np.argmax(y_validation_hat, axis=1))
-    util.eval_accuracy(testing_df[target_fea], np.argmax(y_test_hat, axis=1))
-    util.eval_accuracy(latest_df[target_fea], np.argmax(y_latest_hat, axis=1))
+    util.binary_eval_accuracy(validation_df[target_fea], y_validation_hat>0.5)
+    util.binary_eval_accuracy(testing_df[target_fea], y_test_hat>0.5)
+    util.binary_eval_accuracy(latest_df[target_fea], y_latest_hat>0.5)
 
     """
     Early stopping, best iteration is:

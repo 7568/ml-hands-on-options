@@ -48,7 +48,7 @@ if __name__ == '__main__':
     latest_df = latest_df.astype({j: int for j in cat_features})
     params = {
         'n_estimators': 50000,
-        # 'objective': 'binary:logistic',
+        'objective': 'binary:logistic',
         'max_depth': 6,
         'learning_rate': 0.01,
         'tree_method': 'hist',
@@ -57,7 +57,7 @@ if __name__ == '__main__':
         'reg_alpha': 0.5,
         'reg_lambda': 0.5,
         'use_label_encoder': False,
-        # 'eval_metric': 'logloss'
+        'eval_metric': 'logloss'
 
     }
     target_fea = 'up_and_down'
@@ -78,8 +78,8 @@ if __name__ == '__main__':
     y_validation_hat = model_from_file.predict(np.ascontiguousarray(validation_df.iloc[:, :last_x_index].to_numpy()))
     y_test_hat = model_from_file.predict(np.ascontiguousarray(testing_df.iloc[:, :last_x_index].to_numpy()))
     y_latest_hat = model_from_file.predict(np.ascontiguousarray(latest_df.iloc[:, :last_x_index].to_numpy()))
-    util.eval_accuracy(np.array(validation_df[target_fea]), y_validation_hat)
-    util.eval_accuracy(np.array(testing_df[target_fea]), y_test_hat)
-    util.eval_accuracy(np.array(latest_df[target_fea]), y_latest_hat)
+    util.binary_eval_accuracy(np.array(validation_df[target_fea]), y_validation_hat)
+    util.binary_eval_accuracy(np.array(testing_df[target_fea]), y_test_hat)
+    util.binary_eval_accuracy(np.array(latest_df[target_fea]), y_latest_hat)
     # 预测为1 且实际为1 ，看涨的准确率: 0.9995863067535422
     # 预测为0中实际为1的概率，即期权实际是涨，但是被漏掉的概率 : 0.11983781907155139
