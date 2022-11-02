@@ -31,11 +31,12 @@ if __name__ == '__main__':
     validation_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/validation.csv')
     testing_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/testing.csv')
     LATEST_DATA_PATH = f'/home/liyu/data/hedging-option/latest-china-market/h_sh_300/'
-    testing_df = pd.read_csv(f'{LATEST_DATA_PATH}/{NORMAL_TYPE}/predict_latest.csv')
+    latest_df = pd.read_csv(f'{LATEST_DATA_PATH}/{NORMAL_TYPE}/predict_latest.csv')
     no_need_columns = ['TradingDate']
     training_df.drop(columns=no_need_columns, axis=1, inplace=True)
     validation_df.drop(columns=no_need_columns, axis=1, inplace=True)
     testing_df.drop(columns=no_need_columns, axis=1, inplace=True)
+    latest_df.drop(columns=no_need_columns, axis=1, inplace=True)
     params = {
         'iterations': 50000,
         'depth': 12,
@@ -59,6 +60,7 @@ if __name__ == '__main__':
     training_df = training_df.astype({j: int for j in cat_features})
     validation_df = validation_df.astype({j: int for j in cat_features})
     testing_df = testing_df.astype({j: int for j in cat_features})
+    latest_df = latest_df.astype({j: int for j in cat_features})
     target_fea = 'up_and_down'
     last_x_index = 36+31*day_num
     print(training_df.columns.size - (36+31*day_num))
@@ -70,6 +72,8 @@ if __name__ == '__main__':
                            cat_features=cat_features)
     test_pool = Pool(testing_df.iloc[:, :last_x_index],
                      cat_features=cat_features)
+    latest_pool = Pool(latest_df.iloc[:, :last_x_index],
+                    cat_features=cat_features)
 
     model = CatBoostClassifier(**params)
     model.fit(train_pool, eval_set=validation_pool,log_cerr=sys.stderr,log_cout=sys.stdout)
@@ -85,11 +89,14 @@ if __name__ == '__main__':
     # make the prediction using the resulting model
     y_validation_hat = from_file.predict(validation_pool)
     y_test_hat = from_file.predict(test_pool)
+    y_latest_hat = from_file.predict(latest_pool)
     y_validation_true=np.array(validation_df[target_fea]).reshape(-1, 1)
     y_test_true=np.array(testing_df[target_fea]).reshape(-1, 1)
+    y_latest_true=np.array(latest_df[target_fea]).reshape(-1, 1)
 
     util.eval_accuracy(y_validation_true,y_validation_hat)
     util.eval_accuracy(y_test_true,y_test_hat)
+    util.eval_accuracy(y_latest_true,y_latest_hat)
     # acc = accuracy_score(y_test_hat, np.array(testing_df[target_fea]).reshape(-1, 1))
     # print(f'accuracy_score : {acc}')
     """

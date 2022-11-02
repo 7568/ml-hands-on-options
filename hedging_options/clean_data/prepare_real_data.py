@@ -797,10 +797,10 @@ def do_append_next_price(param):
         _options = df[df['SecurityID'] == option_id]
         sorted_options = _options.sort_values(by='TradingDate', ignore_index=True)
         for i in range(sorted_options.shape[0] - 2):
+            sorted_options.loc[i, 'C_0'] = sorted_options.copy().iloc[i]['AvgPrice']
+            sorted_options.loc[i, 'S_0'] = sorted_options.copy().iloc[i]['UnderlyingScrtClose']
             sorted_options.loc[i, 'C_1'] = sorted_options.copy().iloc[i + 1]['OpenPrice']
             sorted_options.loc[i, 'S_1'] = sorted_options.copy().iloc[i + 1]['UnderlyingScrtClose']
-            sorted_options.loc[i, 'C_2'] = sorted_options.copy().iloc[i + 2]['OpenPrice']
-            sorted_options.loc[i, 'S_2'] = sorted_options.copy().iloc[i + 2]['UnderlyingScrtClose']
         sorted_options_list.append(sorted_options.iloc[:-2])
     return pd.concat([_r for _r in sorted_options_list], ignore_index=True)
 
@@ -855,26 +855,32 @@ def append_real_hedging_rate(ord_1, ord_2):
 @cm.my_log
 def append_payoff_rate(ord_1, ord_2, shreshold_rate=0.1):
     """
-    如果我在今天开盘进行交易，那么我只能使用昨天的数据，而且今天买，明天卖
-    得到收益比率
-    如果期权的价格在明天涨幅超过 10% 就认为期权涨，up_and_down=1
-    # 如果期权的价格在明天涨幅在10% ～ 20% 就认为期权涨，up_and_down=2
-    # 如果期权的价格在明天涨幅20% ～ 30% 就认为期权涨，up_and_down=3
-    # 如果期权的价格在明天涨幅30% ～ 40% 就认为期权涨，up_and_down=4
-    # 如果期权的价格在明天涨幅40% ～ 50% 就认为期权涨，up_and_down=5
-    # 如果期权的价格在明天涨幅50% ～ 100% 就认为期权涨，up_and_down=6
-    # 如果期权的价格在明天涨幅100% ～ 200% 就认为期权涨，up_and_down=7
-    # 如果期权的价格在明天涨幅200% ～ 400% 就认为期权涨，up_and_down=8
-    # 如果期权的价格在明天涨幅400% ～ 1000% 就认为期权涨，up_and_down=9
-    # 如果期权的价格在明天涨幅大于 1000% 就认为期权涨，up_and_down=10
-    否则就认为没变化，up_and_down=0
+    # 如果我在今天开盘进行交易，那么我只能使用昨天的数据，而且今天买，明天卖
+
+        在真实场景中，我们通常是在时间点 t 卖出一份期权，就马上卖入一份标的资产，
+    此时我们可以拿到 t 时间点的数据，然后根据该数据确定对冲比例
+
+        基于我们只有日频数据，所以我们需要将场景进行稍微修改一下。我们假设我们拿到了
+    今天的数据之后在进行对冲，今天期权的价格我们用平均价格来代替，明天的期权价格用开盘价格来代替。
+
+        所以此时我们假设在今天我们以均价卖出一份期权，然后在市场关闭前得到今天的数据，
+    并确定对冲比例，再买入对应比例的标的资产
+
+        我们将计算对冲比例问题划分为两个相关的小问题，一个是，判断是否需要进行对冲，
+    另一个是如果需要对冲，那么再来计算对冲比例，
+        我们暂时只研究第一个问题
+
+    如果期权的价格在明天涨幅超过 10% 就认为期权涨，up_and_down=2
+    如果期权的价格在明天跌幅超过 10% 就认为期权跌，up_and_down=4
+    否则就认为没变化，up_and_down=1
     """
     df = pd.read_csv(f'{DATA_HOME_PATH}/all_raw_data_{ord_1}.csv', parse_dates=['TradingDate'])
     df['up_and_down'] = 0
-    C_1 = df['C_1']
-    C_2 = df['C_2']
+    C_1 = df['C_0']
+    C_2 = df['C_1']
     _ra = C_2 / C_1
     df.loc[_ra > (1 + shreshold_rate), 'up_and_down'] = 1
+    df.loc[_ra < (1 - shreshold_rate), 'up_and_down'] = 2
     # df.iloc[_ra < (1 - rate), 'up_and_down'] = -1
     df.to_csv(f'{DATA_HOME_PATH}/all_raw_data_{ord_2}.csv', index=False)
 
@@ -948,9 +954,9 @@ if __name__ == '__main__':
     # # save_by_each_option()  # 便于查看每份期权合约的每天交易信息
     # hand_category_data(7, 9)
     # append_before4_days_data(9, 10)  # 将前4天的数据追加到当天，不够4天的用0填充
-    # append_next_price(10, 11)  # 得到下一天的价格数据，包括期权的价格数据和标的资产的价格数据
-    # append_real_hedging_rate(11, 12)  # 得到得到真实的对冲比例
-    append_payoff_rate(12, '12_1', 0.05)  # 得到期权是涨还是跌
+    append_next_price(10, 11)  # 得到下一天的价格数据，包括期权的价格数据和标的资产的价格数据
+    append_real_hedging_rate(11, 12)  # 得到得到真实的对冲比例
+    append_payoff_rate(12, '12_1', 0.05)  # 得到期权是涨还是跌，或者是不涨不跌
     check_null_by_id('12_1')
     retype_cat_columns('12_1', 13)  # 将分类数据设置成int型
     # get_expand_head()  # 查看填充效果
