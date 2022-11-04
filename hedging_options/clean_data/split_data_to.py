@@ -116,8 +116,9 @@ def normalize_data(normal_type):
     validation_df.drop(columns=no_need_columns, axis=1, inplace=True)
     testing_df.drop(columns=no_need_columns, axis=1, inplace=True)
 
-    cat_columns = ['CallOrPut', 'MainSign', 'MainSign_1', 'MainSign_2', 'MainSign_3', 'MainSign_4', 'TradingDate',
-                   'up_and_down']
+    cat_columns = ['CallOrPut', 'CallOrPut_1', 'CallOrPut_2', 'CallOrPut_3', 'CallOrPut_4',
+                   'MainSign', 'MainSign_1', 'MainSign_2', 'MainSign_3', 'MainSign_4', 'TradingDate',
+                   'up_and_down', 'up_and_down_1', 'up_and_down_2', 'up_and_down_3', 'up_and_down_4']
     normal_data = []
 
     for i in cat_columns:

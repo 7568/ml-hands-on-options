@@ -6,7 +6,8 @@ Description:
 import os
 import sys
 import logging
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, auc, accuracy_score
+import numpy as np
 
 
 def remove_file_if_exists(path):
@@ -39,7 +40,8 @@ def init_log(file_name='tmp'):
     logger.addHandler(handler)
     return logger
 
-def binary_eval_accuracy(y_true,y_test_hat):
+
+def binary_eval_accuracy(y_true, y_test_hat):
     tn, fp, fn, tp = confusion_matrix(y_true, y_test_hat).ravel()
     print('0：不涨 ， 1：涨')
     print('tn, fp, fn, tp', tn, fp, fn, tp)
@@ -51,6 +53,9 @@ def binary_eval_accuracy(y_true,y_test_hat):
     print(f'查准率 - 预测为1 且实际为1 ，看涨的准确率: {tp / (tp + fp)}')
     print(f'查全率 - 实际为1，预测为1 : {tp / (tp + fn)}')
     print(f'F1 = {(2 * tp) / (len(y_true) + tp - tn)}')
+
+    # print(f'AUC：{auc(y_true,y_test_hat)}')
+    print(f'总体准确率：{accuracy_score(y_true, y_test_hat)}')
 
 
 def mutil_class_eval_accuracy(y_true, y_test_hat):
@@ -67,3 +72,31 @@ def mutil_class_eval_accuracy(y_true, y_test_hat):
     print(f'预测为1 且实际为1 ，看涨的准确率: {_1_1 / (_0_1 + _1_1 + _2_1)}')
     # print(f'真实为2中，预测为2 ，看跌的查全率: {_2_2 / (_2_0 + _2_1 + _2_2)}')
     print(f'预测为1，实际为2 ，重大损失的比例: {_2_1 / (_0_1 + _1_1 + _2_1)}')
+
+
+def reformat_data(training_df, validation_df, testing_df, latest_df):
+    """
+    训练的时候，前4天的 up_and_down 的值可见，当天的不可见，且设置为-1
+    :param training_df:
+    :param validation_df:
+    :param testing_df:
+    :param latest_df:
+    :return:
+    """
+    target_fea = 'up_and_down'
+    train_x = training_df.copy()
+    train_x.loc[:, target_fea] = -1
+    train_y = training_df[target_fea]
+
+    validation_x = validation_df.copy()
+    validation_x.loc[:, target_fea] = -1
+    validation_y = validation_df[target_fea]
+
+    testing_x = testing_df.copy()
+    testing_x.loc[:, target_fea] = -1
+    testing_y = testing_df[target_fea]
+
+    latest_x = latest_df.copy()
+    latest_x.loc[:, target_fea] = -1
+    latest_y = latest_df[target_fea]
+    return train_x, train_y, validation_x, validation_y, testing_x, testing_y, latest_x, latest_y

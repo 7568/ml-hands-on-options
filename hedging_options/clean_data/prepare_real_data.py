@@ -747,10 +747,10 @@ def append_before4_days_data(ord_1, ord_2):
 
     before_0_column = ['StrikePrice', 'ClosePrice', 'UnderlyingScrtClose', 'RisklessRate', 'HistoricalVolatility',
                        'TheoreticalPrice', 'Delta', 'Gamma', 'Vega', 'Theta', 'Rho', 'DividendYeild', 'MainSign',
-                       'OpenPrice', 'PositionChange',
+                       'OpenPrice', 'PositionChange', 'PreClosePrice', 'PrePosition', 'RemainingTerm', 'PreSettlePrice',
                        'HighPrice', 'LowPrice', 'SettlePrice', 'Change1', 'Change2', 'Volume', 'Position', 'Amount',
                        'AvgPrice', 'ClosePriceChangeRatio', 'SettlePriceChangeRatio', 'Amplitude', 'LimitUp',
-                       'LimitDown', 'MaintainingMargin', 'ChangeRatio']
+                       'LimitDown', 'MaintainingMargin', 'ChangeRatio', 'CallOrPut']
     before_1_column = [i + '_1' for i in before_0_column]
     before_2_column = [i + '_2' for i in before_0_column]
     before_3_column = [i + '_3' for i in before_0_column]
@@ -797,10 +797,10 @@ def do_append_next_price(param):
         _options = df[df['SecurityID'] == option_id]
         sorted_options = _options.sort_values(by='TradingDate', ignore_index=True)
         for i in range(sorted_options.shape[0] - 2):
-            sorted_options.loc[i, 'C_0'] = sorted_options.copy().iloc[i]['AvgPrice']
-            sorted_options.loc[i, 'S_0'] = sorted_options.copy().iloc[i]['UnderlyingScrtClose']
+            # sorted_options.loc[i, 'C_0'] = sorted_options.copy().iloc[i]['AvgPrice']
+            # sorted_options.loc[i, 'S_0'] = sorted_options.copy().iloc[i]['UnderlyingScrtClose']
             sorted_options.loc[i, 'C_1'] = sorted_options.copy().iloc[i + 1]['OpenPrice']
-            sorted_options.loc[i, 'S_1'] = sorted_options.copy().iloc[i + 1]['UnderlyingScrtClose']
+            # sorted_options.loc[i, 'S_1'] = sorted_options.copy().iloc[i + 1]['UnderlyingScrtClose']
         sorted_options_list.append(sorted_options.iloc[:-2])
     return pd.concat([_r for _r in sorted_options_list], ignore_index=True)
 
@@ -885,12 +885,22 @@ def append_payoff_rate(ord_1, ord_2):
     """
     df = pd.read_csv(f'{DATA_HOME_PATH}/all_raw_data_{ord_1}.csv', parse_dates=['TradingDate'])
     df['up_and_down'] = 0
-    C_0 = df['C_0']
+    df['up_and_down_1'] = 0
+    df['up_and_down_2'] = 0
+    df['up_and_down_3'] = 0
+    df['up_and_down_4'] = 0
+    C_0 = df['AvgPrice']
     C_1 = df['C_1']
-    _ra = C_1 / C_0
+    _ra = C_1 / C_0  # 明天的开盘价除以今天的平均价
     df.loc[_ra > 1, 'up_and_down'] = 1
-    # df.loc[_ra < (1 - shreshold_rate), 'up_and_down'] = 2
-    # df.iloc[_ra < (1 - rate), 'up_and_down'] = -1
+    _ra_1 = df['OpenPrice'] / df['AvgPrice_1']  # 今天天的开盘价除以昨天的平均价
+    df.loc[_ra_1 > 1, 'up_and_down_1'] = 1
+    _ra_2 = df['OpenPrice_1'] / df['AvgPrice_2']  # 昨天天的开盘价除以前天的平均价
+    df.loc[_ra_2 > 1, 'up_and_down_2'] = 1
+    _ra_3 = df['OpenPrice_2'] / df['AvgPrice_3']  # 依次类推
+    df.loc[_ra_3 > 1, 'up_and_down_3'] = 1
+    _ra_4 = df['OpenPrice_3'] / df['AvgPrice_4']
+    df.loc[_ra_4 > 1, 'up_and_down_4'] = 1
     df.to_csv(f'{DATA_HOME_PATH}/all_raw_data_{ord_2}.csv', index=False)
 
 
@@ -932,7 +942,9 @@ def retype_cat_columns(ord_1, ord_2):
     df = pd.read_csv(f'{DATA_HOME_PATH}/all_raw_data_{ord_1}.csv', parse_dates=['TradingDate'])
     cat_features = ['CallOrPut', 'MainSign', 'up_and_down']
     for i in range(1, 5):
+        cat_features.append(f'CallOrPut_{i}')
         cat_features.append(f'MainSign_{i}')
+        cat_features.append(f'up_and_down_{i}')
     df = df.astype({j: int for j in cat_features})
     df.to_csv(f'{DATA_HOME_PATH}/all_raw_data_{ord_2}.csv', index=False)
 
@@ -963,10 +975,10 @@ if __name__ == '__main__':
     # # save_by_each_option()  # 便于查看每份期权合约的每天交易信息
     # hand_category_data(7, 9)
     # append_before4_days_data(9, 10)  # 将前4天的数据追加到当天，不够4天的用0填充
-    # append_next_price(10, 11)  # 得到下一天的价格数据，包括期权的价格数据和标的资产的价格数据
-    # append_real_hedging_rate(11, 12)  # 得到得到真实的对冲比例
-    append_payoff_rate(12, '12_1')  # 得到期权是涨还是跌
-    check_null_by_id('12_1')
+    # append_next_price(10, 11)  # 得到下一天的期权价格数据
+    # #append_real_hedging_rate(11, 12)  # 得到真实的对冲比例
+    # append_payoff_rate(11, '12_1')  # 得到期权是涨还是跌
+    # check_null_by_id('12_1')
     retype_cat_columns('12_1', 13)  # 将分类数据设置成int型
     # get_expand_head()  # 查看填充效果
 
