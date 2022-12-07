@@ -74,29 +74,34 @@ def mutil_class_eval_accuracy(y_true, y_test_hat):
     print(f'预测为1，实际为2 ，重大损失的比例: {_2_1 / (_0_1 + _1_1 + _2_1)}')
 
 
-def reformat_data(training_df, validation_df, testing_df, latest_df):
+def reformat_data(training_df, validation_df, testing_df, not_use_pre_data=False):
     """
     训练的时候，前4天的 up_and_down 的值可见，当天的不可见，且设置为-1
     :param training_df:
     :param validation_df:
     :param testing_df:
-    :param latest_df:
+    :param not_use_pre_data:
     :return:
     """
     target_fea = 'up_and_down'
     train_x = training_df.copy()
-    train_x.loc[:, target_fea] = -1
+    train_x = train_x.iloc[:,:-5]
     train_y = training_df[target_fea]
 
     validation_x = validation_df.copy()
-    validation_x.loc[:, target_fea] = -1
+    validation_x = validation_x.iloc[:,:-5]
     validation_y = validation_df[target_fea]
 
     testing_x = testing_df.copy()
-    testing_x.loc[:, target_fea] = -1
+    testing_x = testing_x.iloc[:,:-5]
     testing_y = testing_df[target_fea]
 
-    latest_x = latest_df.copy()
-    latest_x.loc[:, target_fea] = -1
-    latest_y = latest_df[target_fea]
-    return train_x, train_y, validation_x, validation_y, testing_x, testing_y, latest_x, latest_y
+    # latest_x = latest_df.copy()
+    # latest_x.loc[:, target_fea] = -1
+    # latest_y = latest_df[target_fea]
+    if not_use_pre_data:
+        train_x = train_x.iloc[:, :int(train_x.shape[1] / 5)]
+        validation_x = validation_x.iloc[:, :int(validation_x.shape[1] / 5)]
+        testing_x = testing_x.iloc[:, :int(testing_x.shape[1] / 5)]
+        # latest_x = latest_x.iloc[:, :int(latest_x.shape[1] / 5)]
+    return train_x, train_y, validation_x, validation_y, testing_x, testing_y

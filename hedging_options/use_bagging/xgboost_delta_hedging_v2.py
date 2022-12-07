@@ -21,7 +21,10 @@ def init_parser():
     return opt
 
 
-PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/china-market/h_sh_300/'
+# PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20140101-20160229/h_sh_300/'
+# PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20160301-20190531/h_sh_300/'
+# PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20190601-20221123/h_sh_300/'
+PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20190701-20221124/h_sh_300/'
 if __name__ == '__main__':
     opt = init_parser()
     if opt.log_to_file:
@@ -32,21 +35,25 @@ if __name__ == '__main__':
     training_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/training.csv')
     validation_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/validation.csv')
     testing_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/testing.csv')
-    LATEST_DATA_PATH = f'/home/liyu/data/hedging-option/latest-china-market/h_sh_300/'
-    latest_df = pd.read_csv(f'{LATEST_DATA_PATH}/{NORMAL_TYPE}/predict_latest.csv')
+    # LATEST_DATA_PATH = f'/home/liyu/data/hedging-option/latest-china-market/h_sh_300/'
+    # latest_df = pd.read_csv(f'{LATEST_DATA_PATH}/{NORMAL_TYPE}/predict_latest.csv')
     no_need_columns = ['TradingDate', 'C_1']
+                       # 'ImpliedVolatility',
+                       # 'ImpliedVolatility_1',
+                       # 'ImpliedVolatility_2',
+                       # 'ImpliedVolatility_3',
+                       # 'ImpliedVolatility_4']
     training_df.drop(columns=no_need_columns, axis=1, inplace=True)
     validation_df.drop(columns=no_need_columns, axis=1, inplace=True)
     testing_df.drop(columns=no_need_columns, axis=1, inplace=True)
-    latest_df.drop(columns=no_need_columns, axis=1, inplace=True)
+    # latest_df.drop(columns=no_need_columns, axis=1, inplace=True)
     cat_features = ['CallOrPut', 'MainSign', 'up_and_down']
     for i in range(1, 5):
         cat_features.append(f'CallOrPut_{i}')
         cat_features.append(f'MainSign_{i}')
         cat_features.append(f'up_and_down_{i}')
-    train_x, train_y, validation_x, validation_y, testing_x, testing_y, latest_x, latest_y = util.reformat_data(
-        training_df, testing_df, validation_df, latest_df)
-
+    train_x, train_y, validation_x, validation_y, testing_x, testing_y= util.reformat_data(
+        training_df, testing_df, validation_df, not_use_pre_data=False)
 
     params = {
         'n_estimators': 50000,
@@ -79,34 +86,64 @@ if __name__ == '__main__':
     # Predict on x_test
     y_validation_hat = model_from_file.predict(np.ascontiguousarray(validation_x.to_numpy()))
     y_test_hat = model_from_file.predict(np.ascontiguousarray(testing_x.to_numpy()))
-    y_latest_hat = model_from_file.predict(np.ascontiguousarray(latest_x.to_numpy()))
+    # y_latest_hat = model_from_file.predict(np.ascontiguousarray(latest_x.to_numpy()))
     util.binary_eval_accuracy(np.array(validation_y), y_validation_hat)
     util.binary_eval_accuracy(np.array(testing_y), y_test_hat)
-    util.binary_eval_accuracy(np.array(latest_y), y_latest_hat)
+    # util.binary_eval_accuracy(np.array(latest_y), y_latest_hat)
 
     """
     0：不涨 ， 1：涨
-tn, fp, fn, tp 19185 5543 9993 9311
-test中为1的比例 : 0.43840843023255816
-test中为0的比例 : 0.5615915697674418
-查准率 - 预测为1 且实际为1 ，看涨的准确率: 0.6268345226874916
-查全率 - 实际为1，预测为1 : 0.48233526730211357
-F1 = 0.5451724339832543
-总体准确率：0.6471656976744186
+tn, fp, fn, tp 6024 341 1015 236
+test中为1的比例 : 0.1642594537815126
+test中为0的比例 : 0.8357405462184874
+查准率 - 预测为1 且实际为1 ，看涨的准确率: 0.4090121317157712
+查全率 - 实际为1，预测为1 : 0.18864908073541167
+F1 = 0.25820568927789933
+总体准确率：0.821953781512605
 0：不涨 ， 1：涨
-tn, fp, fn, tp 21641 5484 9717 9652
-test中为1的比例 : 0.4165913881361036
-test中为0的比例 : 0.5834086118638964
-查准率 - 预测为1 且实际为1 ，看涨的准确率: 0.6376849894291755
-查全率 - 实际为1，预测为1 : 0.49832206102534976
-F1 = 0.5594551514273294
-总体准确率：0.673054587688734
+tn, fp, fn, tp 8212 149 1147 224
+test中为1的比例 : 0.14087546239210852
+test中为0的比例 : 0.8591245376078915
+查准率 - 预测为1 且实际为1 ，看涨的准确率: 0.6005361930294906
+查全率 - 实际为1，预测为1 : 0.16338439095550694
+F1 = 0.25688073394495414
+总体准确率：0.8668310727496917
+    
+    
+    0：不涨 ， 1：涨
+tn, fp, fn, tp 12482 198 3657 277
+test中为1的比例 : 0.23678825087275793
+test中为0的比例 : 0.7632117491272421
+查准率 - 预测为1 且实际为1 ，看涨的准确率: 0.5831578947368421
+查全率 - 实际为1，预测为1 : 0.07041179461108286
+F1 = 0.12565207530052167
+总体准确率：0.7679667750090285
 0：不涨 ， 1：涨
-tn, fp, fn, tp 4115 986 2274 1743
-test中为1的比例 : 0.4405571397236236
-test中为0的比例 : 0.5594428602763764
-查准率 - 预测为1 且实际为1 ，看涨的准确率: 0.6386954928545254
-查全率 - 实际为1，预测为1 : 0.4339058999253174
-F1 = 0.5167506670619626
-总体准确率：0.6424654529502084
+tn, fp, fn, tp 8416 129 458 113
+test中为1的比例 : 0.06263712154453707
+test中为0的比例 : 0.937362878455463
+查准率 - 预测为1 且实际为1 ，看涨的准确率: 0.4669421487603306
+查全率 - 实际为1，预测为1 : 0.1978984238178634
+F1 = 0.2779827798277983
+总体准确率：0.9356077226853883
+
+
+
+0：不涨 ， 1：涨
+tn, fp, fn, tp 9462 1409 7156 1645
+test中为1的比例 : 0.44738714924766165
+test中为0的比例 : 0.5526128507523383
+查准率 - 预测为1 且实际为1 ，看涨的准确率: 0.5386378519973805
+查全率 - 实际为1，预测为1 : 0.18691057834337008
+F1 = 0.27752003374103756
+总体准确率：0.564609597397316
+0：不涨 ， 1：涨
+tn, fp, fn, tp 8833 2570 7179 2532
+test中为1的比例 : 0.4599317988064791
+test中为0的比例 : 0.5400682011935208
+查准率 - 预测为1 且实际为1 ，看涨的准确率: 0.49627597020776165
+查全率 - 实际为1，预测为1 : 0.26073524868705594
+F1 = 0.3418618780800648
+总体准确率：0.5382684474756086
+
     """

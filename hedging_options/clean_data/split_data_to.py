@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 from hedging_options.library import common as cm
+from hedging_options.library.common import chunks_np
 
 
 def remove_file_if_exists(path):
@@ -110,8 +111,7 @@ def normalize_data(normal_type):
     validation_df = pd.read_csv(f'{PREPARE_HOME_PATH}/validation.csv', parse_dates=['TradingDate'])
     testing_df = pd.read_csv(f'{PREPARE_HOME_PATH}/testing.csv', parse_dates=['TradingDate'])
 
-    no_need_columns = ['SecurityID', 'Filling', 'ImpliedVolatility', 'ContinueSign',
-                       'TradingDayStatusID']
+    no_need_columns = ['SecurityID', 'Filling', 'ContinueSign', 'TradingDayStatusID']
     training_df.drop(columns=no_need_columns, axis=1, inplace=True)
     validation_df.drop(columns=no_need_columns, axis=1, inplace=True)
     testing_df.drop(columns=no_need_columns, axis=1, inplace=True)
@@ -155,11 +155,18 @@ def normalize_data(normal_type):
                 else:
                     mean = _df.mean()
                     std = _df.std()
-                    df[k] = (_df - mean) / std
-                    validation_df[k] = (validation_df[k] - mean) / std
-                    testing_df[k] = (testing_df[k] - mean) / std
-                    normal_data.append([f'{k}_mean', mean])
-                    normal_data.append([f'{k}_std', std])
+                    if std == 0:
+                        df[k] = 0
+                        validation_df[k] = 0
+                        testing_df[k] = 0
+                        normal_data.append([f'{k}_mean', 0])
+                        normal_data.append([f'{k}_std', 0])
+                    else:
+                        df[k] = (_df - mean) / std
+                        validation_df[k] = (validation_df[k] - mean) / std
+                        testing_df[k] = (testing_df[k] - mean) / std
+                        normal_data.append([f'{k}_mean', mean])
+                        normal_data.append([f'{k}_std', std])
             else:
                 print(f'{k} do not normalize')
 
@@ -252,6 +259,7 @@ def split_training_validation_test_by_date_2():
     """
 
     df = pd.read_csv(f'{PREPARE_HOME_PATH}/all_raw_data.csv', parse_dates=['TradingDate'])
+    print(f'all data length is {df.shape}')
 
     trading_date = df.sort_values(by=['TradingDate'])['TradingDate'].unique()
     training_end_index = int(trading_date.shape[0] * 0.8)
@@ -259,6 +267,12 @@ def split_training_validation_test_by_date_2():
     training_data_dates = trading_date[:training_end_index]
     validation_data_dates = trading_date[training_end_index:validation_end_index]
     testing_data_dates = trading_date[validation_end_index:]
+    print(f'training_data_dates start at {training_data_dates[0]}')
+    print(f'training_data_dates end at {training_data_dates[-1]}')
+    print(f'validation_data_dates start at {validation_data_dates[0]}')
+    print(f'validation_data_dates end at {validation_data_dates[-1]}')
+    print(f'testing_data_dates start at {testing_data_dates[0]}')
+    print(f'testing_data_dates end at {testing_data_dates[-1]}')
     training_data = df[df['TradingDate'].isin(training_data_dates)]
     validation_data = df[df['TradingDate'].isin(validation_data_dates)]
     testing_data = df[df['TradingDate'].isin(testing_data_dates)]
@@ -268,6 +282,10 @@ def split_training_validation_test_by_date_2():
     training_data.to_csv(f'{PREPARE_HOME_PATH}/training.csv', index=False)
     validation_data.to_csv(f'{PREPARE_HOME_PATH}/validation.csv', index=False)
     testing_data.to_csv(f'{PREPARE_HOME_PATH}/testing.csv', index=False)
+
+    print(f'training data length is {training_data.shape}')
+    print(f'validation data length is {validation_data.shape}')
+    print(f'testing data length is {testing_data.shape}')
 
 
 @cm.my_log
@@ -290,7 +308,56 @@ def check_null(normal_type):
     # print(f'contain_null_ids : {contain_null_ids}')
 
 
-PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/china-market/h_sh_300/'
+def do_append_less_rate(param):
+    column_all_data = param['column_all_data']
+    column_chunk_data = param['column_chunk_data']
+    zeros = []
+    for index, j in tqdm(enumerate(column_chunk_data), total=len(column_chunk_data)):
+        zeros.append((((column_all_data < j).sum()) / len(column_all_data)) + 1)
+    return np.array(zeros)
+
+
+def create_train_mirror_data(normal_type):
+    """
+    新建一个train数据集对应的概率密度数据
+    :return:
+    """
+    training_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{normal_type}/training.csv', parse_dates=['TradingDate'])
+    before_0_column = ['StrikePrice', 'ClosePrice', 'UnderlyingScrtClose', 'RisklessRate', 'HistoricalVolatility',
+                       'ImpliedVolatility',
+                       'TheoreticalPrice', 'Delta', 'Gamma', 'Vega', 'Theta', 'Rho', 'DividendYeild', 'MainSign',
+                       'OpenPrice', 'PositionChange', 'PreClosePrice', 'PrePosition', 'RemainingTerm', 'PreSettlePrice',
+                       'HighPrice', 'LowPrice', 'SettlePrice', 'Change1', 'Change2', 'Volume', 'Position', 'Amount',
+                       'AvgPrice', 'ClosePriceChangeRatio', 'SettlePriceChangeRatio', 'Amplitude', 'LimitUp',
+                       'LimitDown', 'MaintainingMargin', 'ChangeRatio', 'CallOrPut']
+
+    X = training_df[before_0_column].to_numpy()
+    r_n, c_n = X.shape
+    cpu_num = int(cpu_count() * 0.8)
+    mirror = np.zeros_like(X, dtype=np.float32)
+
+    for i in range(c_n):
+        c_i = X[:, i]
+        data_chunks = chunks_np(c_i, cpu_num)
+        param = []
+        for data_chunk in tqdm(data_chunks, total=len(data_chunks)):
+            ARGS_ = dict(column_chunk_data=data_chunk, column_all_data=c_i)
+            param.append(ARGS_)
+        with Pool(cpu_num) as p:
+            r = p.map(do_append_less_rate, param)
+            p.close()
+            p.join()
+            mirror[:, i] = np.concatenate(r)
+    np.save(f'/home/liyu/data/hedging-option/china-market/h_sh_300/hedging_options_mirror.npy', mirror)
+    print(mirror[0, :])
+    print('done')
+
+
+# PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/china-market/h_sh_300/'
+# PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/20140101-20160229/h_sh_300/'
+# PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/20160301-20190531/h_sh_300/'
+# PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/20190601-20221123/h_sh_300/'
+PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/20190701-20221124/h_sh_300/'
 if __name__ == '__main__':
     # split_training_validation_test()
     # split_training_validation_test_by_date()
@@ -299,6 +366,7 @@ if __name__ == '__main__':
     NORMAL_TYPE = 'mean_norm'
     normalize_data(NORMAL_TYPE)
     check_null(NORMAL_TYPE)
+    # create_train_mirror_data(NORMAL_TYPE)
     # NORMAL_TYPE = 'min_max_norm'
     # normalize_data(NORMAL_TYPE)
     # NORMAL_TYPE = 'no_norm'

@@ -18,8 +18,7 @@ def normalize_data(normal_type):
     all_df = pd.read_csv(f'{LATEST_DATA_PATH}/all_raw_data.csv', parse_dates=['TradingDate'])
     normal_data = pd.read_csv(f'{TRAIN_DATA_PATH}/{normal_type}/normal_data.csv')
 
-    no_need_columns = ['SecurityID', 'Filling', 'ImpliedVolatility', 'ContinueSign',
-                       'TradingDayStatusID']
+    no_need_columns = ['SecurityID', 'Filling', 'ContinueSign', 'TradingDayStatusID']
     all_df.drop(columns=no_need_columns, axis=1, inplace=True)
 
     cat_columns = ['CallOrPut', 'CallOrPut_1', 'CallOrPut_2', 'CallOrPut_3', 'CallOrPut_4',

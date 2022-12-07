@@ -191,7 +191,7 @@ def test005():
 DATA_HOME_PATH = '/home/liyu/data/hedging-option/china-market'
 if __name__ == '__main__':
     # test001()
-    # test002()
+    test002()
     # test003()
     # test004()
-    test005()
+    # test005()
