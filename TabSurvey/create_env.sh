@@ -37,12 +37,17 @@ conda env remove -n tensorflow
 /home/liyu/miniconda3/bin/conda install -n gbdt -y pandas
 
 # For ModelTrees
-/home/liyu/miniconda3/envs/gbdt/bin/python -m pip install https://github.com/schufa-innovationlab/model-trees/archive/master.zip
+#/home/liyu/miniconda3/envs/gbdt/bin/python -m pip install https://github.com/schufa-innovationlab/model-trees/archive/master.zip
+/home/liyu/miniconda3/envs/gbdt/bin/python -m pip install ~/data/model-trees-main.zip
 
 #############################################################################################################
 
 # Set up Pytorch environment
-/home/liyu/miniconda3/bin/conda create -n torch -y python=3.8 pytorch cudatoolkit=11.3 -c pytorch
+#/home/liyu/miniconda3/bin/conda create -n torch -y python=3.8 pytorch=1.8.1=py3.8_cuda11.1_cudnn8.0.5_0 cudatoolkit=11.1 -c pytorch
+/home/liyu/miniconda3/bin/conda create -n torch -y python=3.8
+/home/liyu/miniconda3/bin/conda install -n torch -y _libgcc_mutex=0.1 -c conda-forge
+/home/liyu/miniconda3/bin/conda install -n torch -y pytorch=1.8.1=py3.8_cuda11.1_cudnn8.0.5_0 -c pytorch
+/home/liyu/miniconda3/bin/conda install -n torch -y cudatoolkit=11.1.1 -c conda-forge
 /home/liyu/miniconda3/bin/conda install -n torch -y -c anaconda ipykernel
 /home/liyu/miniconda3/bin/conda install -n torch -y -c conda-forge optuna
 /home/liyu/miniconda3/bin/conda install -n torch -y -c conda-forge configargparse
@@ -82,7 +87,8 @@ conda env remove -n tensorflow
 /home/liyu/miniconda3/envs/torch/bin/python -m pip install stg==0.1.2
 
 # For NAM
-/home/liyu/miniconda3/envs/torch/bin/python -m pip install https://github.com/AmrMKayid/nam/archive/main.zip
+#/home/liyu/miniconda3/envs/torch/bin/python -m pip install https://github.com/AmrMKayid/nam/archive/main.zip
+/home/liyu/miniconda3/envs/torch/bin/python -m pip install ~/data/nam-main.zip
 /home/liyu/miniconda3/envs/torch/bin/python -m pip install tabulate
 
 # For DANet
