@@ -6,6 +6,7 @@ import torch.optim as optim
 from torch.utils.data import TensorDataset, DataLoader
 
 import numpy as np
+from tqdm import tqdm
 
 from utils.io_utils import get_output_path
 
@@ -69,7 +70,7 @@ class BaseModelTorch(BaseModel):
         val_loss_history = []
 
         for epoch in range(self.args.epochs):
-            for i, (batch_X, batch_y) in enumerate(train_loader):
+            for i, (batch_X, batch_y) in tqdm(enumerate(train_loader, 0), total=len(train_loader)):
 
                 out = self.model(batch_X.to(self.device))
 

@@ -14,6 +14,7 @@ from einops import rearrange
 from models.saint_lib.models.pretrainmodel import SAINT as SAINTModel
 from models.saint_lib.data_openml import DataSetCatCon
 from models.saint_lib.augmentations import embed_data_mask
+from tqdm import tqdm
 
 '''
     SAINT: Improved Neural Networks for Tabular Data via Row Attention and Contrastive Pre-Training
@@ -58,6 +59,7 @@ class SAINT(BaseModelTorch):
         )
 
         if self.args.data_parallel:
+            print(f'self.args.data_parallel :{self.args.data_parallel}')
             self.model.transformer = nn.DataParallel(self.model.transformer, device_ids=self.args.gpu_ids)
             self.model.mlpfory = nn.DataParallel(self.model.mlpfory, device_ids=self.args.gpu_ids)
 
@@ -71,7 +73,6 @@ class SAINT(BaseModelTorch):
             criterion = nn.MSELoss()
 
         optimizer = optim.AdamW(self.model.parameters(), lr=0.00003)
-
         self.model.to(self.device)
 
         # SAINT wants it like this...
@@ -95,7 +96,7 @@ class SAINT(BaseModelTorch):
         for epoch in range(self.args.epochs):
             self.model.train()
 
-            for i, data in enumerate(trainloader, 0):
+            for i, data in tqdm(enumerate(trainloader, 0), total=len(trainloader)):
                 optimizer.zero_grad()
 
                 # x_categ is the the categorical data,

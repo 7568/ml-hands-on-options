@@ -30,23 +30,13 @@ if __name__ == '__main__':
     if opt.log_to_file:
         logger = util.init_log('xgboost_delta_hedging_v2')
     NORMAL_TYPE = 'mean_norm'
-    # NORMAL_TYPE = 'min_max_norm'
-    # NORMAL_TYPE = 'no_norm'
     training_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/training.csv')
     validation_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/validation.csv')
     testing_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/testing.csv')
-    # LATEST_DATA_PATH = f'/home/liyu/data/hedging-option/latest-china-market/h_sh_300/'
-    # latest_df = pd.read_csv(f'{LATEST_DATA_PATH}/{NORMAL_TYPE}/predict_latest.csv')
     no_need_columns = ['TradingDate', 'C_1']
-                       # 'ImpliedVolatility',
-                       # 'ImpliedVolatility_1',
-                       # 'ImpliedVolatility_2',
-                       # 'ImpliedVolatility_3',
-                       # 'ImpliedVolatility_4']
     training_df.drop(columns=no_need_columns, axis=1, inplace=True)
     validation_df.drop(columns=no_need_columns, axis=1, inplace=True)
     testing_df.drop(columns=no_need_columns, axis=1, inplace=True)
-    # latest_df.drop(columns=no_need_columns, axis=1, inplace=True)
     cat_features = ['CallOrPut', 'MainSign', 'up_and_down']
     for i in range(1, 5):
         cat_features.append(f'CallOrPut_{i}')

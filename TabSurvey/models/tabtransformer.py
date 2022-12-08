@@ -5,6 +5,7 @@ from torch.utils.data import TensorDataset, DataLoader
 from models.basemodel_torch import BaseModelTorch
 
 import numpy as np
+from tqdm import tqdm
 
 '''
     TabTransformer: Tabular Data Modeling Using Contextual Embeddings (https://arxiv.org/abs/2012.06678)
@@ -90,7 +91,7 @@ class TabTransformer(BaseModelTorch):
         val_loss_history = []
 
         for epoch in range(self.args.epochs):
-            for i, (batch_X, batch_y) in enumerate(train_loader):
+            for i, (batch_X, batch_y) in tqdm(enumerate(train_loader, 0), total=len(train_loader)):
 
                 if self.args.cat_idx:
                     x_categ = batch_X[:, self.args.cat_idx].int().to(self.device)

@@ -7,6 +7,7 @@ import torch.optim as optim
 from torch.utils.data import TensorDataset, DataLoader
 
 from models.basemodel_torch import BaseModelTorch
+from tqdm import tqdm
 from utils.io_utils import get_output_path
 
 '''
@@ -102,7 +103,7 @@ class VIME(BaseModelTorch):
         train_loader = DataLoader(dataset=train_dataset, batch_size=self.args.batch_size, shuffle=True, num_workers=2)
 
         for epoch in range(10):
-            for batch_X, batch_mask, batch_feat in train_loader:
+            for batch_X, batch_mask, batch_feat in tqdm(train_loader,total=len(train_loader)):
                 out_mask, out_feat = self.model_self(batch_X.to(self.device))
 
                 loss_mask = loss_func_mask(out_mask, batch_mask.to(self.device))

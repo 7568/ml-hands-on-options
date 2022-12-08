@@ -5,10 +5,14 @@ model_name: TabNet # LinearModel, KNN, SVM, DecisionTree, RandomForest, XGBoost,
 objective: binary # Don't change
 # optimize_hyperparameters: True
 
-# GPU parameters
 use_gpu: False
+# use one GPU parameters
+gpu_index: 7
+# use GPU data_parallel parameters
 gpu_ids: [0, 1]
-data_parallel: True
+data_parallel: False
+
+
 
 # Optuna parameters - https://optuna.org/
 n_trials: 2

@@ -6,7 +6,7 @@ def get_parser():
     # Use parser that can read YML files
     parser = configargparse.ArgumentParser(config_file_parser_class=configargparse.YAMLConfigFileParser,
                                            formatter_class=configargparse.ArgumentDefaultsHelpFormatter)
-
+    parser.add('--log_to_file', action='store_true')
     parser.add('-config', '--config', required=False, is_config_file_arg=True, help='config file path',
                default="config/adult.yml")  # kddcup99 covertype california_housing adult higgs
 
@@ -18,6 +18,7 @@ def get_parser():
 
     parser.add('--use_gpu', action="store_true", help="Set to true if GPU is available")
     parser.add('--gpu_ids', type=int, action="append", help="IDs of the GPUs used when data_parallel is true")
+    parser.add('--gpu_index', default=7, type=int, help="ID of the GPU used when use_gpu is true")
     parser.add('--data_parallel', action="store_true", help="Distribute the training over multiple GPUs")
 
     parser.add('--optimize_hyperparameters', action="store_true",

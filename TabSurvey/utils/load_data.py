@@ -13,10 +13,77 @@ def discretize_colum(data_clm, num_values=10):
     return q
 
 
+def reformat_data(training_df, validation_df, testing_df, not_use_pre_data=False):
+    """
+    训练的时候，前4天的 up_and_down 的值可见，当天的不可见，且设置为-1
+    :param training_df:
+    :param validation_df:
+    :param testing_df:
+    :param not_use_pre_data:
+    :return:
+    """
+    target_fea = 'up_and_down'
+    train_x = training_df.copy()
+    train_x = train_x.iloc[:, :-5]
+    train_y = training_df[target_fea]
+
+    validation_x = validation_df.copy()
+    validation_x = validation_x.iloc[:, :-5]
+    validation_y = validation_df[target_fea]
+
+    testing_x = testing_df.copy()
+    testing_x = testing_x.iloc[:, :-5]
+    testing_y = testing_df[target_fea]
+
+    # latest_x = latest_df.copy()
+    # latest_x.loc[:, target_fea] = -1
+    # latest_y = latest_df[target_fea]
+    if not_use_pre_data:
+        train_x = train_x.iloc[:, :int(train_x.shape[1] / 5)]
+        validation_x = validation_x.iloc[:, :int(validation_x.shape[1] / 5)]
+        testing_x = testing_x.iloc[:, :int(testing_x.shape[1] / 5)]
+        # latest_x = latest_x.iloc[:, :int(latest_x.shape[1] / 5)]
+    return train_x, train_y, validation_x, validation_y, testing_x, testing_y
+
+
+def load_h_sh_300_options():
+    PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20190701-20221124/h_sh_300/'
+    NORMAL_TYPE = 'mean_norm'
+    training_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/training.csv')
+    validation_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/validation.csv')
+    testing_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/testing.csv')
+    no_need_columns = ['TradingDate', 'C_1']
+    training_df.drop(columns=no_need_columns, axis=1, inplace=True)
+    validation_df.drop(columns=no_need_columns, axis=1, inplace=True)
+    testing_df.drop(columns=no_need_columns, axis=1, inplace=True)
+    cat_features = ['CallOrPut', 'MainSign', 'up_and_down']
+    for i in range(1, 5):
+        cat_features.append(f'CallOrPut_{i}')
+        cat_features.append(f'MainSign_{i}')
+        cat_features.append(f'up_and_down_{i}')
+    train_x, train_y, validation_x, validation_y, testing_x, testing_y = reformat_data(
+        training_df, testing_df, validation_df, not_use_pre_data=False)
+    # pd.DataFrame().to_numpy()
+    X = {
+        'training': train_x.to_numpy(),
+        'validation': validation_x.to_numpy(),
+        'testing': testing_x.to_numpy(),
+    }
+    y = {
+        'training': train_y.to_numpy(),
+        'validation': validation_y.to_numpy(),
+        'testing': testing_y.to_numpy(),
+    }
+
+    return X, y
+
+
 def load_data(args):
     print("Loading dataset " + args.dataset + "...")
+    if args.dataset == "H_sh_300_options":  # h_sh_300_options dataset
+        X, y = load_h_sh_300_options()
 
-    if args.dataset == "CaliforniaHousing":  # Regression dataset
+    elif args.dataset == "CaliforniaHousing":  # Regression dataset
         X, y = sklearn.datasets.fetch_california_housing(return_X_y=True)
 
     elif args.dataset == "Covertype":  # Multi-class classification dataset
@@ -109,7 +176,7 @@ def load_data(args):
         raise AttributeError("Dataset \"" + args.dataset + "\" not available")
 
     print("Dataset loaded!")
-    print(X.shape)
+
 
     # Preprocess target
     if args.target_encode:
