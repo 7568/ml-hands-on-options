@@ -94,12 +94,12 @@ def training_validation_testing(model, X, y, args, save_model=False):
 
     # Create a new unfitted version of the model
     curr_model = model.clone()
-    print(f'args.use_gpu {args.use_gpu}')
-    if args.use_gpu:
-        import torch
-        device = torch.device(f"cuda:{args.gpu_index}" if torch.cuda.is_available() else "cpu")
-        curr_model.device = device
-        print(f'curr_model.device {curr_model.device}')
+    # print(f'args.use_gpu {args.use_gpu}')
+    # if args.use_gpu:
+    #     import torch
+    #     device = torch.device(f"cuda:{args.gpu_index}" if torch.cuda.is_available() else "cpu")
+    #     curr_model.device = device
+    #     print(f'curr_model.device {curr_model.device}')
     # Train model
     train_timer.start()
     loss_history, val_loss_history = curr_model.fit(X_train, y_train, X_validation, y_validation)  # X_val, y_val)
@@ -212,7 +212,7 @@ if __name__ == "__main__":
     arguments = parser.parse_args()
     print(arguments)
     if arguments.log_to_file:
-        logger_conf.init_log(arguments.dataset)
+        logger_conf.init_log(f'{arguments.model_name}_{arguments.dataset}')
     if arguments.optimize_hyperparameters:
         main(arguments)
     else:

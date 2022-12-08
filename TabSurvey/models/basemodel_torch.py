@@ -15,7 +15,7 @@ class BaseModelTorch(BaseModel):
 
     def __init__(self, params, args):
         super().__init__(params, args)
-        self.device = self.get_device()
+        self.device = self.get_device(params, args)
         self.gpus = args.gpu_ids if args.use_gpu and torch.cuda.is_available() and args.data_parallel else None
 
     def to_device(self):
@@ -25,7 +25,7 @@ class BaseModelTorch(BaseModel):
         print("On Device:", self.device)
         self.model.to(self.device)
 
-    def get_device(self):
+    def get_device(self,params, args):
         if self.args.use_gpu and torch.cuda.is_available():
             if self.args.data_parallel:
                 device = "cuda"  # + ''.join(str(i) + ',' for i in self.args.gpu_ids)[:-1]
@@ -33,7 +33,8 @@ class BaseModelTorch(BaseModel):
                 device = 'cuda'
         else:
             device = 'cpu'
-
+        if self.args.use_gpu:
+            device = torch.device(f"cuda:{args.gpu_index}" if torch.cuda.is_available() else "cpu")
         return torch.device(device)
 
     def fit(self, X, y, X_val=None, y_val=None):

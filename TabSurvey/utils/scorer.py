@@ -1,4 +1,5 @@
-from sklearn.metrics import mean_squared_error, r2_score, accuracy_score, f1_score, log_loss, roc_auc_score
+from sklearn.metrics import mean_squared_error, r2_score, accuracy_score, f1_score, log_loss, roc_auc_score, \
+    confusion_matrix
 import numpy as np
 
 
@@ -14,12 +15,12 @@ def get_scorer(args):
 
 
 class Scorer:
-
     """
         y_true: (n_samples,)
         y_prediction: (n_samples,) - predicted classes
         y_probabilities: (n_samples, n_classes) - probabilities of the classes (summing to 1)
     """
+
     def eval(self, y_true, y_prediction, y_probabilities):
         raise NotImplementedError("Has be implemented in the sub class")
 
@@ -118,6 +119,8 @@ class BinScorer(Scorer):
         self.aucs = []
         self.accs = []
         self.f1s = []
+        self.accu_1 = []
+        self.accu_2 = []
 
     def eval(self, y_true, y_prediction, y_probabilities):
         logloss = log_loss(y_true, y_probabilities)
@@ -130,8 +133,21 @@ class BinScorer(Scorer):
         self.aucs.append(auc)
         self.accs.append(acc)
         self.f1s.append(f1)
+        tn, fp, fn, tp = confusion_matrix(y_true, y_prediction).ravel()
+        # print('0：不涨 ， 1：涨')
+        print('tn, fp, fn, tp', tn, fp, fn, tp)
+        #
+        print(f'test中为1的比例 : {y_true.sum() / len(y_true)}')
+        print(f'test中为0的比例 : {(1 - y_true).sum() / len(y_true)}')
 
-        return {"Log Loss": logloss, "AUC": auc, "Accuracy": acc, "F1 score": f1}
+        # error_in_test = mean_squared_error(y_test_hat, np.array(testing_df[target_fea]).reshape(-1, 1))
+        accu_1 = tp / (tp + fp)
+        accu_2 = tp / (tp + fn)
+        print(f'查准率 - 预测为1 且实际为1 ，看涨的准确率: {accu_1}')
+        print(f'查全率 - 实际为1，预测为1 : {accu_2}')
+        self.accu_1.append(accu_1)
+        self.accu_2.append(accu_2)
+        return {"Log Loss": logloss, "AUC": auc, "Accuracy": acc, "F1 score": f1, "accu_1": accu_1, "accu_2": accu_2}
 
     def get_results(self):
         logloss_mean = np.mean(self.loglosses)

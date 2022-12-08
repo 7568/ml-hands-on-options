@@ -1,11 +1,11 @@
 # General parameters
 dataset: H_sh_300_options
-model_name: XGBoost # LinearModel, KNN, SVM, DecisionTree, RandomForest, XGBoost, CatBoost, LightGBM, ModelTree
+model_name: TabNet # LinearModel, KNN, SVM, DecisionTree, RandomForest, XGBoost, CatBoost, LightGBM, ModelTree
                 # MLP, TabNet, VIME, TabTransformer, RLN, DNFNet, STG, NAM, DeepFM, SAINT
 objective: binary # Don't change
 # optimize_hyperparameters: True
 
-use_gpu: False
+use_gpu: True
 # use one GPU parameters
 gpu_index: 7
 # use GPU data_parallel parameters
@@ -32,9 +32,12 @@ one_hot_encode: False
 batch_size: 128
 val_batch_size: 256
 early_stopping_rounds: 20
-epochs: 1000
-logging_period: 100
+epochs: 200
+logging_period: 10
+
+
 
 # About the data
 num_classes: 1  # for classification
 num_features: 185
+# --model_name SAINT --n_trials 2 --epochs 3 --use_gpu
