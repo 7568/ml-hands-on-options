@@ -26,6 +26,8 @@ from models.danet_lib.model.DANet import DANet
 from models.danet_lib.model.AcceleratedModule import AcceleratedCreator
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_array
+from tqdm import tqdm
+
 
 @dataclass
 class DANsModel(BaseEstimator):
@@ -238,7 +240,7 @@ class DANsModel(BaseEstimator):
         """
         self.network.train()
         loss = []
-        for batch_idx, (X, y) in enumerate(train_loader):
+        for batch_idx, (X, y) in tqdm(enumerate(train_loader),total=len(train_loader)):
             self._callback_container.on_batch_begin(batch_idx)
             batch_logs = self._train_batch(X, y)
 

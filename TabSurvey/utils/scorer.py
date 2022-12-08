@@ -162,6 +162,12 @@ class BinScorer(Scorer):
         f1_mean = np.mean(self.f1s)
         f1_std = np.std(self.f1s)
 
+        accu_1_mean = np.mean(self.accu_1)
+        accu_1_std = np.std(self.accu_1)
+
+        accu_2_mean = np.mean(self.accu_2)
+        accu_2_std = np.std(self.accu_2)
+
         return {"Log Loss - mean": logloss_mean,
                 "Log Loss - std": logloss_std,
                 "AUC - mean": auc_mean,
@@ -169,7 +175,11 @@ class BinScorer(Scorer):
                 "Accuracy - mean": acc_mean,
                 "Accuracy - std": acc_std,
                 "F1 score - mean": f1_mean,
-                "F1 score - std": f1_std}
+                "F1 score - std": f1_std,
+                "accu_1 score - mean": accu_1_mean,
+                "accu_1 score - std": accu_1_std,
+                "accu_2 score - mean": accu_2_mean,
+                "accu_2 score - std": accu_2_std}
 
     def get_objective_result(self):
         return np.mean(self.aucs)

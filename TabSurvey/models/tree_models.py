@@ -1,3 +1,5 @@
+import os
+
 import xgboost as xgb
 import catboost as cat
 import lightgbm as lgb
@@ -152,6 +154,11 @@ class LightGBM(BaseModel):
         elif args.objective == "binary":
             self.params["objective"] = "binary"
             self.params["metric"] = "auc"
+        self.args = args
+
+    def remove_file_if_exists(self, path):
+        if os.path.exists(path):
+            os.remove(path)
 
     def fit(self, X, y, X_val=None, y_val=None):
         train = lgb.Dataset(X, label=y, categorical_feature=self.args.cat_idx)
@@ -160,6 +167,10 @@ class LightGBM(BaseModel):
                                valid_names=["eval"], callbacks=[lgb.early_stopping(self.args.early_stopping_rounds),
                                                                 lgb.log_evaluation(self.args.logging_period)],
                                categorical_feature=self.args.cat_idx)
+        if self.args.log_to_file:
+            self.remove_file_if_exists(f'lgboostClassifier')
+            self.model.save_model('lgboostClassifier', num_iteration=self.model.best_iteration)
+            self.model = lgb.Booster(model_file='lgboostClassifier')
 
         return [], []
 

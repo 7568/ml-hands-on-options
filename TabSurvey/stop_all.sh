@@ -9,3 +9,4 @@ for i in ${files[@]}
       done
 
 rm -rf pid/*
+rm -rf log/*

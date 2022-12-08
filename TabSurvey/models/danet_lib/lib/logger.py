@@ -1,7 +1,7 @@
 import os
 import torch
 from datetime import datetime
-from torch.utils.tensorboard import SummaryWriter
+# from torch.utils.tensorboard import SummaryWriter
 
 class Train_Log():
     def __init__(self, logname, resume_dir=None):
@@ -13,7 +13,7 @@ class Train_Log():
         else:
             self.log_dir = os.path.join('./logs/',  logname + '_' +time_str)
 
-        self.writer = SummaryWriter(self.log_dir)
+        # self.writer = SummaryWriter(self.log_dir)
 
         if not os.path.exists(self.log_dir):
             os.makedirs(self.log_dir)
@@ -45,5 +45,6 @@ class Train_Log():
 
 
     def save_tensorboard(self, info, epoch):
-        for tag, value in info.items():
-            self.writer.add_scalar(tag, value, global_step=epoch)
+        pass
+        # for tag, value in info.items():
+        #     self.writer.add_scalar(tag, value, global_step=epoch)
