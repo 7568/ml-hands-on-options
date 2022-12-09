@@ -28,6 +28,7 @@ class VIME(BaseModelTorch):
         self.model_semi = VIMESemi(args, args.num_features, args.num_classes).to(self.device)
 
         if self.args.data_parallel:
+            print(f'self.args.data_parallel : {self.args.data_parallel}')
             self.model_self = nn.DataParallel(self.model_self, device_ids=self.args.gpu_ids)
             self.model_semi = nn.DataParallel(self.model_semi, device_ids=self.args.gpu_ids)
 
@@ -100,9 +101,11 @@ class VIME(BaseModelTorch):
         m_label = torch.tensor(m_label).float()
         X = torch.tensor(X).float()
         train_dataset = TensorDataset(x_tilde, m_label, X)
-        train_loader = DataLoader(dataset=train_dataset, batch_size=self.args.batch_size, shuffle=True, num_workers=2)
-
+        train_loader = DataLoader(dataset=train_dataset, batch_size=self.args.batch_size, shuffle=True, num_workers=1,
+                                  pin_memory=True)
+        loss_s = []
         for epoch in range(10):
+            self.model_self.train()
             for batch_X, batch_mask, batch_feat in tqdm(train_loader,total=len(train_loader)):
                 out_mask, out_feat = self.model_self(batch_X.to(self.device))
 
@@ -110,10 +113,13 @@ class VIME(BaseModelTorch):
                 loss_feat = loss_func_feat(out_feat, batch_feat.to(self.device))
 
                 loss = loss_mask + loss_feat * alpha
+                loss_s.append(loss.item())
 
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
+
+            print(np.array(loss_s).mean())
 
         print("Fitted encoder")
 
@@ -139,11 +145,11 @@ class VIME(BaseModelTorch):
         optimizer = optim.AdamW(self.model_semi.parameters())
 
         train_dataset = TensorDataset(X, y, x_unlab)
-        train_loader = DataLoader(dataset=train_dataset, batch_size=self.args.batch_size, shuffle=True, num_workers=2,
+        train_loader = DataLoader(dataset=train_dataset, batch_size=self.args.batch_size, shuffle=True, num_workers=1,
                                   drop_last=True)
 
         val_dataset = TensorDataset(X_val, y_val)
-        val_loader = DataLoader(dataset=val_dataset, batch_size=self.args.val_batch_size, shuffle=False)
+        val_loader = DataLoader(dataset=val_dataset, batch_size=self.args.val_batch_size, shuffle=False, num_workers=1)
 
         min_val_loss = float("inf")
         min_val_loss_idx = 0
@@ -152,7 +158,7 @@ class VIME(BaseModelTorch):
         val_loss_history = []
 
         for epoch in range(self.args.epochs):
-            for i, (batch_X, batch_y, batch_unlab) in enumerate(train_loader):
+            for i, (batch_X, batch_y, batch_unlab) in tqdm(enumerate(train_loader),total=len(train_loader)):
 
                 batch_X_encoded = self.encoder_layer(batch_X.to(self.device))
                 y_hat = self.model_semi(batch_X_encoded)
@@ -178,6 +184,7 @@ class VIME(BaseModelTorch):
                 loss.backward()
                 optimizer.step()
 
+            print(np.array(loss_history).mean())
             # Early Stopping
             val_loss = 0.0
             val_dim = 0

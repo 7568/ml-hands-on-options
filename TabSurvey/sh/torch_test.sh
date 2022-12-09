@@ -45,8 +45,9 @@ for config in "${CONFIGS[@]}"; do
     printf 'Training %s with %s in env %s\n\n' "$model" "$config" "${MODELS_1[$model]}"
 
     conda activate "${MODELS_1[$model]}"
-
-    python train.py --config "$config" --model_name "$model" --n_trials $N_TRIALS --epochs $EPOCHS --use_gpu --gpu_index $GPU_INDEX --log_to_file & echo $! >> pid/$model.pid
+    cd ..
+    python train.py --config "$config" --model_name "$model" --n_trials $N_TRIALS --epochs $EPOCHS --use_gpu --gpu_index $GPU_INDEX --log_to_file & echo $! >> sh/pid/$model.pid
+    cd sh
     GPU_INDEX=$((GPU_INDEX+1))
     if [ $GPU_INDEX \> 6 ]
     then

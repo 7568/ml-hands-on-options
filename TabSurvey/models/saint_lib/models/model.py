@@ -190,7 +190,7 @@ class simple_MLP(nn.Module):
 
     def forward(self, x):
         if len(x.shape) == 1:
-            x = x.view(x.size(0), -1)
+            x = x.reshape(x.size(0), -1)
         x = self.layers(x)
         return x
 

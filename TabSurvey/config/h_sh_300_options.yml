@@ -1,7 +1,7 @@
 # General parameters
 dataset: H_sh_300_options
 model_name: SAINT # LinearModel, KNN, SVM, DecisionTree, RandomForest, XGBoost, CatBoost, LightGBM, ModelTree
-                # MLP, TabNet, VIME, TabTransformer, RLN, DNFNet, STG, NAM, DeepFM, SAINT
+# MLP, TabNet, VIME, TabTransformer, RLN, DNFNet, STG, NAM, DeepFM, SAINT
 objective: binary # Don't change
 # optimize_hyperparameters: True
 
@@ -9,7 +9,7 @@ use_gpu: True
 # use one GPU parameters
 gpu_index: 7
 # use GPU data_parallel parameters
-gpu_ids: [0, 1]
+gpu_ids: [ 0, 1 ]
 data_parallel: False
 
 
@@ -40,4 +40,6 @@ logging_period: 10
 # About the data
 num_classes: 1  # for classification
 num_features: 185
-# --model_name SAINT --n_trials 2 --epochs 3 --use_gpu
+cat_idx: [ 0, 28, 50, 73, 87, 110, 124, 147, 161, 184 ]
+# cat_dims: will be automatically set.
+#cat_dims: [ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2 ]

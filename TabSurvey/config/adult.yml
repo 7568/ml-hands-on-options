@@ -1,11 +1,11 @@
 # General parameters
 dataset: Adult
-model_name: TabNet # LinearModel, KNN, SVM, DecisionTree, RandomForest, XGBoost, CatBoost, LightGBM, ModelTree
+model_name: SAINT # LinearModel, KNN, SVM, DecisionTree, RandomForest, XGBoost, CatBoost, LightGBM, ModelTree
                 # MLP, TabNet, VIME, TabTransformer, RLN, DNFNet, STG, NAM, DeepFM, SAINT
 objective: binary # Don't change
 # optimize_hyperparameters: True
 
-use_gpu: False
+use_gpu: True
 # use one GPU parameters
 gpu_index: 7
 # use GPU data_parallel parameters

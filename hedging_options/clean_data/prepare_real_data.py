@@ -991,10 +991,10 @@ def hand_category_data(ord_1, ord_2):
     """
     df = pd.read_csv(f'{DATA_HOME_PATH}/all_raw_data_{ord_1}.csv', parse_dates=['TradingDate'])
     # call_nums = df[df['CallOrPut'] == 'C'].shape[0]
-    df['CallOrPut'].replace(to_replace='C', value=2, inplace=True)
+    df['CallOrPut'].replace(to_replace='C', value=0, inplace=True)
     df['CallOrPut'].replace(to_replace='P', value=1, inplace=True)
     # mainsign2_num = df[df['MainSign'] == 2].shape[0]
-    # df['MainSign'].replace(to_replace=2, value=mainsign2_num / (df.shape[0]), inplace=True)
+    df['MainSign'].replace(to_replace=2, value=0, inplace=True)
     df.to_csv(f'{DATA_HOME_PATH}/all_raw_data_{ord_2}.csv', index=False)
 
 
@@ -1043,12 +1043,12 @@ if __name__ == '__main__':
     # check_volume(6, 7)  # 将成交量为0的数据中存在nan的地方填充0
     # check_null_by_id(7)  # 查看是否还有nan数据
     # # save_by_each_option()  # 便于查看每份期权合约的每天交易信息
-    # hand_category_data(7, 9)
-    # append_before4_days_data(9, 10)  # 将前4天的数据追加到当天，不够4天的用0填充
-    # append_next_price(10, 11)  # 得到下一天的期权价格数据
-    # # append_real_hedging_rate(11, 12)  # 得到真实的对冲比例
-    # append_payoff_rate(11, '12_1')  # 得到期权是涨还是跌
-    # check_null_by_id('12_1')
+    hand_category_data(7, 9)
+    append_before4_days_data(9, 10)  # 将前4天的数据追加到当天，不够4天的用0填充
+    append_next_price(10, 11)  # 得到下一天的期权价格数据
+    # append_real_hedging_rate(11, 12)  # 得到真实的对冲比例
+    append_payoff_rate(11, '12_1')  # 得到期权是涨还是跌
+    check_null_by_id('12_1')
     retype_cat_columns('12_1', 13)  # 将分类数据设置成int型
     # get_expand_head()  # 查看填充效果
 

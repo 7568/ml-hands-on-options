@@ -22,6 +22,7 @@ def reformat_data(training_df, validation_df, testing_df, not_use_pre_data=False
     :param not_use_pre_data:
     :return:
     """
+
     target_fea = 'up_and_down'
     train_x = training_df.copy()
     train_x = train_x.iloc[:, :-5]
@@ -43,6 +44,12 @@ def reformat_data(training_df, validation_df, testing_df, not_use_pre_data=False
         validation_x = validation_x.iloc[:, :int(validation_x.shape[1] / 5)]
         testing_x = testing_x.iloc[:, :int(testing_x.shape[1] / 5)]
         # latest_x = latest_x.iloc[:, :int(latest_x.shape[1] / 5)]
+    # cat_features = ['CallOrPut', 'MainSign']
+    # for i in range(1, 5):
+    #     cat_features.append(f'CallOrPut_{i}')
+    #     cat_features.append(f'MainSign_{i}')
+    # for f in cat_features:
+    #     print(f'{f} : {testing_df.columns.get_loc(f)}')
     return train_x, train_y, validation_x, validation_y, testing_x, testing_y
 
 
@@ -82,6 +89,49 @@ def load_data(args):
     print("Loading dataset " + args.dataset + "...")
     if args.dataset == "H_sh_300_options":  # h_sh_300_options dataset
         X, y = load_h_sh_300_options()
+        # Preprocess target
+        if args.target_encode:
+            le = LabelEncoder()
+            y['training'] = le.fit_transform(y['training'])
+            y['validation'] = le.fit_transform(y['validation'])
+            y['testing'] = le.fit_transform(y['testing'])
+
+            # Setting this if classification task
+            if args.objective == "classification":
+                args.num_classes = len(le.classes_)
+                print("Having", args.num_classes, "classes as target.")
+
+        num_idx = []
+        args.cat_dims = []
+
+        # Preprocess data
+        for i in range(args.num_features):
+            if args.cat_idx and i in args.cat_idx:
+                le = LabelEncoder()
+                X['training'][:, i] = le.fit_transform(X['training'][:, i])
+                X['validation'][:, i] = le.fit_transform(X['validation'][:, i])
+                X['testing'][:, i] = le.fit_transform(X['testing'][:, i])
+
+                # Setting this?
+                args.cat_dims.append(len(le.classes_))
+
+            else:
+                num_idx.append(i)
+
+        if args.scale:
+            print("Scaling the data...")
+            scaler = StandardScaler()
+            X['training'][:, num_idx] = scaler.fit_transform(X['training'][:, num_idx])
+            X['validation'][:, num_idx] = scaler.fit_transform(X['validation'][:, num_idx])
+            X['testing'][:, num_idx] = scaler.fit_transform(X['testing'][:, num_idx])
+
+        if args.one_hot_encode:
+            ohe = OneHotEncoder(sparse=False, handle_unknown='ignore')
+            new_x1 = ohe.fit_transform(X[:, args.cat_idx])
+            new_x2 = X[:, num_idx]
+            X = np.concatenate([new_x1, new_x2], axis=1)
+            print("New Shape:", X.shape)
+        return X,y
 
     elif args.dataset == "CaliforniaHousing":  # Regression dataset
         X, y = sklearn.datasets.fetch_california_housing(return_X_y=True)
@@ -141,7 +191,7 @@ def load_data(args):
         y = df[label].to_numpy()
 
     elif args.dataset == "HIGGS":  # Binary classification dataset with one categorical feature
-        path = "/opt/notebooks/data/HIGGS.csv.gz"
+        path = "/home/liyu/data/tabular-data/HIGGS.csv.gz"
         df = pd.read_csv(path, header=None)
         df.columns = ['x' + str(i) for i in range(df.shape[1])]
         num_col = list(df.drop(['x0', 'x21'], 1).columns)
@@ -176,7 +226,6 @@ def load_data(args):
         raise AttributeError("Dataset \"" + args.dataset + "\" not available")
 
     print("Dataset loaded!")
-
 
     # Preprocess target
     if args.target_encode:

@@ -38,9 +38,9 @@ for config in "${CONFIGS[@]}"; do
     printf 'Training %s with %s in env %s\n\n' "$model" "$config" "${MODELS_4[$model]}"
 
     conda activate "${MODELS_4[$model]}"
-
-    python train.py --config "$config" --model_name "$model" --n_trials $N_TRIALS --epochs $EPOCHS --log_to_file & echo $! >> pid/$model.pid
-
+    cd ..
+    python train.py --config "$config" --model_name "$model" --n_trials $N_TRIALS --epochs $EPOCHS --log_to_file & echo $! >> sh/pid/$model.pid
+    cd sh
     conda deactivate
 
   done

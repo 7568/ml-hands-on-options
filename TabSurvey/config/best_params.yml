@@ -100,7 +100,7 @@ parameters: {
     SAINT: {
       dim: 32,
       depth: 1,
-      heads: 2,
+      heads: 5,
       dropout: 0.6
     },
     DANet: {
