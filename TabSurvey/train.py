@@ -210,9 +210,9 @@ def main_once(args):
 if __name__ == "__main__":
     parser = get_parser()
     arguments = parser.parse_args()
-    print(arguments)
     if arguments.log_to_file:
         logger_conf.init_log(f'{arguments.model_name}_{arguments.dataset}')
+    print(arguments)
     if arguments.optimize_hyperparameters:
         main(arguments)
     else:

@@ -60,20 +60,20 @@ class NAM(BaseModelTorch):
                                                 num_workers=2)
 
         # Folder hack
-        tb_logger = TensorBoardLogger(save_dir=self.config.logdir, name=f'{self.model.name}', version=f'0')
-
-        checkpoint_callback = ModelCheckpoint(filename=tb_logger.log_dir + "/{epoch:02d}-{val_loss:.4f}",
-                                              monitor='val_loss',
-                                              save_top_k=self.config.save_top_k,
-                                              mode='min')
+        # tb_logger = TensorBoardLogger(save_dir=self.config.logdir, name=f'{self.model.name}', version=f'0')
+        #
+        # checkpoint_callback = ModelCheckpoint(filename=tb_logger.log_dir + "/{epoch:02d}-{val_loss:.4f}",
+        #                                       monitor='val_loss',
+        #                                       save_top_k=self.config.save_top_k,
+        #                                       mode='min')
 
         metrics_callback = MetricsCallback()
 
         litmodel = LitNAM(self.config, self.model)
 
         gpus = 1 if self.args.use_gpu else 0
-        trainer = pl.Trainer(logger=tb_logger,  max_epochs=self.config.num_epochs,
-                             enable_checkpointing=checkpoint_callback,  # checkpoint_callback
+        trainer = pl.Trainer( max_epochs=self.config.num_epochs,
+
                              callbacks=[EarlyStopping(monitor='val_loss', patience=self.args.early_stopping_rounds),
                                         metrics_callback],
                              gpus=gpus)
