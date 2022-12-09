@@ -13,6 +13,7 @@ def embed_data_mask(x_categ, x_cont, cat_mask, con_mask, model, vision_dset=Fals
         for i in range(model.num_continuous):
             x_cont_enc[:, i, :] = model.simple_MLP[i](x_cont[:, i])
     else:
+        print('This case should not work!')
         raise Exception('This case should not work!')
 
     x_cont_enc = x_cont_enc.to(device)

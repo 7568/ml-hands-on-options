@@ -207,6 +207,7 @@ def main_once(args):
     print(time)
 
 
+# python train.py --config config/h_sh_300_options.yml  --model_name LightGBM --n_trials 2 --epochs 30 --log_to_file &
 if __name__ == "__main__":
     parser = get_parser()
     arguments = parser.parse_args()
