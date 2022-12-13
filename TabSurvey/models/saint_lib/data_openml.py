@@ -57,6 +57,7 @@ class DataSetCatCon(Dataset):
         return len(self.y)
 
     def __getitem__(self, idx):
+        # print(idx)
         # X1 has categorical data, X2 has continuous
         return np.concatenate((self.cls[idx], self.X1[idx])), self.X2[idx], self.y[idx], np.concatenate(
             (self.cls_mask[idx], self.X1_mask[idx])), self.X2_mask[idx]

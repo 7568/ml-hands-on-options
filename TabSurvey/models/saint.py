@@ -66,14 +66,14 @@ class SAINT(BaseModelTorch):
     def fit(self, X, y, X_val=None, y_val=None):
 
         if self.args.objective == 'binary':
-            criterion = nn.BCEWithLogitsLoss()
+            criterion = nn.BCEWithLogitsLoss().to(self.device)
         elif self.args.objective == 'classification':
-            criterion = nn.CrossEntropyLoss()
+            criterion = nn.CrossEntropyLoss().to(self.device)
         else:
-            criterion = nn.MSELoss()
+            criterion = nn.MSELoss().to(self.device)
 
-        optimizer = optim.AdamW(self.model.parameters(), lr=0.00003)
         self.model.to(self.device)
+        optimizer = optim.AdamW(self.model.parameters(), lr=0.00003)
 
         # SAINT wants it like this...
         X = {'data': X, 'mask': np.ones_like(X)}
@@ -82,10 +82,10 @@ class SAINT(BaseModelTorch):
         y_val = {'data': y_val.reshape(-1, 1)}
 
         train_ds = DataSetCatCon(X, y, self.args.cat_idx, self.args.objective)
-        trainloader = DataLoader(train_ds, batch_size=self.batch_size, shuffle=True, num_workers=1,pin_memory=True)
+        trainloader = DataLoader(train_ds, batch_size=self.batch_size, num_workers=1)
 
         val_ds = DataSetCatCon(X_val, y_val, self.args.cat_idx, self.args.objective)
-        valloader = DataLoader(val_ds, batch_size=self.args.val_batch_size, shuffle=True, num_workers=1,pin_memory=True)
+        valloader = DataLoader(val_ds, batch_size=self.args.val_batch_size, num_workers=1)
 
         min_val_loss = float("inf")
         min_val_loss_idx = 0
@@ -96,8 +96,7 @@ class SAINT(BaseModelTorch):
         for epoch in range(self.args.epochs):
             self.model.train()
 
-            for i, data in tqdm(enumerate(trainloader, 0), total=len(trainloader)):
-                optimizer.zero_grad()
+            for i, data in tqdm(enumerate(trainloader), total=len(trainloader)):
 
                 # x_categ is the the categorical data,
                 # x_cont has continuous data,
@@ -129,6 +128,7 @@ class SAINT(BaseModelTorch):
                     y_gts = y_gts.to(self.device).float()
 
                 loss = criterion(y_outs, y_gts)
+                optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
 
@@ -136,20 +136,27 @@ class SAINT(BaseModelTorch):
 
                 # print("Loss", loss.item())
 
+            print(np.array(loss_history).mean())
             # Early Stopping
             val_loss = 0.0
             val_dim = 0
             self.model.eval()
+            print('valloader')
             with torch.no_grad():
-                for data in valloader:
+                print('a : ',valloader.num_workers)
+                print('b : ',valloader.__sizeof__())
+                for i, data in tqdm(enumerate(valloader), total=len(valloader)):
+                    # print(i)
                     x_categ, x_cont, y_gts, cat_mask, con_mask = data
 
                     x_categ, x_cont = x_categ.to(self.device), x_cont.to(self.device)
                     cat_mask, con_mask = cat_mask.to(self.device), con_mask.to(self.device)
 
                     _, x_categ_enc, x_cont_enc = embed_data_mask(x_categ, x_cont, cat_mask, con_mask, self.model)
+
                     reps = self.model.transformer(x_categ_enc, x_cont_enc)
                     y_reps = reps[:, 0, :]
+
                     y_outs = self.model.mlpfory(y_reps)
 
                     if self.args.objective == "regression":
@@ -194,7 +201,8 @@ class SAINT(BaseModelTorch):
         predictions = []
 
         with torch.no_grad():
-            for data in testloader:
+            print('test1')
+            for data in tqdm(testloader, total=len(testloader)):
                 x_categ, x_cont, y_gts, cat_mask, con_mask = data
 
                 x_categ, x_cont = x_categ.to(self.device), x_cont.to(self.device)
@@ -248,7 +256,8 @@ class SAINT(BaseModelTorch):
         self.model.transformer.layers[0][0].fn.fn.register_forward_hook(sample_attribution)
         attributions = []
         with torch.no_grad():
-            for data in testloader:
+            print('test2')
+            for data in tqdm(testloader, total=len(testloader)):
                 x_categ, x_cont, y_gts, cat_mask, con_mask = data
 
                 x_categ, x_cont = x_categ.to(self.device), x_cont.to(self.device)
