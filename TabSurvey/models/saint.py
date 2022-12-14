@@ -82,10 +82,10 @@ class SAINT(BaseModelTorch):
         y_val = {'data': y_val.reshape(-1, 1)}
 
         train_ds = DataSetCatCon(X, y, self.args.cat_idx, self.args.objective)
-        trainloader = DataLoader(train_ds, batch_size=self.batch_size, num_workers=1)
+        trainloader = DataLoader(train_ds, batch_size=self.batch_size, num_workers=4,pin_memory=True,persistent_workers=True)
 
         val_ds = DataSetCatCon(X_val, y_val, self.args.cat_idx, self.args.objective)
-        valloader = DataLoader(val_ds, batch_size=self.args.val_batch_size, num_workers=1)
+        valloader = DataLoader(val_ds, batch_size=self.args.val_batch_size, num_workers=2,pin_memory=True,persistent_workers=True)
 
         min_val_loss = float("inf")
         min_val_loss_idx = 0
@@ -143,8 +143,6 @@ class SAINT(BaseModelTorch):
             self.model.eval()
             print('valloader')
             with torch.no_grad():
-                print('a : ',valloader.num_workers)
-                print('b : ',valloader.__sizeof__())
                 for i, data in tqdm(enumerate(valloader), total=len(valloader)):
                     # print(i)
                     x_categ, x_cont, y_gts, cat_mask, con_mask = data
