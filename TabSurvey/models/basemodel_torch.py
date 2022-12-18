@@ -58,12 +58,10 @@ class BaseModelTorch(BaseModel):
             y_val = y_val.float()
 
         train_dataset = TensorDataset(X, y)
-        train_loader = DataLoader(dataset=train_dataset, batch_size=self.args.batch_size, shuffle=True,
-                                  num_workers=4, persistent_workers=True)
+        train_loader = DataLoader(dataset=train_dataset, batch_size=self.args.batch_size)
 
         val_dataset = TensorDataset(X_val, y_val)
-        val_loader = DataLoader(dataset=val_dataset, batch_size=self.args.val_batch_size, shuffle=True,
-                                num_workers=1, persistent_workers=True)
+        val_loader = DataLoader(dataset=val_dataset, batch_size=self.args.val_batch_size)
 
         min_val_loss = float("inf")
         min_val_loss_idx = 0

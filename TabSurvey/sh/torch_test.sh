@@ -1,22 +1,16 @@
 #!/bin/bash
 
-N_TRIALS=2
-EPOCHS=200
-GPU_INDEX=0
-
-SKLEARN_ENV="sklearn"
-GBDT_ENV="gbdt"
 TORCH_ENV="torch"
-KERAS_ENV="tensorflow"
 
 
 declare -A MODELS_1
 
-MODELS_1=(["MLP"]=$TORCH_ENV
+MODELS_1=(
          ["TabNet"]=$TORCH_ENV
          ["VIME"]=$TORCH_ENV
-#         ["TabTransformer"]=$TORCH_ENV
+         ["TabTransformer"]=$TORCH_ENV
          ["NODE"]=$TORCH_ENV
+         ["MLP"]=$TORCH_ENV
          ["DeepGBM"]=$TORCH_ENV
          ["STG"]=$TORCH_ENV
 #         ["NAM"]=$TORCH_ENV
@@ -25,7 +19,20 @@ MODELS_1=(["MLP"]=$TORCH_ENV
          ["DANet"]=$TORCH_ENV
           )
 
+declare -A MODELS_GPU_INDEX
 
+MODELS_GPU_INDEX=(
+         ["TabNet"]=0
+         ["VIME"]=1
+         ["TabTransformer"]=2
+         ["NODE"]=3
+         ["MLP"]=4
+         ["DeepGBM"]=5
+         ["STG"]=6
+         ["DeepFM"]=7
+         ["SAINT"]=5
+         ["DANet"]=1
+          )
 
 #CONFIGS=( "config/adult.yml"
 #          "config/covertype.yml"
@@ -46,13 +53,8 @@ for config in "${CONFIGS[@]}"; do
 
     conda activate "${MODELS_1[$model]}"
     cd ..
-    python train.py --config "$config" --model_name "$model" --n_trials $N_TRIALS --epochs $EPOCHS --use_gpu --gpu_index $GPU_INDEX --log_to_file & echo $! >> sh/pid/$model.pid
+    python train.py --config "$config" --model_name "$model"  --use_gpu --gpu_index ${MODELS_GPU_INDEX[$model]} --log_to_file & echo $! >> sh/pid/$model.pid
     cd sh
-    GPU_INDEX=$((GPU_INDEX+1))
-    if [ $GPU_INDEX \> 6 ]
-    then
-      GPU_INDEX=0
-    fi
     conda deactivate
 
   done
