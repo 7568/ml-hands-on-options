@@ -25,7 +25,7 @@ class BaseModelTorch(BaseModel):
         print("On Device:", self.device)
         self.model.to(self.device)
 
-    def get_device(self,params, args):
+    def get_device(self, params, args):
         if self.args.use_gpu and torch.cuda.is_available():
             if self.args.data_parallel:
                 device = "cuda"  # + ''.join(str(i) + ',' for i in self.args.gpu_ids)[:-1]
@@ -59,11 +59,11 @@ class BaseModelTorch(BaseModel):
 
         train_dataset = TensorDataset(X, y)
         train_loader = DataLoader(dataset=train_dataset, batch_size=self.args.batch_size, shuffle=True,
-                                  num_workers=4,persistent_workers=True)
+                                  num_workers=4, persistent_workers=True)
 
         val_dataset = TensorDataset(X_val, y_val)
         val_loader = DataLoader(dataset=val_dataset, batch_size=self.args.val_batch_size, shuffle=True,
-                                num_workers=4,persistent_workers=True)
+                                num_workers=1, persistent_workers=True)
 
         min_val_loss = float("inf")
         min_val_loss_idx = 0
@@ -73,13 +73,13 @@ class BaseModelTorch(BaseModel):
 
         for epoch in range(self.args.epochs):
             for i, (batch_X, batch_y) in tqdm(enumerate(train_loader, 0), total=len(train_loader)):
-
+                batch_y = batch_y.to(self.device)
                 out = self.model(batch_X.to(self.device))
 
                 if self.args.objective == "regression" or self.args.objective == "binary":
                     out = out.squeeze()
 
-                loss = loss_func(out, batch_y.to(self.device))
+                loss = loss_func(out, batch_y)
                 loss_history.append(loss.item())
 
                 optimizer.zero_grad()
@@ -89,13 +89,15 @@ class BaseModelTorch(BaseModel):
             # Early Stopping
             val_loss = 0.0
             val_dim = 0
-            for val_i, (batch_val_X, batch_val_y) in enumerate(val_loader):
+            for val_i, (batch_val_X, batch_val_y) in tqdm(enumerate(val_loader),total=len(val_loader)):
+                batch_val_y = batch_val_y.to(self.device)
+
                 out = self.model(batch_val_X.to(self.device))
 
                 if self.args.objective == "regression" or self.args.objective == "binary":
                     out = out.squeeze()
 
-                val_loss += loss_func(out, batch_val_y.to(self.device))
+                val_loss += loss_func(out, batch_val_y)
                 val_dim += 1
 
             val_loss /= val_dim

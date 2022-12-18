@@ -15,7 +15,7 @@ declare -A MODELS_1
 MODELS_1=(["MLP"]=$TORCH_ENV
          ["TabNet"]=$TORCH_ENV
          ["VIME"]=$TORCH_ENV
-         ["TabTransformer"]=$TORCH_ENV
+#         ["TabTransformer"]=$TORCH_ENV
          ["NODE"]=$TORCH_ENV
          ["DeepGBM"]=$TORCH_ENV
          ["STG"]=$TORCH_ENV

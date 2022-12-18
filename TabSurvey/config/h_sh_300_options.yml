@@ -1,8 +1,8 @@
 # General parameters
 dataset: H_sh_300_options
-model_name: SAINT # LinearModel, KNN, SVM, DecisionTree, RandomForest, XGBoost, CatBoost, LightGBM, ModelTree
+model_name: MLP # LinearModel, KNN, SVM, DecisionTree, RandomForest, XGBoost, CatBoost, LightGBM, ModelTree
 # MLP, TabNet, VIME, TabTransformer, RLN, DNFNet, STG, NAM, DeepFM, SAINT
-objective: binary # Don't change
+objective: binary # Don't change binary_f1 binary
 # optimize_hyperparameters: True
 
 use_gpu: True
@@ -31,9 +31,9 @@ one_hot_encode: False
 # Training parameters
 batch_size: 128
 val_batch_size: 256
-early_stopping_rounds: 100
+early_stopping_rounds: 10
 epochs: 500
-logging_period: 10
+logging_period: 500
 
 
 

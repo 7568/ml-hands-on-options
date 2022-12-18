@@ -6,6 +6,7 @@ from torch.utils.data import TensorDataset
 import models.deepgbm_lib.config as config
 
 from models.deepgbm_lib.utils.helper import eval_metrics, printMetric
+from tqdm import tqdm
 
 '''
 
@@ -51,7 +52,7 @@ def trainModel(model, train_x, train_y, tree_outputs, test_x, test_y, optimizer,
         running_loss = 0.0
         num_it = 0
 
-        for i, data in enumerate(trainloader, 0):
+        for i, data in tqdm(enumerate(trainloader, 0),total=len(trainloader)):
 
             # Get data and target from trainloader
 
@@ -152,7 +153,7 @@ def evaluateModel(model, test_x, test_y, test_x_cat=None):
     sum_loss = 0
 
     with torch.no_grad():
-        for data in testloader:
+        for data in tqdm(testloader,total=len(testloader)):
 
             # Get data and target from dataloader
             if test_x_cat is not None:
@@ -200,7 +201,7 @@ def makePredictions(model, test_x, test_cat):
     y_preds = []
 
     with torch.no_grad():
-        for data in testloader:
+        for data in tqdm(testloader,total=len(testloader)):
             inputs, inputs_cat = data
             inputs, inputs_cat = inputs.to(device), inputs_cat.to(device)
 

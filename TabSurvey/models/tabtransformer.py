@@ -67,13 +67,13 @@ class TabTransformer(BaseModelTorch):
         y_val = torch.tensor(y_val)
 
         if self.args.objective == "regression":
-            loss_func = nn.MSELoss()
+            loss_func = nn.MSELoss().to(self.device)
             y = y.float()
             y_val = y_val.float()
         elif self.args.objective == "classification":
-            loss_func = nn.CrossEntropyLoss()
+            loss_func = nn.CrossEntropyLoss().to(self.device)
         else:
-            loss_func = nn.BCEWithLogitsLoss()
+            loss_func = nn.BCEWithLogitsLoss().to(self.device)
             y = y.float()
             y_val = y_val.float()
 
@@ -82,7 +82,8 @@ class TabTransformer(BaseModelTorch):
                                   num_workers=2)
 
         val_dataset = TensorDataset(X_val, y_val)
-        val_loader = DataLoader(dataset=val_dataset, batch_size=self.args.val_batch_size, shuffle=True)
+        val_loader = DataLoader(dataset=val_dataset, batch_size=self.args.val_batch_size, shuffle=True,
+                                num_workers=1)
 
         min_val_loss = float("inf")
         min_val_loss_idx = 0
@@ -92,20 +93,21 @@ class TabTransformer(BaseModelTorch):
 
         for epoch in range(self.args.epochs):
             for i, (batch_X, batch_y) in tqdm(enumerate(train_loader, 0), total=len(train_loader)):
-
+                batch_X = batch_X.to(self.device)
+                batch_y = batch_y.to(self.device)
                 if self.args.cat_idx:
-                    x_categ = batch_X[:, self.args.cat_idx].int().to(self.device)
+                    x_categ = batch_X[:, self.args.cat_idx].int()
                 else:
                     x_categ = None
 
-                x_cont = batch_X[:, self.num_idx].to(self.device)
+                x_cont = batch_X[:, self.num_idx]
 
                 out = self.model(x_categ, x_cont)
 
                 if self.args.objective == "regression" or self.args.objective == "binary":
                     out = out.squeeze()
 
-                loss = loss_func(out, batch_y.to(self.device))
+                loss = loss_func(out, batch_y)
                 loss_history.append(loss.item())
 
                 optimizer.zero_grad()
@@ -115,21 +117,23 @@ class TabTransformer(BaseModelTorch):
             # Early Stopping
             val_loss = 0.0
             val_dim = 0
-            for val_i, (batch_val_X, batch_val_y) in enumerate(val_loader):
+            for val_i, (batch_val_X, batch_val_y) in tqdm(enumerate(val_loader),total=len(val_loader)):
+                batch_val_X = batch_val_X.to(self.device)
+                batch_val_y = batch_val_y.to(self.device)
 
                 if self.args.cat_idx:
-                    x_categ = batch_val_X[:, self.args.cat_idx].int().to(self.device)
+                    x_categ = batch_val_X[:, self.args.cat_idx].int()
                 else:
                     x_categ = None
 
-                x_cont = batch_val_X[:, self.num_idx].to(self.device)
+                x_cont = batch_val_X[:, self.num_idx]
 
                 out = self.model(x_categ, x_cont)
 
                 if self.args.objective == "regression" or self.args.objective == "binary":
                     out = out.squeeze()
 
-                val_loss += loss_func(out, batch_val_y.to(self.device))
+                val_loss += loss_func(out, batch_val_y)
                 val_dim += 1
             val_loss /= val_dim
             val_loss_history.append(val_loss.item())

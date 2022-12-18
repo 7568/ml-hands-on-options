@@ -8,7 +8,7 @@ def get_scorer(args):
         return RegScorer()
     elif args.objective == "classification":
         return ClassScorer()
-    elif args.objective == "binary":
+    elif args.objective == "binary" or args.objective == "binary_f1":
         return BinScorer()
     else:
         raise NotImplementedError("No scorer for \"" + args.objective + "\" implemented")
@@ -127,7 +127,7 @@ class BinScorer(Scorer):
         auc = roc_auc_score(y_true, y_probabilities[:, 1])
 
         acc = accuracy_score(y_true, y_prediction)
-        f1 = f1_score(y_true, y_prediction, average="micro")  # use here macro or weighted?
+        f1 = f1_score(y_true, y_prediction, average="binary")  # use here macro or weighted?
 
         self.loglosses.append(logloss)
         self.aucs.append(auc)

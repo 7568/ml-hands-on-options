@@ -15,7 +15,7 @@ from models.saint_lib.models.pretrainmodel import SAINT as SAINTModel
 from models.saint_lib.data_openml import DataSetCatCon
 from models.saint_lib.augmentations import embed_data_mask
 from tqdm import tqdm
-
+from torchmetrics.classification import BinaryF1Score
 '''
     SAINT: Improved Neural Networks for Tabular Data via Row Attention and Contrastive Pre-Training
     (https://arxiv.org/abs/2106.01342)
@@ -69,6 +69,8 @@ class SAINT(BaseModelTorch):
             criterion = nn.BCEWithLogitsLoss().to(self.device)
         elif self.args.objective == 'classification':
             criterion = nn.CrossEntropyLoss().to(self.device)
+        elif self.args.objective == 'binary_f1':
+            criterion = BinaryF1Score().to(self.device)
         else:
             criterion = nn.MSELoss().to(self.device)
 
@@ -82,10 +84,10 @@ class SAINT(BaseModelTorch):
         y_val = {'data': y_val.reshape(-1, 1)}
 
         train_ds = DataSetCatCon(X, y, self.args.cat_idx, self.args.objective)
-        trainloader = DataLoader(train_ds, batch_size=self.batch_size, num_workers=4,pin_memory=True,persistent_workers=True)
+        trainloader = DataLoader(train_ds, batch_size=self.batch_size, num_workers=4)
 
         val_ds = DataSetCatCon(X_val, y_val, self.args.cat_idx, self.args.objective)
-        valloader = DataLoader(val_ds, batch_size=self.args.val_batch_size, num_workers=2,pin_memory=True,persistent_workers=True)
+        valloader = DataLoader(val_ds, batch_size=self.args.val_batch_size, num_workers=1)
 
         min_val_loss = float("inf")
         min_val_loss_idx = 0
@@ -127,7 +129,8 @@ class SAINT(BaseModelTorch):
                 else:
                     y_gts = y_gts.to(self.device).float()
 
-                loss = criterion(y_outs, y_gts)
+                # loss = criterion(y_outs, y_gts)
+                loss = 1 / torch.pow(criterion(y_outs, y_gts), 2)
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()

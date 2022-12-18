@@ -9,7 +9,7 @@ def embed_data_mask(x_categ, x_cont, cat_mask, con_mask, model, vision_dset=Fals
     n1, n2 = x_cont.shape
     _, n3 = x_categ.shape
     if model.cont_embeddings == 'MLP':
-        x_cont_enc = torch.empty(n1, n2, model.dim)
+        x_cont_enc = torch.empty(n1, n2, model.dim).to(device)
         for i in range(model.num_continuous):
             x_cont_enc[:, i, :] = model.simple_MLP[i](x_cont[:, i])
     else:
