@@ -204,15 +204,15 @@ def get_data_by_securityids(param):
         ax.set_xlabel("Day")
         ax.set_ylabel("Value")
         ax2.set_ylabel("Value")
-        ax.set_title(f'{option_id}_{_option_datas.iloc[0]["TradingDate"]}')
+        ax.set_title(f'{option_id}_{str(_option_datas.iloc[0]["TradingDate"]).split(" ")[0]}')
         p1, = ax.plot(range(data_numbers),
-                (_option_datas[feature2] - _option_datas[feature1]) / (_option_datas[feature1] + 1e-6), color='red',
+                (_option_datas[feature2] - _option_datas[feature1]) / (_option_datas[feature1] + 1e-6), color='#E50000',
                 label=f'(price1-price)/price')
-        ax.tick_params(axis='y', labelcolor='red')
+        ax.tick_params(axis='y', labelcolor='#E50000')
         p2, = ax2.plot(range(data_numbers),
-                 (_option_datas['UnderlyingScrtClose_1'] - _option_datas['UnderlyingScrtClose']), color='green',
+                 (_option_datas['UnderlyingScrtClose_1'] - _option_datas['UnderlyingScrtClose']), color='#AAA662',
                  label=f'Underprince-Under1price')
-        ax2.tick_params(axis='y', labelcolor='green')
+        ax2.tick_params(axis='y', labelcolor='#AAA662')
         leg = plt.legend()
 
         ax.yaxis.get_label().set_color(p1.get_color())
@@ -220,7 +220,9 @@ def get_data_by_securityids(param):
 
         ax2.yaxis.get_label().set_color(p2.get_color())
         leg.texts[1].set_color(p2.get_color())
-        plt.savefig(f'{SAVE_ROOT_PATH}/(2-1)_1/{str(option_id)[-5:]}.png')
+        if not os.path.exists(f'{SAVE_ROOT_PATH}/(2-1)_1/{str(_option_datas.iloc[0]["TradingDate"]).split(" ")[0]}'):
+            os.makedirs(f'{SAVE_ROOT_PATH}/(2-1)_1/{str(_option_datas.iloc[0]["TradingDate"]).split(" ")[0]}')
+        plt.savefig(f'{SAVE_ROOT_PATH}/(2-1)_1/{str(_option_datas.iloc[0]["TradingDate"]).split(" ")[0]}/{str(option_id)[-5:]}.png')
         plt.close(fig)
 
 
@@ -270,8 +272,8 @@ def test_strike_price(df):
 PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/china-market/'
 SAVE_ROOT_PATH = f'/home/liyu/data/hedging-option/china-market/display/'
 if __name__ == '__main__':
-    train_data = pd.read_csv('/home/liyu/data/hedging-option/china-market/h_sh_300/all.csv', parse_dates=[
-        'TradingDate', 'ExerciseDate'])
+    train_data = pd.read_csv('/home/liyu/data/hedging-option/china-market/h_sh_300/all_raw_data.csv', parse_dates=[
+        'TradingDate'])
 
     print(train_data.columns)
     # train_data = train_data.iloc[:100]
