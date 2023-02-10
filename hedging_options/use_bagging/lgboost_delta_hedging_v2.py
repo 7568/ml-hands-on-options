@@ -47,24 +47,24 @@ if __name__ == '__main__':
 
     params = {'objective': 'binary',
               # 'boosting': 'gbdt',
-              'learning_rate': 0.002,
+              'learning_rate': 0.05,
               'max_depth': -1,
-              'num_leaves': 2 ** 8,
+              # 'num_leaves': 2 ** 8,
               'lambda_l1': 0.5,
               'lambda_l2': 0.5,
               'feature_fraction': 0.75,
               'bagging_fraction': 0.75,
               'bagging_freq': 20,
-              'force_col_wise': True,
-              # 'metric': 'multi_logloss',
+              # 'force_col_wise': True,
+              # 'metric': 'binary_logloss',
               # 'num_classes': 3
               }
 
-    num_round = 50000
-    early_s_n = 100
+    num_round = 1000
+    early_s_n = 20
     train_data = lgb.Dataset(train_x, train_y)
     validation_data = lgb.Dataset(validation_x, validation_y)
-    bst = lgb.train(params, train_data, num_round, valid_sets=[validation_data],
+    bst = lgb.train(params, train_data, num_round,valid_sets=[validation_data],
                     callbacks=[early_stopping(early_s_n), log_evaluation()])
     if opt.log_to_file:
 

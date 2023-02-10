@@ -6,6 +6,8 @@ Description:
 import os
 import sys
 import logging
+
+import lightgbm.basic
 from sklearn.metrics import confusion_matrix, auc, accuracy_score
 import numpy as np
 
@@ -105,3 +107,14 @@ def reformat_data(training_df, validation_df, testing_df, not_use_pre_data=False
         testing_x = testing_x.iloc[:, :int(testing_x.shape[1] / 5)]
         # latest_x = latest_x.iloc[:, :int(latest_x.shape[1] / 5)]
     return train_x, train_y, validation_x, validation_y, testing_x, testing_y
+
+def mse_loss(y_pred, y_val):
+    """
+    在xgboost中自定义mseloss
+    """
+    # l(y_val, y_pred) = (y_val-y_pred)**2
+    if type(y_val) is lightgbm.basic.Dataset:
+        y_val = y_val.get_label()
+    grad = 2*(y_val-y_pred)
+    hess = np.repeat(2,y_val.shape[0])
+    return grad, hess

@@ -46,7 +46,7 @@ class SAINT(BaseModelTorch):
             categories=tuple(cat_dims),
             num_continuous=len(num_idx),
             dim=dim,
-            dim_out=1,
+            dim_out=2,
             depth=self.params["depth"],  # 6
             heads=self.params["heads"],  # 8
             attn_dropout=self.params["dropout"],  # 0.1
@@ -129,8 +129,8 @@ class SAINT(BaseModelTorch):
                 else:
                     y_gts = y_gts.to(self.device).float()
 
-                # loss = criterion(y_outs, y_gts)
-                loss = 1 / torch.pow(criterion(y_outs, y_gts), 2)
+                loss = criterion(y_outs, y_gts)
+                # loss = 1 / torch.pow(criterion(y_outs, y_gts), 2)
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()

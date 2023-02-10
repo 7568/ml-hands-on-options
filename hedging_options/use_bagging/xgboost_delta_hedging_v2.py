@@ -21,6 +21,24 @@ def init_parser():
     return opt
 
 
+
+def mae_loss(y_pred, y_val):
+    # f(y_val) = abs(y_val-y_pred)
+    grad = np.sign(y_val-y_pred)*np.repeat(1,y_val.shape[0])
+    hess = np.repeat(0,y_val.shape[0])
+    return grad, hess
+
+
+def pseudo_huber_loss(y_pred, y_val):
+    d = (y_val-y_pred)
+    delta = 1
+    scale = 1 + (d / delta) ** 2
+    scale_sqrt = np.sqrt(scale)
+    grad = d / scale_sqrt
+    hess = (1 / scale) / scale_sqrt
+    return grad, hess
+
+
 # PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20140101-20160229/h_sh_300/'
 # PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20160301-20190531/h_sh_300/'
 # PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20190601-20221123/h_sh_300/'
@@ -46,10 +64,14 @@ if __name__ == '__main__':
         training_df, testing_df, validation_df, not_use_pre_data=False)
 
     params = {
+        # 'objective': 'binary:logistic',
+        # 'objective': 'reg:squarederror',
+        'objective': util.mse_loss,
+        # 'objective': mae_loss,
+        # 'objective': pseudo_huber_loss,
         'n_estimators': 50000,
-        'objective': 'binary:logistic',
         'max_depth': 12,
-        'learning_rate': 0.01,
+        'learning_rate': 0.05,
         'tree_method': 'hist',
         'subsample': 0.75,
         'colsample_bytree': 0.75,
@@ -78,6 +100,7 @@ if __name__ == '__main__':
     y_test_hat = model_from_file.predict(np.ascontiguousarray(testing_x.to_numpy()))
     # y_latest_hat = model_from_file.predict(np.ascontiguousarray(latest_x.to_numpy()))
     util.binary_eval_accuracy(np.array(validation_y), y_validation_hat)
+    print('======================')
     util.binary_eval_accuracy(np.array(testing_y), y_test_hat)
     # util.binary_eval_accuracy(np.array(latest_y), y_latest_hat)
 

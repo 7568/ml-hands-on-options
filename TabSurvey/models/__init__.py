@@ -89,6 +89,10 @@ def str2model(model):
         from models.saint import SAINT
         return SAINT
 
+    elif model == "SAINT_v2":
+        from models.saint_v2 import SAINT_v2
+        return SAINT_v2
+
     elif model == "DANet":
         from models.danet import DANet
         return DANet

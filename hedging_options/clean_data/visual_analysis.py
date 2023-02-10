@@ -54,8 +54,9 @@ def test002():
     显示不同日期与存在期权数量的关系
     :return: 生成一个柱状图，横轴日期，纵轴当前日期存在的期权的数量，并保存
     """
+    DATA_HOME_PATH = '/home/liyu/data/hedging-option/20190701-20221124'
     df = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/all_raw_data.csv', parse_dates=['TradingDate'])
-    # df = df[df['TradingDate'] > pd.Timestamp('2020-01-01')]
+    # df = df[df['TradingDate'] > pd.Timestamp('2019-07-01')]
     print(df.shape)
     trading_dates = df['TradingDate'].unique()
     start_dic = {}
@@ -69,6 +70,45 @@ def test002():
     nums = np.array(nums)
     print(nums.max())
     print(nums > 100)
+    fig = plt.figure(figsize=(100, 50))
+    ax = fig.add_subplot()
+    ax.set_title(f'aaa')
+    ax.set_xlabel('date')
+    ax.set_ylabel('start options number')
+    keys = []
+    values = []
+    for i in start_dic.keys():
+        keys.append(i)
+        values.append(start_dic[i])
+    ax.bar(keys, values)
+    ax.tick_params(axis='x', labelrotation=90)
+    plt.savefig(f'{DATA_HOME_PATH}/h_sh_300/date_trade_num.png')
+    plt.close()
+    print('save date_trade_num done!')
+
+
+
+def test002_v2():
+    """
+    显示不同日期与存在期权数量的关系
+    :return: 生成一个线图，横轴日期，纵轴当前日期存在的期权的数量，并保存
+    """
+    DATA_HOME_PATH = '/home/liyu/data/hedging-option/20190701-20221124'
+    df = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/all_raw_data.csv', parse_dates=['TradingDate'])
+    # df = df[df['TradingDate'] > pd.Timestamp('2019-07-01')]
+    print(df.shape)
+    trading_dates = df['TradingDate'].unique()
+    start_dic = {}
+    nums = []
+    for trading_date in tqdm(trading_dates, total=len(trading_dates)):
+        _options = df[df['TradingDate'] == trading_date]
+        trading_date_str = str(trading_date)
+        if start_dic.get(trading_date_str) is None:
+            start_dic[trading_date_str] = _options.shape[0]
+            nums.append(_options.shape[0])
+    nums = np.array(nums)
+    print(nums.max())
+    print(nums > 150)
     fig = plt.figure(figsize=(100, 50))
     ax = fig.add_subplot()
     ax.set_title(f'aaa')
@@ -189,9 +229,23 @@ def test005():
 
 
 DATA_HOME_PATH = '/home/liyu/data/hedging-option/china-market'
+
+
+def test006():
+    """
+    从数据集中截取部分数据用于展示
+    """
+    DATA_HOME_PATH = '/home/liyu/data/hedging-option/20190701-20221124'
+    df = pd.read_csv(f'{DATA_HOME_PATH}/h_sh_300/all_raw_data.csv', parse_dates=['TradingDate'])
+    df = df[df['TradingDate'] > pd.Timestamp('2022-11-01')]
+    df = df[df['TradingDate'] < pd.Timestamp('2022-11-03')]
+    df.to_csv(f'{DATA_HOME_PATH}/h_sh_300/sub_raw_data.csv', index=False)
+
+
 if __name__ == '__main__':
     # test001()
-    test002()
+    # test002()
     # test003()
     # test004()
     # test005()
+    test006()

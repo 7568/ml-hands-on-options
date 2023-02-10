@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import TensorDataset, DataLoader
-
+from utils.scorer import get_scorer
 import numpy as np
 from tqdm import tqdm
 
@@ -17,6 +17,8 @@ class BaseModelTorch(BaseModel):
         super().__init__(params, args)
         self.device = self.get_device(params, args)
         self.gpus = args.gpu_ids if args.use_gpu and torch.cuda.is_available() and args.data_parallel else None
+        self.args = args
+        self.params = params
 
     def to_device(self):
         if self.args.data_parallel:
@@ -60,11 +62,13 @@ class BaseModelTorch(BaseModel):
         train_dataset = TensorDataset(X, y)
         train_loader = DataLoader(dataset=train_dataset, batch_size=self.args.batch_size)
 
-        val_dataset = TensorDataset(X_val, y_val)
-        val_loader = DataLoader(dataset=val_dataset, batch_size=self.args.val_batch_size)
+        # val_dataset = TensorDataset(X_val, y_val)
+        # val_loader = DataLoader(dataset=val_dataset, batch_size=self.args.val_batch_size)
 
-        min_val_loss = float("inf")
-        min_val_loss_idx = 0
+        # min_val_loss = float("inf")
+        # min_val_loss_idx = 0
+        max_f1_score=0
+        max_f1_score_idx=0
 
         loss_history = []
         val_loss_history = []
@@ -85,32 +89,50 @@ class BaseModelTorch(BaseModel):
                 optimizer.step()
 
             # Early Stopping
-            val_loss = 0.0
-            val_dim = 0
-            for val_i, (batch_val_X, batch_val_y) in tqdm(enumerate(val_loader),total=len(val_loader)):
-                batch_val_y = batch_val_y.to(self.device)
+            # val_loss = 0.0
+            # val_dim = 0
+            # for val_i, (batch_val_X, batch_val_y) in tqdm(enumerate(val_loader),total=len(val_loader)):
+            #     batch_val_y = batch_val_y.to(self.device)
+            #
+            #     out = self.model(batch_val_X.to(self.device))
+            #
+            #     if self.args.objective == "regression" or self.args.objective == "binary":
+            #         out = out.squeeze()
+            #
+            #     val_loss += loss_func(out, batch_val_y)
+            #     val_dim += 1
+            #
+            # val_loss /= val_dim
+            # val_loss_history.append(val_loss.item())
+            #
+            # print("Epoch %d, Val Loss: %.5f" % (epoch, val_loss))
+            #
+            # if val_loss < min_val_loss:
+            #     min_val_loss = val_loss
+            #     min_val_loss_idx = epoch
+            #
+            #     # Save the currently best model
+            #     self.save_model(filename_extension="best", directory="tmp")
 
-                out = self.model(batch_val_X.to(self.device))
+            # Early Stopping
+            sc = get_scorer(self.args)
+            self.predict(X_val)
+            f1_score = sc.eval(y_val, self.predictions, self.prediction_probabilities)['F1 score']
+            print("Epoch %d, F1 score: %.5f" % (epoch, f1_score))
 
-                if self.args.objective == "regression" or self.args.objective == "binary":
-                    out = out.squeeze()
-
-                val_loss += loss_func(out, batch_val_y)
-                val_dim += 1
-
-            val_loss /= val_dim
-            val_loss_history.append(val_loss.item())
-
-            print("Epoch %d, Val Loss: %.5f" % (epoch, val_loss))
-
-            if val_loss < min_val_loss:
-                min_val_loss = val_loss
-                min_val_loss_idx = epoch
+            if f1_score > max_f1_score:
+                max_f1_score = f1_score
+                max_f1_score_idx = epoch
 
                 # Save the currently best model
                 self.save_model(filename_extension="best", directory="tmp")
 
-            if min_val_loss_idx + self.args.early_stopping_rounds < epoch:
+            # if min_val_loss_idx + self.args.early_stopping_rounds < epoch:
+            #     print("Validation loss has not improved for %d steps!" % self.args.early_stopping_rounds)
+            #     print("Early stopping applies.")
+            #     break
+
+            if max_f1_score_idx + self.args.early_stopping_rounds < epoch:
                 print("Validation loss has not improved for %d steps!" % self.args.early_stopping_rounds)
                 print("Early stopping applies.")
                 break
@@ -147,7 +169,7 @@ class BaseModelTorch(BaseModel):
                                  num_workers=2)
         predictions = []
         with torch.no_grad():
-            for batch_X in test_loader:
+            for batch_X in tqdm(test_loader,total=len(test_loader)):
                 preds = self.model(batch_X[0].to(self.device))
 
                 if self.args.objective == "binary":

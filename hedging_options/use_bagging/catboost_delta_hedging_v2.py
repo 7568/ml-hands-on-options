@@ -52,7 +52,7 @@ if __name__ == '__main__':
         'task_type': "GPU",
         'logging_level': 'Verbose',
         'devices': '6',
-        'early_stopping_rounds': 5,
+        'early_stopping_rounds': 20,
         # 'eval_metric':'Accuracy'
 
     }
@@ -82,6 +82,7 @@ if __name__ == '__main__':
 
 
     util.binary_eval_accuracy(y_validation_true, y_validation_hat)
+    print('==========================')
     util.binary_eval_accuracy(y_test_true, y_test_hat)
 
 

@@ -18,7 +18,9 @@ MODELS_1=(
          ["SAINT"]=$TORCH_ENV
          ["DANet"]=$TORCH_ENV
           )
-
+MODELS_1=(
+         ["SAINT"]=$TORCH_ENV
+          )
 declare -A MODELS_GPU_INDEX
 
 MODELS_GPU_INDEX=(
