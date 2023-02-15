@@ -109,6 +109,12 @@ parameters: {
       heads: 5,
       dropout: 0.6
     },
+    SAINT_3d: {
+      dim: 32,
+      depth: 8,
+      heads: 5,
+      dropout: 0.6
+    },
     DANet: {
       layer: 8,
       base_outdim: 96,

@@ -64,9 +64,9 @@ if __name__ == '__main__':
         training_df, testing_df, validation_df, not_use_pre_data=False)
 
     params = {
-        # 'objective': 'binary:logistic',
+        'objective': 'binary:logistic',
         # 'objective': 'reg:squarederror',
-        'objective': util.mse_loss,
+        # 'objective': util.mse_loss,
         # 'objective': mae_loss,
         # 'objective': pseudo_huber_loss,
         'n_estimators': 50000,

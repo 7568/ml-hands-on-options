@@ -108,9 +108,9 @@ class RowColTransformer(nn.Module):
                             Residual(Attention(dim * nfeats, heads=heads, dim_head=64, dropout=attn_dropout))),
                     PreNorm(dim * nfeats, Residual(FeedForward(dim * nfeats, dropout=ff_dropout))),
 
-                    PreNorm(int(dim * nfeats/5),
-                            Residual(Attention(int(dim * nfeats/5), heads=heads, dim_head=64, dropout=attn_dropout))),
-                    PreNorm(dim * nfeats, Residual(FeedForward(dim * nfeats, dropout=ff_dropout))),
+                    PreNorm(int(dim * nfeats / 5),
+                            Residual(Attention(int(dim * nfeats / 5), heads=heads, dim_head=64, dropout=attn_dropout))),
+                    PreNorm(int(dim * nfeats / 5), Residual(FeedForward(int(dim * nfeats / 5), dropout=ff_dropout))),
                 ]))
             else:
                 self.layers.append(nn.ModuleList([
@@ -123,21 +123,26 @@ class RowColTransformer(nn.Module):
         if x_cont is not None:
             x = torch.cat((x, x_cont), dim=1)
         _, n, _ = x.shape
+        s1 = 0.1
+        s2 = 1
+        s3 = 0.1
         if self.style == 'colrow':
             for attn1, ff1, attn2, ff2, attn3, ff3 in self.layers:
-                x = attn1(x)
-                x = ff1(x)
-                x = rearrange(x, 'b n d -> 1 b (n d)')
-                x = attn2(x)
-                x = ff2(x)
-                x = rearrange(x, '1 b (n d) -> b n d', n=n)
+                x1 = attn1(x)
+                x1 = ff1(x1)
+                x2 = rearrange(x1, 'b n d -> 1 b (n d)')
+                x2 = attn2(x2)
+                x2 = ff2(x2)
+                x2 = rearrange(x2, '1 b (n d) -> b n d', n=n)
 
-                x = rearrange(x, 'b n d -> b n d_1 d_2',d_2=5)
-                x = rearrange(x, 'b n d_1 d_2 -> b d_2 (n d_1)')
-                x = attn3(x)
-                x = ff3(x)
-                x = rearrange(x, 'b d_2 (n d_1) -> b n d_1 d_2',d_2=5)
-                x = rearrange(x, 'b n d_1 d_2 -> b n d')
+                x3 = rearrange(x2, 'b (d_1 d_2) d -> b d_1 d_2 d', d_1=5)
+                x3 = rearrange(x3, 'b d_1 d_2 d -> b d_1 (d_2 d)')
+                x3 = attn3(x3)
+                x3 = ff3(x3)
+                x3 = rearrange(x3, 'b d_1 (d_2 d) -> b d_1 d_2 d', d=8)
+                x3 = rearrange(x3, 'b d_1 d_2 d -> b (d_1 d_2) d')
+                x = s1 * x1 + s2 * x2 + s3 * x3
+
 
         else:
             for attn1, ff1 in self.layers:

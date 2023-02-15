@@ -11,28 +11,28 @@ import numpy as np
 from torch import einsum
 from einops import rearrange
 
-from models.saint_lib.models.pretrainmodel import SAINT as SAINTModel
-from models.saint_lib.data_openml import DataSetCatCon
-from models.saint_lib.augmentations import embed_data_mask
+from models.saint_3d_lib.models.pretrainmodel import SAINT as SAINTModel
+from models.saint_3d_lib.data_openml import DataSetCatCon
+from models.saint_3d_lib.augmentations import embed_data_mask
 from tqdm import tqdm
 from torchmetrics.classification import BinaryF1Score
+
 '''
-    SAINT: Improved Neural Networks for Tabular Data via Row Attention and Contrastive Pre-Training
-    (https://arxiv.org/abs/2106.01342)
-    
-    Code adapted from: https://github.com/somepago/saint
-    原始的sant
+    batch内数据为一天内的数据
 '''
 
 
-class SAINT(BaseModelTorch):
+
+
+class SAINT_3d(BaseModelTorch):
 
     def __init__(self, params, args):
         super().__init__(params, args)
         if args.cat_idx:
             num_idx = list(set(range(args.num_features)) - set(args.cat_idx))
             # Appending 1 for CLS token, this is later used to generate embeddings.
-            cat_dims = np.append(np.array([1]), np.array(args.cat_dims)).astype(int)
+            # cat_dims = np.append(np.array([1]), np.array(args.cat_dims)).astype(int)
+            cat_dims = np.array(args.cat_dims).astype(int)
         else:
             num_idx = list(range(args.num_features))
             cat_dims = np.array([1])
@@ -41,7 +41,7 @@ class SAINT(BaseModelTorch):
         dim = self.params["dim"] if args.num_features < 50 else 8
         self.batch_size = self.args.batch_size if args.num_features < 50 else 64
 
-        print("Using dim %d and batch size %d" % (dim, self.batch_size))
+        # print("Using dim %d and batch size %d" % (dim, self.batch_size))
 
         self.model = SAINTModel(
             categories=tuple(cat_dims),
@@ -64,7 +64,7 @@ class SAINT(BaseModelTorch):
             self.model.transformer = nn.DataParallel(self.model.transformer, device_ids=self.args.gpu_ids)
             self.model.mlpfory = nn.DataParallel(self.model.mlpfory, device_ids=self.args.gpu_ids)
 
-    def fit(self, X, y, X_val=None, y_val=None):
+    def fit(self, X, y, X_val=None, y_val=None,training_trading_dates=None, validation_trading_dates=None):
 
         if self.args.objective == 'binary':
             criterion = nn.BCEWithLogitsLoss().to(self.device)
@@ -74,9 +74,9 @@ class SAINT(BaseModelTorch):
             criterion = BinaryF1Score().to(self.device)
         else:
             criterion = nn.MSELoss().to(self.device)
-
+        f1_score = BinaryF1Score().to(self.device)
         self.model.to(self.device)
-        optimizer = optim.AdamW(self.model.parameters(), lr=0.00003)
+        optimizer = optim.AdamW(self.model.parameters(), lr=0.0001)
 
         # SAINT wants it like this...
         X = {'data': X, 'mask': np.ones_like(X)}
@@ -84,11 +84,11 @@ class SAINT(BaseModelTorch):
         X_val = {'data': X_val, 'mask': np.ones_like(X_val)}
         y_val = {'data': y_val.reshape(-1, 1)}
 
-        train_ds = DataSetCatCon(X, y, self.args.cat_idx, self.args.objective)
-        trainloader = DataLoader(train_ds, batch_size=self.batch_size, num_workers=4)
+        train_ds = DataSetCatCon(X, y, self.args.cat_idx, self.args.objective,trading_dates=training_trading_dates)
+        trainloader = DataLoader(train_ds, batch_size=1, num_workers=4)
 
-        val_ds = DataSetCatCon(X_val, y_val, self.args.cat_idx, self.args.objective)
-        valloader = DataLoader(val_ds, batch_size=self.args.val_batch_size, num_workers=1)
+        val_ds = DataSetCatCon(X_val, y_val, self.args.cat_idx, self.args.objective,trading_dates=validation_trading_dates)
+        valloader = DataLoader(val_ds, batch_size=1, num_workers=1)
 
         min_val_loss = float("inf")
         min_val_loss_idx = 0
@@ -108,6 +108,11 @@ class SAINT(BaseModelTorch):
                 # token) set to 0s.
                 # con_mask is an array of ones same shape as x_cont.
                 x_categ, x_cont, y_gts, cat_mask, con_mask = data
+                x_categ= x_categ.squeeze(0)
+                x_cont= x_cont.squeeze(0)
+                y_gts= y_gts.squeeze(0)
+                cat_mask= cat_mask.squeeze(0)
+                con_mask= con_mask.squeeze(0)
 
                 x_categ, x_cont = x_categ.to(self.device), x_cont.to(self.device)
                 cat_mask, con_mask = cat_mask.to(self.device), con_mask.to(self.device)
@@ -130,7 +135,7 @@ class SAINT(BaseModelTorch):
                 else:
                     y_gts = y_gts.to(self.device).float()
 
-                loss = criterion(y_outs, y_gts)
+                loss = 0.1*criterion(y_outs, y_gts)+0.9*f1_score(y_outs, y_gts)
                 # loss = 1 / torch.pow(criterion(y_outs, y_gts), 2)
                 optimizer.zero_grad()
                 loss.backward()
@@ -150,7 +155,11 @@ class SAINT(BaseModelTorch):
                 for i, data in tqdm(enumerate(valloader), total=len(valloader)):
                     # print(i)
                     x_categ, x_cont, y_gts, cat_mask, con_mask = data
-
+                    x_categ = x_categ.squeeze(0)
+                    x_cont = x_cont.squeeze(0)
+                    y_gts = y_gts.squeeze(0)
+                    cat_mask = cat_mask.squeeze(0)
+                    con_mask = con_mask.squeeze(0)
                     x_categ, x_cont = x_categ.to(self.device), x_cont.to(self.device)
                     cat_mask, con_mask = cat_mask.to(self.device), con_mask.to(self.device)
 
@@ -191,12 +200,12 @@ class SAINT(BaseModelTorch):
         self.load_model(filename_extension="best", directory="tmp")
         return loss_history, val_loss_history
 
-    def predict_helper(self, X):
+    def predict_helper(self, X,testing_trading_dates=None):
         X = {'data': X, 'mask': np.ones_like(X)}
         y = {'data': np.ones((X['data'].shape[0], 1))}
 
-        test_ds = DataSetCatCon(X, y, self.args.cat_idx, self.args.objective)
-        testloader = DataLoader(test_ds, batch_size=self.args.val_batch_size, shuffle=False, num_workers=4)
+        test_ds = DataSetCatCon(X, y, self.args.cat_idx, self.args.objective,trading_dates=testing_trading_dates)
+        testloader = DataLoader(test_ds, batch_size=1, shuffle=False, num_workers=4)
 
         self.model.eval()
 
@@ -206,6 +215,10 @@ class SAINT(BaseModelTorch):
             print('test1')
             for data in tqdm(testloader, total=len(testloader)):
                 x_categ, x_cont, y_gts, cat_mask, con_mask = data
+                x_categ = x_categ.squeeze(0)
+                x_cont = x_cont.squeeze(0)
+                cat_mask = cat_mask.squeeze(0)
+                con_mask = con_mask.squeeze(0)
 
                 x_categ, x_cont = x_categ.to(self.device), x_cont.to(self.device)
                 cat_mask, con_mask = cat_mask.to(self.device), con_mask.to(self.device)
@@ -261,7 +274,11 @@ class SAINT(BaseModelTorch):
             print('test2')
             for data in tqdm(testloader, total=len(testloader)):
                 x_categ, x_cont, y_gts, cat_mask, con_mask = data
-
+                x_categ = x_categ.squeeze(0)
+                x_cont = x_cont.squeeze(0)
+                y_gts = y_gts.squeeze(0)
+                cat_mask = cat_mask.squeeze(0)
+                con_mask = con_mask.squeeze(0)
                 x_categ, x_cont = x_categ.to(self.device), x_cont.to(self.device)
                 cat_mask, con_mask = cat_mask.to(self.device), con_mask.to(self.device)
                 # print(x_categ.shape, x_cont.shape)

@@ -1,7 +1,7 @@
 # General parameters
 dataset: H_sh_300_options
-model_name: SAINT # LinearModel, KNN, SVM, DecisionTree, RandomForest, XGBoost, CatBoost, LightGBM, ModelTree
-# MLP, TabNet, VIME, TabTransformer, RLN, DNFNet, STG, NAM, DeepFM, SAINT
+model_name: SAINT_3d # LinearModel, KNN, SVM, DecisionTree, RandomForest, XGBoost, CatBoost, LightGBM, ModelTree
+# MLP, TabNet, VIME, TabTransformer, RLN, DNFNet, STG, NAM, DeepFM, SAINT,SAINT_v2.SAINT_3d
 objective: binary # Don't change binary_f1 binary
 # optimize_hyperparameters: True
 

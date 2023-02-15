@@ -8,7 +8,7 @@ import sys
 import logging
 
 import lightgbm.basic
-from sklearn.metrics import confusion_matrix, auc, accuracy_score
+from sklearn.metrics import confusion_matrix, auc, accuracy_score,f1_score
 import numpy as np
 
 
@@ -54,8 +54,8 @@ def binary_eval_accuracy(y_true, y_test_hat):
     # error_in_test = mean_squared_error(y_test_hat, np.array(testing_df[target_fea]).reshape(-1, 1))
     print(f'查准率 - 预测为1 且实际为1 ，看涨的准确率: {tp / (tp + fp)}')
     print(f'查全率 - 实际为1，预测为1 : {tp / (tp + fn)}')
-    print(f'F1 = {(2 * tp) / (len(y_true) + tp - tn)}')
-
+    f_1 = f1_score(y_true, y_test_hat, average="binary")
+    print(f'F1 = {f_1}')
     # print(f'AUC：{auc(y_true,y_test_hat)}')
     print(f'总体准确率：{accuracy_score(y_true, y_test_hat)}')
 

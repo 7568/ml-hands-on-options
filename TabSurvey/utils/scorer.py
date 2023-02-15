@@ -106,7 +106,12 @@ class ClassScorer(Scorer):
                 "Accuracy - mean": acc_mean,
                 "Accuracy - std": acc_std,
                 "F1 score - mean": f1_mean,
-                "F1 score - std": f1_std}
+                "F1 score - std": f1_std,
+                "loglosses":self.loglosses,
+                "aucs":self.aucs,
+                "accs":self.accs,
+                "F1":self.f1s
+                }
 
     def get_objective_result(self):
         return np.mean(self.loglosses)
@@ -123,6 +128,7 @@ class BinScorer(Scorer):
         self.accu_2 = []
 
     def eval(self, y_true, y_prediction, y_probabilities):
+        y_true = y_true.reshape((-1,))
         logloss = log_loss(y_true, y_probabilities)
         auc = roc_auc_score(y_true, y_probabilities[:, 1])
 
@@ -179,7 +185,13 @@ class BinScorer(Scorer):
                 "accu_1 score - mean": accu_1_mean,
                 "accu_1 score - std": accu_1_std,
                 "accu_2 score - mean": accu_2_mean,
-                "accu_2 score - std": accu_2_std}
+                "accu_2 score - std": accu_2_std,
+                "loglosses": self.loglosses,
+                "aucs": self.aucs,
+                "accs": self.accs,
+                "F1": self.f1s}
+
+
 
     def get_objective_result(self):
         return np.mean(self.aucs)

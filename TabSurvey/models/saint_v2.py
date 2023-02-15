@@ -12,15 +12,12 @@ from torch import einsum
 from einops import rearrange
 
 from models.saint_lib.models.pretrainmodel_v2 import SAINT_v2 as SAINTModel
-from models.saint_lib.data_openml import DataSetCatCon
-from models.saint_lib.augmentations import embed_data_mask
+from models.saint_lib.data_openml_v2 import DataSetCatCon
+from models.saint_lib.augmentations_v2 import embed_data_mask
 from tqdm import tqdm
 from torchmetrics.classification import BinaryF1Score
 '''
-    SAINT: Improved Neural Networks for Tabular Data via Row Attention and Contrastive Pre-Training
-    (https://arxiv.org/abs/2106.01342)
-    
-    Code adapted from: https://github.com/somepago/saint
+    batch内数据任意
 '''
 
 
@@ -31,7 +28,8 @@ class SAINT_v2(BaseModelTorch):
         if args.cat_idx:
             num_idx = list(set(range(args.num_features)) - set(args.cat_idx))
             # Appending 1 for CLS token, this is later used to generate embeddings.
-            cat_dims = np.append(np.array([1]), np.array(args.cat_dims)).astype(int)
+            # cat_dims = np.append(np.array([1]), np.array(args.cat_dims)).astype(int)
+            cat_dims = np.array(args.cat_dims).astype(int)
         else:
             num_idx = list(range(args.num_features))
             cat_dims = np.array([1])

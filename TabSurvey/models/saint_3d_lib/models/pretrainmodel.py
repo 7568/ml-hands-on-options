@@ -1,4 +1,4 @@
-from .model_v2 import *
+from .model import *
 
 
 class sep_MLP(nn.Module):
@@ -18,7 +18,7 @@ class sep_MLP(nn.Module):
         return y_pred
 
 
-class SAINT_v2(nn.Module):
+class SAINT(nn.Module):
     def __init__(
             self,
             *,
