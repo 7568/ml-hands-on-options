@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 import xgboost as xgb
 import util
-
+from sklearn.metrics import mean_squared_error,f1_score,confusion_matrix,accuracy_score
 
 def init_parser():
     parser = argparse.ArgumentParser()
@@ -38,11 +38,15 @@ def pseudo_huber_loss(y_pred, y_val):
     hess = (1 / scale) / scale_sqrt
     return grad, hess
 
+def f1_eval(y_pred, y_val):
+    print('f1')
+    f_1 = f1_score(y_pred,y_val, average="binary")
+    return f_1
 
 # PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20140101-20160229/h_sh_300/'
-# PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20160301-20190531/h_sh_300/'
+PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20160301-20190531/h_sh_300/'
 # PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20190601-20221123/h_sh_300/'
-PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20190701-20221124/h_sh_300/'
+# PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20190701-20221124/h_sh_300/'
 if __name__ == '__main__':
     opt = init_parser()
     if opt.log_to_file:
@@ -70,7 +74,7 @@ if __name__ == '__main__':
         # 'objective': mae_loss,
         # 'objective': pseudo_huber_loss,
         'n_estimators': 50000,
-        'max_depth': 12,
+        'max_depth': 5,
         'learning_rate': 0.05,
         'tree_method': 'hist',
         'subsample': 0.75,
@@ -79,6 +83,7 @@ if __name__ == '__main__':
         'reg_lambda': 0.5,
         'use_label_encoder': False,
         'eval_metric': 'logloss'
+        # 'eval_metric': f1_eval
 
     }
 

@@ -93,11 +93,15 @@ class Attention(nn.Module):
 
 
 class RowColTransformer(nn.Module):
-    def __init__(self, num_tokens, dim, nfeats, depth, heads, dim_head, attn_dropout, ff_dropout, style='col'):
+    def __init__(self, num_tokens, dim, nfeats, depth, heads, dim_head, attn_dropout, ff_dropout, style='col',device=None):
         super().__init__()
+        self.device = device
         self.embeds = nn.Embedding(num_tokens, dim)
         self.layers = nn.ModuleList([])
         self.mask_embed = nn.Embedding(nfeats, dim)
+        max_length=100
+        self.pos_embedding = nn.Embedding(max_length, int(dim * nfeats / 5))
+        self.scale = torch.sqrt(torch.FloatTensor([dim * nfeats / 5]).to(device))
         self.style = style
         for _ in range(depth):
             if self.style == 'colrow':
@@ -122,7 +126,7 @@ class RowColTransformer(nn.Module):
     def forward(self, x, x_cont=None, mask=None):
         if x_cont is not None:
             x = torch.cat((x, x_cont), dim=1)
-        _, n, _ = x.shape
+        batch, n, _ = x.shape
         s1 = 0.1
         s2 = 1
         s3 = 0.1
@@ -137,6 +141,8 @@ class RowColTransformer(nn.Module):
 
                 x3 = rearrange(x2, 'b (d_1 d_2) d -> b d_1 d_2 d', d_1=5)
                 x3 = rearrange(x3, 'b d_1 d_2 d -> b d_1 (d_2 d)')
+                pos = torch.arange(0, 5).unsqueeze(0).repeat(batch, 1).to(self.device)
+                x3 = x3 * self.scale + self.pos_embedding(pos)
                 x3 = attn3(x3)
                 x3 = ff3(x3)
                 x3 = rearrange(x3, 'b d_1 (d_2 d) -> b d_1 d_2 d', d=8)
@@ -234,10 +240,11 @@ class TabAttention(nn.Module):
             lastmlp_dropout=0.,
             cont_embeddings='MLP',
             scalingfactor=10,
-            attentiontype='col'
+            attentiontype='col',device=None
     ):
         super().__init__()
         assert all(map(lambda n: n > 0, categories)), 'number of each category must be positive'
+        self.device = device
 
         # categories related calculations
         self.num_categories = len(categories)
@@ -290,7 +297,7 @@ class TabAttention(nn.Module):
                 dim_head=dim_head,
                 attn_dropout=attn_dropout,
                 ff_dropout=ff_dropout,
-                style=attentiontype
+                style=attentiontype,device=self.device
             )
 
         l = input_size // 8

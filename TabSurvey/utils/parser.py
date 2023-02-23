@@ -47,6 +47,22 @@ def get_parser():
     parser.add('--cat_dims', type=int, action="append", help="Cardinality of the categorical features (is set "
                                                              "automatically, when the load_data function is used.")
 
+    parser.add_argument('--use_pretrain_data', default=False, action='store_true')
+    parser.add_argument('--pretrain', default=False, action='store_true')
+    parser.add_argument('--pretrain_epochs', default=10, type=int)
+    parser.add_argument('--pt_tasks', default=['contrastive', 'denoising'], type=str, nargs='*',
+                        choices=['contrastive', 'contrastive_sim', 'denoising'])
+    parser.add_argument('--pt_aug', default=['mixup', 'cutmix'], type=str, nargs='*', choices=['mixup', 'cutmix', 'gauss_noise'])
+    parser.add_argument('--pt_aug_lam', default=0.1, type=float)
+    parser.add_argument('--mixup_lam', default=0.3, type=float)
+    parser.add_argument('--ssl_avail_y', default=0, type=int)
+    parser.add_argument('--pt_projhead_style', default='diff', type=str, choices=['diff', 'same', 'nohead'])
+    parser.add_argument('--nce_temp', default=0.7, type=float)
+    parser.add_argument('--lam0', default=0.5, type=float)
+    parser.add_argument('--lam1', default=10, type=float)
+    parser.add_argument('--lam2', default=1, type=float)
+    parser.add_argument('--lam3', default=10, type=float)
+    parser.add_argument('--final_mlp_style', default='sep', type=str, choices=['common', 'sep'])
     # Todo: Validate the arguments
 
     return parser

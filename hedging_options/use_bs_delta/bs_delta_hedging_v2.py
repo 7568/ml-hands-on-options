@@ -46,16 +46,17 @@ if __name__ == '__main__':
     max_delta = train_x['Delta'].max()
     search_list = np.arange(min_delta, max_delta, 0.001)
     for i in tqdm(search_list,total=len(search_list)):
-        y_test_hat = np.array(train_x['Delta']>i).astype(int)
-        tn, fp, fn, tp = confusion_matrix(train_y, y_test_hat).ravel()
-        f_1 = f1_score(train_y, y_test_hat, average="binary")  # use here macro or weighted?
-        _accu = accuracy_score(y_true=train_y, y_pred=y_test_hat)
+        y_train_hat = np.array(train_x['Delta']>i).astype(int)
+        tn, fp, fn, tp = confusion_matrix(train_y, y_train_hat).ravel()
+        f_1 = f1_score(train_y, y_train_hat, average="binary")  # use here macro or weighted?
         if f_1 > max_f_1:
             max_f_1 = f_1
             scale_rate = i
-            accu = _accu
-
-    print(f'scale_rate ： {scale_rate} , max_f_1 : {max_f_1} , accu : {accu}')
+    y_test_hat = np.array(testing_x['Delta'] > scale_rate).astype(int)
+    tn, fp, fn, tp = confusion_matrix(testing_y, y_test_hat).ravel()
+    f_1 = f1_score(testing_y, y_test_hat, average="binary")  # use here macro or weighted?
+    accu = accuracy_score(y_true=testing_y, y_pred=y_test_hat)
+    print(f'scale_rate ： {scale_rate} , max_f_1 : {f_1} , accu : {accu}')
     # target_hat = scale_rate * testing_x['OpenPrice'] * testing_x['Delta'] * testing_x['CallOrPut']
     # error_in_test = mean_squared_error(target_hat, testing_y)
     # print(f'error_in_test : {error_in_test}')

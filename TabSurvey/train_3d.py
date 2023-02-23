@@ -94,6 +94,9 @@ def training_validation_testing(model, X, y, training_trading_dates, validation_
 
     # Create a new unfitted version of the model
     curr_model = model.clone()
+    print(f'use_pretrain_data : {args.use_pretrain_data}')
+    if args.use_pretrain_data:
+        model.load_model(filename_extension="pretrain", directory="tmp")
     # print(f'args.use_gpu {args.use_gpu}')
     # if args.use_gpu:
     #     import torch
@@ -103,6 +106,7 @@ def training_validation_testing(model, X, y, training_trading_dates, validation_
     # Train model
     train_timer.start()
     loss_history, val_loss_history = curr_model.fit(X_train, y_train, X_validation, y_validation,training_trading_dates, validation_trading_dates)  # X_val, y_val)
+    # loss_history, val_loss_history = curr_model.fit(X_train, y_train, X_test, y_test,training_trading_dates, testing_trading_dates)  # X_val, y_val)
     train_timer.end()
 
 

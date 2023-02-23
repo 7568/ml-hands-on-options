@@ -355,9 +355,9 @@ def create_train_mirror_data(normal_type):
 
 # PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/china-market/h_sh_300/'
 # PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/20140101-20160229/h_sh_300/'
-# PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/20160301-20190531/h_sh_300/'
+PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/20160301-20190531/h_sh_300/'
 # PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/20190601-20221123/h_sh_300/'
-PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/20190701-20221124/h_sh_300/'
+# PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/20190701-20221124/h_sh_300/'
 if __name__ == '__main__':
     # split_training_validation_test()
     # split_training_validation_test_by_date()

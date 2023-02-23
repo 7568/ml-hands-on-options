@@ -13,6 +13,37 @@ def discretize_colum(data_clm, num_values=10):
     return q
 
 
+def reformat_data_2(training_df, validation_df, testing_df, not_use_pre_data=False):
+    """使用当天和前几天的 up_and_down，将每天的数据属性的位置对其"""
+    columns = ['CallOrPut', 'StrikePrice', 'ClosePrice', 'UnderlyingScrtClose','RemainingTerm', 'RisklessRate',
+               'HistoricalVolatility', 'ImpliedVolatility','TheoreticalPrice', 'Delta', 'Gamma', 'Vega', 'Theta', 'Rho',
+               'DividendYeild','OpenPrice', 'HighPrice', 'LowPrice', 'SettlePrice', 'Change1', 'Change2','Volume',
+               'Position', 'Amount', 'PreClosePrice', 'PreSettlePrice','PrePosition', 'PositionChange', 'MainSign',
+               'AvgPrice','ClosePriceChangeRatio', 'SettlePriceChangeRatio', 'Amplitude', 'LimitUp','LimitDown',
+               'MaintainingMargin', 'ChangeRatio', 'up_and_down']
+
+    day_0_training_df = training_df[columns].copy()
+    day_0_training_df.loc[:,'up_and_down']=0
+    day_0_validation_df = validation_df[columns].copy()
+    day_0_validation_df.loc[:,'up_and_down']=0
+    day_0_testing_df = testing_df[columns].copy()
+    day_0_testing_df.loc[:,'up_and_down']=0
+    for i in range(1,5):
+        day_i_columns = [c + f'_{i}' for c in columns]
+        day_i_training_df = training_df[day_i_columns].copy()
+        day_i_validation_df = validation_df[day_i_columns].copy()
+        day_i_testing_df = testing_df[day_i_columns].copy()
+        day_0_training_df = pd.concat((day_0_training_df,day_i_training_df),axis=1)
+        day_0_validation_df = pd.concat((day_0_validation_df,day_i_validation_df),axis=1)
+        day_0_testing_df = pd.concat((day_0_testing_df,day_i_testing_df),axis=1)
+    target_fea = 'up_and_down'
+    train_y = training_df[target_fea]
+    validation_y = validation_df[target_fea]
+    testing_y = testing_df[target_fea]
+
+    return day_0_training_df, train_y, day_0_validation_df, validation_y, day_0_testing_df, testing_y
+
+
 def reformat_data(training_df, validation_df, testing_df, not_use_pre_data=False):
     """
     训练的时候，前4天的 up_and_down 的值可见，当天的不可见，且设置为-1
@@ -25,6 +56,7 @@ def reformat_data(training_df, validation_df, testing_df, not_use_pre_data=False
 
     target_fea = 'up_and_down'
     train_x = training_df.copy()
+    print(training_df.columns)
     train_x = train_x.iloc[:, :-5]
     train_y = training_df[target_fea]
 
@@ -53,8 +85,12 @@ def reformat_data(training_df, validation_df, testing_df, not_use_pre_data=False
     return train_x, train_y, validation_x, validation_y, testing_x, testing_y
 
 
-def load_h_sh_300_options():
-    PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20190701-20221124/h_sh_300/'
+def load_h_sh_300_options(pretrain=False):
+    print(f'pretrain : {pretrain}')
+    if pretrain:
+        PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20190701-20221124/h_sh_300/'
+    else:
+        PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20190701-20221124/h_sh_300/'
     NORMAL_TYPE = 'mean_norm'
     training_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/training.csv')
     validation_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/validation.csv')
@@ -71,8 +107,8 @@ def load_h_sh_300_options():
         cat_features.append(f'CallOrPut_{i}')
         cat_features.append(f'MainSign_{i}')
         cat_features.append(f'up_and_down_{i}')
-    train_x, train_y, validation_x, validation_y, testing_x, testing_y = reformat_data(
-        training_df, validation_df,testing_df, not_use_pre_data=False)
+    train_x, train_y, validation_x, validation_y, testing_x, testing_y = reformat_data_2(
+        training_df, validation_df, testing_df, not_use_pre_data=False)
     # pd.DataFrame().to_numpy()
     X = {
         'training': train_x.to_numpy(),
@@ -91,7 +127,8 @@ def load_h_sh_300_options():
 def load_data(args):
     print("Loading dataset " + args.dataset + "...")
     if args.dataset == "H_sh_300_options":  # h_sh_300_options dataset
-        X, y,training_trading_dates, validation_trading_dates, testing_trading_dates = load_h_sh_300_options()
+        X, y, training_trading_dates, validation_trading_dates, testing_trading_dates = load_h_sh_300_options(
+            args.pretrain)
         # Preprocess target
         if args.target_encode:
             le = LabelEncoder()
@@ -116,7 +153,10 @@ def load_data(args):
                 X['testing'][:, i] = le.fit_transform(X['testing'][:, i])
 
                 # Setting this?
-                args.cat_dims.append(len(le.classes_))
+                if len(le.classes_) == 1:
+                    args.cat_dims.append(len(le.classes_) + 1)
+                else:
+                    args.cat_dims.append(len(le.classes_))
 
             else:
                 num_idx.append(i)
@@ -134,7 +174,7 @@ def load_data(args):
             new_x2 = X[:, num_idx]
             X = np.concatenate([new_x1, new_x2], axis=1)
             print("New Shape:", X.shape)
-        return X, y,training_trading_dates, validation_trading_dates, testing_trading_dates
+        return X, y, training_trading_dates, validation_trading_dates, testing_trading_dates
 
     elif args.dataset == "CaliforniaHousing":  # Regression dataset
         X, y = sklearn.datasets.fetch_california_housing(return_X_y=True)
@@ -250,8 +290,10 @@ def load_data(args):
             X[:, i] = le.fit_transform(X[:, i])
 
             # Setting this?
-            args.cat_dims.append(len(le.classes_))
-
+            if len(le.classes_)==1:
+                args.cat_dims.append(len(le.classes_)+1)
+            else:
+                args.cat_dims.append(len(le.classes_))
         else:
             num_idx.append(i)
 

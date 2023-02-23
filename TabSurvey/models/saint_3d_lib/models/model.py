@@ -82,10 +82,13 @@ class Attention(nn.Module):
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x):
+        _, a2, __ = x.shape
+        scale = a2 ** -0.5
         h = self.heads
         q, k, v = self.to_qkv(x).chunk(3, dim=-1)
         q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> b h n d', h=h), (q, k, v))
-        sim = einsum('b h i d, b h j d -> b h i j', q, k) * self.scale
+        sim = einsum('b h i d, b h j d -> b h i j', q, k) * scale
+        # sim = einsum('b h i d, b h j d -> b h i j', q, k) * self.scale
         attn = sim.softmax(dim=-1)
         out = einsum('b h i j, b h j d -> b h i d', attn, v)
         out = rearrange(out, 'b h n d -> b n (h d)', h=h)
@@ -93,23 +96,28 @@ class Attention(nn.Module):
 
 
 class RowColTransformer(nn.Module):
-    def __init__(self, num_tokens, dim, nfeats, depth, heads, dim_head, attn_dropout, ff_dropout, style='col'):
+    def __init__(self, num_tokens, dim, nfeats, depth, heads, dim_head, attn_dropout, ff_dropout, style='col',
+                 device=None):
         super().__init__()
+        self.device = device
         self.embeds = nn.Embedding(num_tokens, dim)
         self.layers = nn.ModuleList([])
         self.mask_embed = nn.Embedding(nfeats, dim)
+        max_length = 10
+        self.pos_embedding = nn.Embedding(max_length, int(dim * nfeats / 5))
+        self.scale = torch.sqrt(torch.FloatTensor([dim * nfeats / 5]).to(device))
         self.style = style
         for _ in range(depth):
             if self.style == 'colrow':
                 self.layers.append(nn.ModuleList([
-                    PreNorm(dim, Residual(Attention(dim, heads=1, dim_head=dim_head, dropout=attn_dropout))),
+                    PreNorm(dim, Residual(Attention(dim, heads=1, dropout=attn_dropout))),
                     PreNorm(dim, Residual(FeedForward(dim, dropout=ff_dropout))),
-                    PreNorm(dim * nfeats,
-                            Residual(Attention(dim * nfeats, heads=heads, dim_head=64, dropout=attn_dropout))),
-                    PreNorm(dim * nfeats, Residual(FeedForward(dim * nfeats, dropout=ff_dropout))),
+                    PreNorm(dim * nfeats//5,
+                            Residual(Attention(dim * nfeats//5, heads=nfeats//5, dropout=attn_dropout))),
+                    PreNorm(dim * nfeats//5, Residual(FeedForward(dim * nfeats//5, dropout=ff_dropout))),
 
                     PreNorm(int(dim * nfeats / 5),
-                            Residual(Attention(int(dim * nfeats / 5), heads=37, dim_head=64, dropout=attn_dropout))),
+                            Residual(Attention(int(dim * nfeats / 5), heads=int(nfeats / 5), dropout=attn_dropout))),
                     PreNorm(int(dim * nfeats / 5), Residual(FeedForward(int(dim * nfeats / 5), dropout=ff_dropout))),
                 ]))
             else:
@@ -121,8 +129,64 @@ class RowColTransformer(nn.Module):
 
     def forward(self, x, x_cont=None, mask=None):
         if x_cont is not None:
+            x_new = []
+            for i in range(5):
+                x_new.append(torch.cat((x[:,i*3:(i+1)*3,:],x_cont[:,i*35:(i+1)*35,:]), dim=1))
+            x = torch.cat(x_new, dim=1)
+        else:
+            print(f'x_cont is {x_cont}')
+        batch, n, _ = x.shape
+        if self.style == 'colrow':
+            for attn1, ff1, attn2, ff2, attn3, ff3 in self.layers:
+                x1 = []
+                for i in range(5):
+                    _x1 = attn1(x[:, i * 38:(i + 1) * 38, :])
+                    _x1 = ff1(_x1)
+                    x1.append(_x1)
+                x1 = torch.cat(x1, dim=1)
+
+                x2 = []
+                x2_ = rearrange(x1, 'b n d -> 1 b (n d)')
+                for i in range(5):
+                    _x2 = attn2(x2_[:, :, i * 38 * 8:(i + 1) * 38 * 8])
+                    _x2 = ff2(_x2)
+                    x2.append(_x2)
+                x2 = torch.cat(x2, dim=2)
+
+                x2 = rearrange(x2, '1 b (n d) -> b n d', n=n)
+
+                # x3 = rearrange(x2, 'b n d -> b n d_1 d_2', d_2=5)
+                # x3 = rearrange(x3, 'b n d_1 d_2 -> b d_2 (n d_1)')
+                # x3 = attn3(x3)
+                # x3 = ff3(x3)
+                # x3 = rearrange(x3, 'b d_2 (n d_1) -> b n d_1 d_2', d_2=5)
+                # x3 = rearrange(x3, 'b n d_1 d_2 -> b n d')
+                x3 = rearrange(x2, 'b (d_1 d_2) d -> b d_1 d_2 d', d_1=5)
+                x3 = rearrange(x3, 'b d_1 d_2 d -> b d_1 (d_2 d)')
+                pos = torch.arange(0, 5).unsqueeze(0).repeat(batch, 1).to(self.device)
+                x3 = x3 * self.scale + self.pos_embedding(pos)
+                x3 = attn3(x3)
+                x3 = ff3(x3)
+                x3 = rearrange(x3, 'b d_1 (d_2 d) -> b d_1 d_2 d', d=8)
+                x3 = rearrange(x3, 'b d_1 d_2 d -> b (d_1 d_2) d')
+
+                x = 0.0 * x1 + 0.0 * x2 + 1.0 * x3
+
+        else:
+            for attn1, ff1 in self.layers:
+                x = rearrange(x, 'b n d -> 1 b (n d)')
+                x = attn1(x)
+                x = ff1(x)
+                x = rearrange(x, '1 b (n d) -> b n d', n=n)
+
+        x = x[:, 0:38, :]
+        # x = rearrange(x, 'b n d -> b (n d)')
+        return x
+
+    def forward1(self, x, x_cont=None, mask=None):
+        if x_cont is not None:
             x = torch.cat((x, x_cont), dim=1)
-        _, n, _ = x.shape
+        batch, n, _ = x.shape
         if self.style == 'colrow':
             for attn1, ff1, attn2, ff2, attn3, ff3 in self.layers:
                 x1 = attn1(x)
@@ -141,12 +205,14 @@ class RowColTransformer(nn.Module):
                 # x3 = rearrange(x3, 'b n d_1 d_2 -> b n d')
                 x3 = rearrange(x2, 'b (d_1 d_2) d -> b d_1 d_2 d', d_1=5)
                 x3 = rearrange(x3, 'b d_1 d_2 d -> b d_1 (d_2 d)')
+                pos = torch.arange(0, 5).unsqueeze(0).repeat(batch, 1).to(self.device)
+                x3 = x3 * self.scale + self.pos_embedding(pos)
                 x3 = attn3(x3)
                 x3 = ff3(x3)
                 x3 = rearrange(x3, 'b d_1 (d_2 d) -> b d_1 d_2 d', d=8)
                 x3 = rearrange(x3, 'b d_1 d_2 d -> b (d_1 d_2) d')
 
-                x = 0.1 * x1 + 0.8 * x2 + 0.1 * x3
+                x = 0.6 * x1 + 0.3 * x2 + 0.1 * x3
 
         else:
             for attn1, ff1 in self.layers:

@@ -3,16 +3,21 @@ dataset: H_sh_300_options
 model_name: SAINT_3d # LinearModel, KNN, SVM, DecisionTree, RandomForest, XGBoost, CatBoost, LightGBM, ModelTree
 # MLP, TabNet, VIME, TabTransformer, RLN, DNFNet, STG, NAM, DeepFM, SAINT,SAINT_v2.SAINT_3d
 objective: binary # Don't change binary_f1 binary
-# optimize_hyperparameters: True
 
+pretrain: True
+pretrain_epochs: 7
+
+use_pretrain_data: False
+
+# optimize_hyperparameters: True
 use_gpu: True
 # use one GPU parameters
 gpu_index: 5
 # use GPU data_parallel parameters
 gpu_ids: [ 0, 1 ]
+
+
 data_parallel: False
-
-
 
 # Optuna parameters - https://optuna.org/
 n_trials: 2
@@ -31,7 +36,7 @@ one_hot_encode: False
 # Training parameters
 batch_size: 128
 val_batch_size: 256
-early_stopping_rounds: 10
+early_stopping_rounds: 3
 epochs: 500
 logging_period: 20
 
@@ -39,7 +44,7 @@ logging_period: 20
 
 # About the data
 num_classes: 1  # for classification
-num_features: 185
-cat_idx: [ 0, 28, 50, 73, 87, 110, 124, 147, 161, 184 ]
+num_features: 190
+cat_idx: [ 0, 28, 37, 38, 66, 75, 76,104, 113,114,142,151,152,180,189]
 # cat_dims: will be automatically set.
 #cat_dims: [ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2 ]

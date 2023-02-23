@@ -110,10 +110,10 @@ parameters: {
       dropout: 0.6
     },
     SAINT_3d: {
-      dim: 32,
-      depth: 8,
+      dim: 37,
+      depth: 12,
       heads: 5,
-      dropout: 0.6
+      dropout: 0.4
     },
     DANet: {
       layer: 8,

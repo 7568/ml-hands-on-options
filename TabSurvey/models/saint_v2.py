@@ -53,7 +53,7 @@ class SAINT_v2(BaseModelTorch):
             cont_embeddings="MLP",
             attentiontype="colrow",
             final_mlp_style="sep",
-            y_dim=args.num_classes
+            y_dim=args.num_classes,device = self.device
         )
 
         if self.args.data_parallel:

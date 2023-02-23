@@ -38,7 +38,7 @@ class SAINT(nn.Module):
             scalingfactor=10,
             attentiontype='col',
             final_mlp_style='common',
-            y_dim=2
+            y_dim=2,device=None
     ):
         super().__init__()
         assert all(map(lambda n: n > 0, categories)), 'number of each category must be positive'
@@ -101,7 +101,8 @@ class SAINT(nn.Module):
                 dim_head=dim_head,
                 attn_dropout=attn_dropout,
                 ff_dropout=ff_dropout,
-                style=attentiontype
+                style=attentiontype,
+                device=device
             )
 
         l = input_size // 8
@@ -130,20 +131,21 @@ class SAINT(nn.Module):
             self.mlp2 = simple_MLP([dim, (self.num_continuous), 1])
 
         else:
-            self.mlp1 = sep_MLP(dim, self.num_categories, categories)
-            self.mlp2 = sep_MLP(dim, self.num_continuous, np.ones(self.num_continuous).astype(int))
+            self.mlp1 = sep_MLP(dim, self.num_categories//5, categories[:self.num_categories//5])
+            self.mlp2 = sep_MLP(dim, self.num_continuous//5, np.ones(self.num_continuous).astype(int))
 
         self.mlpfory = simple_MLP([dim, 1000, y_dim])
-        self.pt_mlp = simple_MLP([dim * (self.num_continuous + self.num_categories),
+        self.pt_mlp = simple_MLP([dim * (self.num_continuous + self.num_categories)//5,
                                   6 * dim * (self.num_continuous + self.num_categories) // 5,
                                   dim * (self.num_continuous + self.num_categories) // 2])
-        self.pt_mlp2 = simple_MLP([dim * (self.num_continuous + self.num_categories),
+        self.pt_mlp2 = simple_MLP([dim * (self.num_continuous + self.num_categories)//5,
                                    6 * dim * (self.num_continuous + self.num_categories) // 5,
                                    dim * (self.num_continuous + self.num_categories) // 2])
 
     def forward(self, x_categ, x_cont):
 
         x = self.transformer(x_categ, x_cont)
-        cat_outs = self.mlp1(x[:, :self.num_categories, :])
-        con_outs = self.mlp2(x[:, self.num_categories:, :])
+        x = rearrange(x, 'b (n d) -> b n d',d=self.dim)
+        cat_outs = self.mlp1(x[:, :self.num_categories//5, :])
+        con_outs = self.mlp2(x[:, self.num_categories//5:, :])
         return cat_outs, con_outs
