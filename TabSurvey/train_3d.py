@@ -105,8 +105,8 @@ def training_validation_testing(model, X, y, training_trading_dates, validation_
     #     print(f'curr_model.device {curr_model.device}')
     # Train model
     train_timer.start()
-    loss_history, val_loss_history = curr_model.fit(X_train, y_train, X_validation, y_validation,training_trading_dates, validation_trading_dates)  # X_val, y_val)
-    # loss_history, val_loss_history = curr_model.fit(X_train, y_train, X_test, y_test,training_trading_dates, testing_trading_dates)  # X_val, y_val)
+    # loss_history, val_loss_history = curr_model.fit(X_train, y_train, X_validation, y_validation,training_trading_dates, validation_trading_dates)  # X_val, y_val)
+    loss_history, val_loss_history = curr_model.fit(X_train, y_train, X_test, y_test,training_trading_dates, testing_trading_dates)  # X_val, y_val)
     train_timer.end()
 
 
@@ -225,4 +225,5 @@ if __name__ == "__main__":
         # Also load the best parameters
         parser = get_given_parameters_parser()
         arguments = parser.parse_args()
+        arguments.gpu_index=7
         main_once(arguments)

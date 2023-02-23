@@ -112,9 +112,9 @@ class RowColTransformer(nn.Module):
                 self.layers.append(nn.ModuleList([
                     PreNorm(dim, Residual(Attention(dim, heads=1, dropout=attn_dropout))),
                     PreNorm(dim, Residual(FeedForward(dim, dropout=ff_dropout))),
-                    PreNorm(dim * nfeats//5,
-                            Residual(Attention(dim * nfeats//5, heads=nfeats//5, dropout=attn_dropout))),
-                    PreNorm(dim * nfeats//5, Residual(FeedForward(dim * nfeats//5, dropout=ff_dropout))),
+                    PreNorm(dim * nfeats // 5,
+                            Residual(Attention(dim * nfeats // 5, heads=nfeats // 5, dropout=attn_dropout))),
+                    PreNorm(dim * nfeats // 5, Residual(FeedForward(dim * nfeats // 5, dropout=ff_dropout))),
 
                     PreNorm(int(dim * nfeats / 5),
                             Residual(Attention(int(dim * nfeats / 5), heads=int(nfeats / 5), dropout=attn_dropout))),
@@ -131,7 +131,7 @@ class RowColTransformer(nn.Module):
         if x_cont is not None:
             x_new = []
             for i in range(5):
-                x_new.append(torch.cat((x[:,i*3:(i+1)*3,:],x_cont[:,i*35:(i+1)*35,:]), dim=1))
+                x_new.append(torch.cat((x[:, i * 3:(i + 1) * 3, :], x_cont[:, i * 35:(i + 1) * 35, :]), dim=1))
             x = torch.cat(x_new, dim=1)
         else:
             print(f'x_cont is {x_cont}')
@@ -163,7 +163,7 @@ class RowColTransformer(nn.Module):
                 # x3 = rearrange(x3, 'b n d_1 d_2 -> b n d')
                 x3 = rearrange(x2, 'b (d_1 d_2) d -> b d_1 d_2 d', d_1=5)
                 x3 = rearrange(x3, 'b d_1 d_2 d -> b d_1 (d_2 d)')
-                pos = torch.arange(0, 5).unsqueeze(0).repeat(batch, 1).to(self.device)
+                pos = torch.arange(5, 0, -1).unsqueeze(0).repeat(batch, 1).to(self.device)
                 x3 = x3 * self.scale + self.pos_embedding(pos)
                 x3 = attn3(x3)
                 x3 = ff3(x3)

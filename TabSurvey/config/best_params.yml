@@ -110,7 +110,7 @@ parameters: {
       dropout: 0.6
     },
     SAINT_3d: {
-      dim: 37,
+      dim: 38,
       depth: 12,
       heads: 5,
       dropout: 0.4

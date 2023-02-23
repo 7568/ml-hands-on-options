@@ -15,7 +15,7 @@ from models.saint_3d_lib.models.pretrainmodel import SAINT as SAINTModel
 from models.saint_3d_lib.data_openml import DataSetCatCon
 from models.saint_3d_lib.augmentations import embed_data_mask,mixup_data,add_noise
 from tqdm import tqdm
-from torchmetrics.classification import BinaryF1Score
+from torchmetrics.classification import BinaryF1Score,BinaryFBetaScore
 '''
     batch内数据为一天内的数据
 '''
@@ -72,9 +72,10 @@ class SAINT_3d(BaseModelTorch):
             criterion = BinaryF1Score().to(self.device)
         else:
             criterion = nn.MSELoss().to(self.device)
-        f1_score = BinaryF1Score().to(self.device)
+        # f1_score = BinaryF1Score().to(self.device)
+        f1_score = BinaryFBetaScore(beta=2.0).to(self.device)
         self.model.to(self.device)
-        optimizer = optim.AdamW(self.model.parameters(), lr=0.00001)
+        optimizer = optim.AdamW(self.model.parameters(), lr=0.00002)
 
         # SAINT wants it like this...
         X = {'data': X, 'mask': np.ones_like(X)}
@@ -214,7 +215,7 @@ class SAINT_3d(BaseModelTorch):
         self.load_model(filename_extension="best", directory="tmp")
         return loss_history, val_loss_history
 
-    def pretrain(self, X, y, trading_dates=None):
+    def pretrain(self, X, y, trading_dates=None,use_pretrain_data=False):
 
         criterion = nn.CrossEntropyLoss().to(self.device)
         self.model.to(self.device)
@@ -277,7 +278,8 @@ class SAINT_3d(BaseModelTorch):
                 if 'contrastive' in self.args.pt_tasks:
                     aug_features_1 = self.model.transformer(x_categ_enc, x_cont_enc)
                     aug_features_2 = self.model.transformer(x_categ_enc_2, x_cont_enc_2)
-
+                    aug_features_1 = (aug_features_1 / aug_features_1.norm(dim=-1, keepdim=True)).flatten(1, 2)
+                    aug_features_2 = (aug_features_2 / aug_features_2.norm(dim=-1, keepdim=True)).flatten(1, 2)
                     if self.args.pt_projhead_style == 'diff':
                         aug_features_1 = self.model.pt_mlp(aug_features_1)
                         aug_features_2 = self.model.pt_mlp2(aug_features_2)
@@ -295,6 +297,8 @@ class SAINT_3d(BaseModelTorch):
                 elif 'contrastive_sim' in self.args.pt_tasks:
                     aug_features_1 = self.model.transformer(x_categ_enc, x_cont_enc)
                     aug_features_2 = self.model.transformer(x_categ_enc_2, x_cont_enc_2)
+                    aug_features_1 = (aug_features_1 / aug_features_1.norm(dim=-1, keepdim=True)).flatten(1, 2)
+                    aug_features_2 = (aug_features_2 / aug_features_2.norm(dim=-1, keepdim=True)).flatten(1, 2)
                     aug_features_1 = self.model.pt_mlp(aug_features_1)
                     aug_features_2 = self.model.pt_mlp2(aug_features_2)
                     c1 = aug_features_1 @ aug_features_2.t()
@@ -317,7 +321,10 @@ class SAINT_3d(BaseModelTorch):
 
                 # print("Loss", loss.item())
 
-            self.save_model(filename_extension="pretrain", directory="tmp")
+            if use_pretrain_data:
+                self.save_model(filename_extension="pretrain_2", directory="tmp")
+            else:
+                self.save_model(filename_extension="pretrain", directory="tmp")
             print(np.array(loss_history).mean())
 
 

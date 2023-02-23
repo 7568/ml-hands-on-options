@@ -145,7 +145,7 @@ class SAINT(nn.Module):
     def forward(self, x_categ, x_cont):
 
         x = self.transformer(x_categ, x_cont)
-        x = rearrange(x, 'b (n d) -> b n d',d=self.dim)
+        # x = rearrange(x, 'b (n d) -> b n d',d=self.dim)
         cat_outs = self.mlp1(x[:, :self.num_categories//5, :])
         con_outs = self.mlp2(x[:, self.num_categories//5:, :])
         return cat_outs, con_outs
