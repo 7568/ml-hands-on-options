@@ -143,7 +143,7 @@ class BaseModelTorch(BaseModel):
 
     def predict(self, X,testing_trading_dates=None):
         if self.args.objective == "regression":
-            self.predictions = self.predict_helper(X)
+            self.predictions = self.predict_helper(X,testing_trading_dates)
         else:
             if not testing_trading_dates is None:
                 self.predict_proba(X,testing_trading_dates)
@@ -157,7 +157,7 @@ class BaseModelTorch(BaseModel):
         if not testing_trading_dates is None:
             probas = self.predict_helper(X, testing_trading_dates)
         else:
-            probas = self.predict_helper(X)
+            probas = self.predict_helper(X,testing_trading_dates)
         # probas = self.predict_helper(X)
 
         # If binary task returns only probability for the true class, adapt it to return (N x 2)

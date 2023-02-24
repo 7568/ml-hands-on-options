@@ -44,9 +44,9 @@ def f1_eval(y_pred, y_val):
     return f_1
 
 # PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20140101-20160229/h_sh_300/'
-PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20160301-20190531/h_sh_300/'
+# PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20160301-20190531/h_sh_300/'
 # PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20190601-20221123/h_sh_300/'
-# PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20190701-20221124/h_sh_300/'
+PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20190701-20221124/h_sh_300/'
 if __name__ == '__main__':
     opt = init_parser()
     if opt.log_to_file:
@@ -68,13 +68,13 @@ if __name__ == '__main__':
         training_df, testing_df, validation_df, not_use_pre_data=False)
 
     params = {
-        'objective': 'binary:logistic',
+        # 'objective': 'binary:logistic',
         # 'objective': 'reg:squarederror',
-        # 'objective': util.mse_loss,
+        'objective': util.mse_loss,
         # 'objective': mae_loss,
         # 'objective': pseudo_huber_loss,
         'n_estimators': 50000,
-        'max_depth': 5,
+        'max_depth': 12,
         'learning_rate': 0.05,
         'tree_method': 'hist',
         'subsample': 0.75,

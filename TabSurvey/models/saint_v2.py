@@ -200,7 +200,7 @@ class SAINT_v2(BaseModelTorch):
         predictions = []
 
         with torch.no_grad():
-            print('test1')
+
             for data in tqdm(testloader, total=len(testloader)):
                 x_categ, x_cont, y_gts, cat_mask, con_mask = data
 

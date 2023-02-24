@@ -45,7 +45,7 @@ if __name__ == '__main__':
     train_x, train_y, validation_x, validation_y, testing_x, testing_y = util.reformat_data(
         training_df, testing_df, validation_df, not_use_pre_data=False)
 
-    params = {'objective': 'binary',
+    params = {'objective': 'mse',
               # 'boosting': 'gbdt',
               'learning_rate': 0.05,
               'max_depth': -1,

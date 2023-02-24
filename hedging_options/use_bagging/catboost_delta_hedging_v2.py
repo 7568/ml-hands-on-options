@@ -8,7 +8,7 @@ import sys
 
 import numpy as np
 import pandas as pd
-from catboost import CatBoostClassifier, Pool
+from catboost import CatBoostClassifier, Pool,CatBoostRegressor
 from sklearn.metrics import accuracy_score
 
 import util
@@ -45,7 +45,7 @@ if __name__ == '__main__':
 
     params = {
         'iterations': 50000,
-        'depth': 12,
+        'depth': 5,
         'learning_rate': 0.01,
         # 'loss_function': '',
         # 'verbose': False,

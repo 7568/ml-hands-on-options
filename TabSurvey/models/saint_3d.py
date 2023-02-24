@@ -15,7 +15,7 @@ from models.saint_3d_lib.models.pretrainmodel import SAINT as SAINTModel
 from models.saint_3d_lib.data_openml import DataSetCatCon
 from models.saint_3d_lib.augmentations import embed_data_mask,mixup_data,add_noise
 from tqdm import tqdm
-from torchmetrics.classification import BinaryF1Score,BinaryFBetaScore
+from torchmetrics.classification import BinaryF1Score
 '''
     batch内数据为一天内的数据
 '''
@@ -72,8 +72,7 @@ class SAINT_3d(BaseModelTorch):
             criterion = BinaryF1Score().to(self.device)
         else:
             criterion = nn.MSELoss().to(self.device)
-        # f1_score = BinaryF1Score().to(self.device)
-        f1_score = BinaryFBetaScore(beta=2.0).to(self.device)
+        f1_score = BinaryF1Score().to(self.device)
         self.model.to(self.device)
         optimizer = optim.AdamW(self.model.parameters(), lr=0.00002)
 
@@ -142,8 +141,8 @@ class SAINT_3d(BaseModelTorch):
                 else:
                     y_gts = y_gts.to(self.device).float()
 
-                loss = 0.01 * criterion(soft_max_y_outs, y_gts) + 0.1 * (1 - f1_score(soft_max_y_outs, y_gts))
-                # loss = 1 / torch.pow(criterion(y_outs, y_gts), 2)
+                # loss = 0.01 * criterion(soft_max_y_outs, y_gts) + 0.1 * (1 - f1_score(soft_max_y_outs, y_gts))
+                loss = criterion(soft_max_y_outs, y_gts)
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
@@ -183,6 +182,8 @@ class SAINT_3d(BaseModelTorch):
                         y_outs = torch.sigmoid(y_outs)
                     elif self.args.objective == "classification":
                         y_outs = F.softmax(y_outs, dim=1)
+                        y_outs = torch.argmax(y_outs,dim=1)
+
 
                     if self.args.objective == "regression":
                         y_gts = y_gts.to(self.device)
@@ -328,19 +329,22 @@ class SAINT_3d(BaseModelTorch):
             print(np.array(loss_history).mean())
 
 
+    def set_testing_y(self,y):
+        self.testing_y = y.reshape(-1, 1)
     def predict_helper(self, X, testing_trading_dates=None):
         X = {'data': X, 'mask': np.ones_like(X)}
         y = {'data': np.ones((X['data'].shape[0], 1))}
-
+        f1_score = BinaryF1Score().to(self.device)
         test_ds = DataSetCatCon(X, y, self.args.cat_idx, self.args.objective, trading_dates=testing_trading_dates)
         testloader = DataLoader(test_ds, batch_size=1, shuffle=False, num_workers=4)
-
+        self.load_model(filename_extension="best", directory="tmp")
+        self.model.to(self.device)
         self.model.eval()
 
         predictions = []
-
+        pred_validation_y=[]
         with torch.no_grad():
-            print('test1')
+
             for data in tqdm(testloader, total=len(testloader)):
                 x_categ, x_cont, y_gts, cat_mask, con_mask = data
                 x_categ = x_categ.squeeze(0)
@@ -361,8 +365,13 @@ class SAINT_3d(BaseModelTorch):
                     y_outs = torch.sigmoid(y_outs)
                 elif self.args.objective == "classification":
                     y_outs = F.softmax(y_outs, dim=1)
+                    y_outs = torch.argmax(y_outs,dim=1)
 
+                pred_validation_y.append(y_outs)
                 predictions.append(y_outs.detach().cpu().numpy())
+
+        f1 = f1_score(torch.cat(pred_validation_y), torch.tensor(self.testing_y).to(self.device))
+        print(f'f1 : {f1}')
         return np.concatenate(predictions)
 
     def attribute(self, X, y, strategy=""):
