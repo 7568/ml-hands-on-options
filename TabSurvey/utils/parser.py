@@ -7,10 +7,10 @@ def get_parser():
     parser = configargparse.ArgumentParser(config_file_parser_class=configargparse.YAMLConfigFileParser,
                                            formatter_class=configargparse.ArgumentDefaultsHelpFormatter)
     parser.add('--log_to_file', action='store_true')
+    parser.add('--model_name', required=True, help="Name of the model that should be trained")
     parser.add('-config', '--config', required=False, is_config_file_arg=True, help='config file path',
                default="config/h_sh_300_options.yml")  # kddcup99 covertype california_housing adult higgs h_sh_300_options
 
-    parser.add('--model_name', required=True, help="Name of the model that should be trained")
     parser.add('--dataset', required=True, help="Name of the dataset that will be used")
     parser.add('--objective', required=True, type=str, default="regression", choices=["regression", "classification",
                                                                                       "binary","binary_f1"],
@@ -20,6 +20,7 @@ def get_parser():
     parser.add('--gpu_ids', type=int, action="append", help="IDs of the GPUs used when data_parallel is true")
     parser.add('--gpu_index', default=7, type=int, help="ID of the GPU used when use_gpu is true")
     parser.add('--data_parallel', action="store_true", help="Distribute the training over multiple GPUs")
+    parser.add('--learning_rate', default=0.00002, type=float)
 
     parser.add('--optimize_hyperparameters', action="store_true",
                help="Search for the best hyperparameters")

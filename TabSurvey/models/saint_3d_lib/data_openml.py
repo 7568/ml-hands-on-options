@@ -61,7 +61,7 @@ class DataSetCatCon(Dataset):
 
     def __len__(self):
         return len(self.unique_trading_dates)
-        # return 1
+        # return 3
 
     def __getitem__(self, idx):
         # print(idx)

@@ -96,7 +96,7 @@ def training_validation_testing(model, X, y, training_trading_dates, validation_
     curr_model = model.clone()
     print(f'use_pretrain_data : {args.use_pretrain_data}')
     if args.use_pretrain_data:
-        model.load_model(filename_extension="pretrain", directory="tmp")
+        model.load_model(filename_extension="pretrain", directory="tmp",device=model.device)
     # print(f'args.use_gpu {args.use_gpu}')
     # if args.use_gpu:
     #     import torch
@@ -217,7 +217,7 @@ if __name__ == "__main__":
     parser = get_parser()
     arguments = parser.parse_args()
     if arguments.log_to_file:
-        logger_conf.init_log(f'{arguments.model_name}_{arguments.dataset}')
+        logger_conf.init_log(f'train_3d_with_pre')
     print(arguments)
     if arguments.optimize_hyperparameters:
         main(arguments)
@@ -226,5 +226,6 @@ if __name__ == "__main__":
         parser = get_given_parameters_parser()
         arguments = parser.parse_args()
         arguments.gpu_index=6
+        arguments.learning_rate /=2
         arguments.use_pretrain_data=True
         main_once(arguments)

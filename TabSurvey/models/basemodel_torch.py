@@ -190,10 +190,14 @@ class BaseModelTorch(BaseModel):
                                    file_type="pt")
         torch.save(self.model.state_dict(), filename)
 
-    def load_model(self, filename_extension="", directory="models"):
+    def load_model(self, filename_extension="", directory="models",device=None):
         filename = get_output_path(self.args, directory=directory, filename="m", extension=filename_extension,
                                    file_type="pt")
-        state_dict = torch.load(filename)
+        if device is None:
+            state_dict = torch.load(filename)
+        else:
+            state_dict = torch.load(filename, map_location=torch.device(device))
+
         self.model.load_state_dict(state_dict)
 
     def get_model_size(self):

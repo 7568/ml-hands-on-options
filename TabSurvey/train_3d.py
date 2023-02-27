@@ -216,8 +216,9 @@ def main_once(args):
 if __name__ == "__main__":
     parser = get_parser()
     arguments = parser.parse_args()
+    # arguments.config = 'config/h_sh_300_options_3d_attention.yml'
     if arguments.log_to_file:
-        logger_conf.init_log(f'{arguments.model_name}_{arguments.dataset}')
+        logger_conf.init_log(f'train_3d')
     print(arguments)
     if arguments.optimize_hyperparameters:
         main(arguments)

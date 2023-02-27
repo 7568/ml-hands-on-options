@@ -36,28 +36,46 @@ class RegScorer(Scorer):
     def __init__(self):
         self.mses = []
         self.r2s = []
+        self.f1s = []
+        self.accs = []
 
     # y_probabilities is None for Regression
     def eval(self, y_true, y_prediction, y_probabilities):
         mse = mean_squared_error(y_true, y_prediction)
         r2 = r2_score(y_true, y_prediction)
-
+        y_prediction_ = [int(i>0) for i in y_prediction]
+        f1 = f1_score(y_true, y_prediction_, average="binary")
+        acc = accuracy_score(y_true, y_prediction_)
         self.mses.append(mse)
         self.r2s.append(r2)
+        self.f1s.append(f1)
+        self.accs.append(acc)
 
-        return {"MSE": mse, "R2": r2}
+        return {"MSE": mse, "R2": r2,"f1s":f1,"accs":acc}
 
     def get_results(self):
         mse_mean = np.mean(self.mses)
         mse_std = np.std(self.mses)
 
+
         r2_mean = np.mean(self.r2s)
         r2_std = np.std(self.r2s)
+
+        f1_mean = np.mean(self.f1s)
+        f1_std = np.std(self.f1s)
+
+        acc_mean = np.mean(self.accs)
+        acc_std = np.std(self.accs)
 
         return {"MSE - mean": mse_mean,
                 "MSE - std": mse_std,
                 "R2 - mean": r2_mean,
-                "R2 - std": r2_std}
+                "R2 - std": r2_std,
+                "f1 - mean": f1_mean,
+                "f1 - std": f1_std,
+                "acc - mean": acc_mean,
+                "acc - std": acc_std
+                }
 
     def get_objective_result(self):
         return np.mean(self.mses)

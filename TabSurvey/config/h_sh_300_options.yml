@@ -45,7 +45,7 @@ logging_period: 20
 
 # About the data
 num_classes: 1  # for classification
-num_features: 190
-cat_idx: [ 0, 28, 37, 38, 66, 75, 76,104, 113,114,142,151,152,180,189]
+num_features: 185
+cat_idx: [ 0, 28, 50, 73, 87, 110, 124, 147, 161, 184 ]
 # cat_dims: will be automatically set.
 #cat_dims: [ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2 ]

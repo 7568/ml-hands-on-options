@@ -74,7 +74,7 @@ class SAINT_3d(BaseModelTorch):
             criterion = nn.MSELoss().to(self.device)
         f1_score = BinaryF1Score().to(self.device)
         self.model.to(self.device)
-        optimizer = optim.AdamW(self.model.parameters(), lr=0.00002)
+        optimizer = optim.AdamW(self.model.parameters(), lr=self.args.learning_rate)
 
         # SAINT wants it like this...
         X = {'data': X, 'mask': np.ones_like(X)}
@@ -195,14 +195,16 @@ class SAINT_3d(BaseModelTorch):
                     # val_loss += criterion(y_outs, y_gts)
                     # val_dim += 1
 
-                    validation_y.append(y_gts)
-                    pred_validation_y.append(y_outs)
+                    validation_y.append(y_gts.detach().cpu())
+                    pred_validation_y.append(y_outs.detach().cpu())
 
             f1 = f1_score(torch.cat(pred_validation_y), torch.cat(validation_y))
             print("Epoch", epoch, "f1", f1.item())
+            _f1 = f1.item()
+            del f1
 
-            if f1 > max_f1:
-                max_f1 = f1
+            if _f1 > max_f1:
+                max_f1 = _f1
                 min_val_loss_idx = epoch
 
                 # Save the currently best model
@@ -367,11 +369,12 @@ class SAINT_3d(BaseModelTorch):
                     y_outs = F.softmax(y_outs, dim=1)
                     y_outs = torch.argmax(y_outs,dim=1)
 
-                pred_validation_y.append(y_outs)
+                pred_validation_y.append(y_outs.detach().cpu())
                 predictions.append(y_outs.detach().cpu().numpy())
 
-        f1 = f1_score(torch.cat(pred_validation_y), torch.tensor(self.testing_y).to(self.device))
+        f1 = f1_score(torch.cat(pred_validation_y), torch.tensor(self.testing_y))
         print(f'f1 : {f1}')
+        del f1
         return np.concatenate(predictions)
 
     def attribute(self, X, y, strategy=""):

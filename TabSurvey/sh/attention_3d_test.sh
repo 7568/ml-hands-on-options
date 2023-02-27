@@ -6,17 +6,8 @@ TORCH_ENV="torch"
 declare -A MODELS_1
 
 MODELS_1=(
-         ["TabNet"]=$TORCH_ENV
-         ["VIME"]=$TORCH_ENV
-         ["TabTransformer"]=$TORCH_ENV
-         ["NODE"]=$TORCH_ENV
-         ["MLP"]=$TORCH_ENV
-         ["DeepGBM"]=$TORCH_ENV
-         ["STG"]=$TORCH_ENV
-#         ["NAM"]=$TORCH_ENV
-         ["DeepFM"]=$TORCH_ENV
-         ["SAINT"]=$TORCH_ENV
-         ["DANet"]=$TORCH_ENV
+         ["SAINT_3D"]=$TORCH_ENV
+         ["SAINT_3D_PRE"]=$TORCH_ENV
           )
 #MODELS_1=(
 #         ["SAINT"]=$TORCH_ENV
@@ -24,16 +15,8 @@ MODELS_1=(
 declare -A MODELS_GPU_INDEX
 
 MODELS_GPU_INDEX=(
-         ["TabNet"]=0
-         ["VIME"]=1
-         ["TabTransformer"]=2
-         ["NODE"]=3
-         ["MLP"]=4
-         ["DeepGBM"]=5
-         ["STG"]=6
-         ["DeepFM"]=7
-         ["SAINT"]=5
-         ["DANet"]=1
+         ["SAINT_3D"]=2
+         ["SAINT_3D_PRE"]=4
           )
 
 #CONFIGS=( "config/adult.yml"
@@ -41,7 +24,7 @@ MODELS_GPU_INDEX=(
 #          "config/california_housing.yml"
 #          "config/higgs.yml"
 #          )
-CONFIGS=("config/h_sh_300_options.yml")
+CONFIGS=("config/h_sh_300_options_3d_attention.yml")
 
 # conda init bash
 eval "$(conda shell.bash hook)"
