@@ -109,7 +109,13 @@ parameters: {
       heads: 5,
       dropout: 0.6
     },
-    SAINT_3d: {
+    SAINT_3D: {
+      dim: 38,
+      depth: 12,
+      heads: 5,
+      dropout: 0.4
+    },
+    SAINT_3D_PRE: {
       dim: 38,
       depth: 12,
       heads: 5,

@@ -92,7 +92,10 @@ def str2model(model):
     elif model == "SAINT_v2":
         from models.saint_v2 import SAINT_v2
         return SAINT_v2
-    elif model == "SAINT_3d":
+    elif model == "SAINT_3D":
+        from models.saint_3d import SAINT_3d
+        return SAINT_3d
+    elif model == "SAINT_3D_PRE":
         from models.saint_3d import SAINT_3d
         return SAINT_3d
     elif model == "DANet":

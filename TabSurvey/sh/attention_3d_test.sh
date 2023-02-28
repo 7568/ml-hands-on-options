@@ -9,6 +9,14 @@ MODELS_1=(
          ["SAINT_3D"]=$TORCH_ENV
          ["SAINT_3D_PRE"]=$TORCH_ENV
           )
+
+declare -A TRAIN_FILE_NAME
+
+TRAIN_FILE_NAME=(
+          ["SAINT_3D"]="train_3d.py"
+          ["SAINT_3D_PRE"]="train_3d_with_pre.py"
+           )
+
 #MODELS_1=(
 #         ["SAINT"]=$TORCH_ENV
 #          )
@@ -38,7 +46,7 @@ for config in "${CONFIGS[@]}"; do
 
     conda activate "${MODELS_1[$model]}"
     cd ..
-    python train.py --config "$config" --model_name "$model"  --use_gpu --gpu_index ${MODELS_GPU_INDEX[$model]} --log_to_file & echo $! >> sh/pid/$model.pid
+    python ${TRAIN_FILE_NAME[$model]} --config "$config" --model_name "$model"  --use_gpu --gpu_index ${MODELS_GPU_INDEX[$model]} --log_to_file & echo $! >> sh/pid/$model.pid
     cd sh
     conda deactivate
 

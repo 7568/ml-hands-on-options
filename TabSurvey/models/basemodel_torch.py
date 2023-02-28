@@ -143,7 +143,11 @@ class BaseModelTorch(BaseModel):
 
     def predict(self, X,testing_trading_dates=None):
         if self.args.objective == "regression":
-            self.predictions = self.predict_helper(X,testing_trading_dates)
+            if not testing_trading_dates is None:
+                self.predictions = self.predict_helper(X,testing_trading_dates)
+            else:
+                self.predictions = self.predict_helper(X)
+
         else:
             if not testing_trading_dates is None:
                 self.predict_proba(X,testing_trading_dates)

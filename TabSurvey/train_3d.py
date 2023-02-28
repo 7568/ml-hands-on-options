@@ -105,6 +105,7 @@ def training_validation_testing(model, X, y, training_trading_dates, validation_
     #     print(f'curr_model.device {curr_model.device}')
     # Train model
     train_timer.start()
+    curr_model.set_testing_y(y_test)
     loss_history, val_loss_history = curr_model.fit(X_train, y_train, X_validation, y_validation,training_trading_dates, validation_trading_dates)  # X_val, y_val)
     # loss_history, val_loss_history = curr_model.fit(X_train, y_train, X_test, y_test,training_trading_dates, testing_trading_dates)  # X_val, y_val)
     train_timer.end()
