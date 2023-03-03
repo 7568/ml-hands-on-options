@@ -43,7 +43,11 @@ class RegScorer(Scorer):
     def eval(self, y_true, y_prediction, y_probabilities):
         mse = mean_squared_error(y_true, y_prediction)
         r2 = r2_score(y_true, y_prediction)
-        y_prediction_ = [int(i>0) for i in y_prediction]
+        y_prediction_ = np.array([int(i>0.5) for i in y_prediction])
+        print(f'np.all(y_prediction_==0) : {np.all(y_prediction_ == 0)}')
+        print(f'np.all(y_prediction_==1) : {np.all(y_prediction_ == 1)}')
+        print(f"np.sum(np.array(y_prediction)) : {np.sum(np.array(y_prediction_))}")
+        print(f"np.array(y_prediction).size : {np.array(y_prediction_).size}")
         f1 = f1_score(y_true, y_prediction_, average="binary")
         acc = accuracy_score(y_true, y_prediction_)
         self.mses.append(mse)
@@ -51,7 +55,7 @@ class RegScorer(Scorer):
         self.f1s.append(f1)
         self.accs.append(acc)
 
-        return {"MSE": mse, "R2": r2,"f1s":f1,"accs":acc}
+        return {"MSE": mse, "R2": r2,"F1 score":f1,"accs":acc}
 
     def get_results(self):
         mse_mean = np.mean(self.mses)
@@ -92,17 +96,21 @@ class ClassScorer(Scorer):
     def eval(self, y_true, y_prediction, y_probabilities):
         logloss = log_loss(y_true, y_probabilities)
         # auc = roc_auc_score(y_true, y_probabilities, multi_class='ovr')
-        auc = roc_auc_score(y_true, y_probabilities, multi_class='ovo', average="macro")
+        # auc = roc_auc_score(y_true, y_probabilities, multi_class='ovo', average="macro")
 
         acc = accuracy_score(y_true, y_prediction)
         f1 = f1_score(y_true, y_prediction, average="binary")  # use here macro or weighted?
-
+        print(f'np.all(y_prediction==0) : {np.all(np.array(y_prediction) == 0)}')
+        print(f'np.all(y_prediction==1) : {np.all(np.array(y_prediction) == 1)}')
+        print(f"np.sum(np.array(y_prediction)) : {np.sum(np.array(y_prediction))}")
+        print(f"np.array(y_prediction).size : {np.array(y_prediction).size}")
         self.loglosses.append(logloss)
-        self.aucs.append(auc)
+        # self.aucs.append(auc)
         self.accs.append(acc)
         self.f1s.append(f1)
 
-        return {"Log Loss": logloss, "AUC": auc, "Accuracy": acc, "F1 score": f1}
+        # return {"Log Loss": logloss, "AUC": auc, "Accuracy": acc, "F1 score": f1}
+        return {"Log Loss": logloss, "Accuracy": acc, "F1 score": f1}
 
     def get_results(self):
         logloss_mean = np.mean(self.loglosses)
@@ -128,7 +136,7 @@ class ClassScorer(Scorer):
                 "loglosses":self.loglosses,
                 "aucs":self.aucs,
                 "accs":self.accs,
-                "F1":self.f1s
+                "F1 score":self.f1s
                 }
 
     def get_objective_result(self):
@@ -152,7 +160,10 @@ class BinScorer(Scorer):
 
         acc = accuracy_score(y_true, y_prediction)
         f1 = f1_score(y_true, y_prediction, average="binary")  # use here macro or weighted?
-
+        print(f'np.all(y_prediction==0) : {np.all(np.array(y_prediction) == 0)}')
+        print(f'np.all(y_prediction==1) : {np.all(np.array(y_prediction) == 1)}')
+        print(f"np.sum(np.array(y_prediction)) : {np.sum(np.array(y_prediction))}")
+        print(f"np.array(y_prediction).size : {np.array(y_prediction).size}")
         self.loglosses.append(logloss)
         self.aucs.append(auc)
         self.accs.append(acc)

@@ -107,17 +107,17 @@ parameters: {
       dim: 32,
       depth: 1,
       heads: 5,
-      dropout: 0.6
+      dropout: 0
     },
     SAINT_3D: {
       dim: 38,
       depth: 12,
       heads: 5,
-      dropout: 0.4
+      dropout: 0.6
     },
     SAINT_3D_PRE: {
       dim: 38,
-      depth: 12,
+      depth: 6,
       heads: 5,
       dropout: 0.4
     },

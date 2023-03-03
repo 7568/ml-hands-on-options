@@ -27,6 +27,8 @@ MODELS_GPU_INDEX=(
          ["SAINT_3D_PRE"]=4
           )
 
+MODELS_LEARNING_RATE=( 0 0.0002 0.00002 0.0005 0.0001 0.00005  0.00001 0.000005 )
+
 #CONFIGS=( "config/adult.yml"
 #          "config/covertype.yml"
 #          "config/california_housing.yml"
@@ -46,7 +48,14 @@ for config in "${CONFIGS[@]}"; do
 
     conda activate "${MODELS_1[$model]}"
     cd ..
-    python ${TRAIN_FILE_NAME[$model]} --config "$config" --model_name "$model" --log_to_file_name  "$model" --use_gpu --gpu_index ${MODELS_GPU_INDEX[$model]} --log_to_file & echo $! >> sh/pid/$model.pid
+    for item in  1 2 3 4 5 6 7 ;
+      do
+        printf "\n----------------------------------------------------------------------------\n"
+        printf '%s %s %s ' "${model}_${MODELS_LEARNING_RATE[$item]}" "$item"
+        printf "\n----------------------------------------\n"
+        python ${TRAIN_FILE_NAME[$model]} --config "$config" --model_name "$model" --log_to_file_name  "${model}_${MODELS_LEARNING_RATE[$item]}" --use_gpu --gpu_index $item --learning_rate ${MODELS_LEARNING_RATE[$item]}  --log_to_file & echo $! >> sh/pid/$model.pid
+      done
+#    python ${TRAIN_FILE_NAME[$model]} --config "$config" --model_name "$model" --log_to_file_name  "$model" --use_gpu --gpu_index ${MODELS_GPU_INDEX[$model]} --log_to_file & echo $! >> sh/pid/$model.pid
     cd sh
     conda deactivate
 

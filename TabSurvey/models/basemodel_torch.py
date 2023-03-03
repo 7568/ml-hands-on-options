@@ -161,11 +161,11 @@ class BaseModelTorch(BaseModel):
         if not testing_trading_dates is None:
             probas = self.predict_helper(X, testing_trading_dates)
         else:
-            probas = self.predict_helper(X,testing_trading_dates)
+            probas = self.predict_helper(X)
         # probas = self.predict_helper(X)
 
         # If binary task returns only probability for the true class, adapt it to return (N x 2)
-        if probas.shape[1] == 1:
+        if len(probas.shape)>1 and probas.shape[1] == 1:
             probas = np.concatenate((1 - probas, probas), 1)
 
         self.prediction_probabilities = probas

@@ -1,12 +1,12 @@
 #!/bin/bash
-rm -f result.txt
+result_file=result_less.log
+rm -f ${result_file}
 files=`ls ../log/*_std_out.log`
 for i in ${files[@]}
       do
-         echo -e "===================== \n" >> result.txt
-         echo $i >> result.txt
-         echo -e "\n" >> result.txt
-         tail -n 10 $i >> result.txt
-         echo -e "\n=====================\n">> result.txt
+         echo -e "=========="$i"=========== \n" >>  ${result_file}
+         echo -e "\n" >>  ${result_file}
+         tail -n 5 $i >>  ${result_file}
+         echo -e "\n=====================\n">>  ${result_file}
       done
 

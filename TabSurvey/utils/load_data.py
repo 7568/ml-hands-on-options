@@ -69,7 +69,7 @@ def load_h_sh_300_options():
         cat_features.append(f'MainSign_{i}')
         cat_features.append(f'up_and_down_{i}')
     train_x, train_y, validation_x, validation_y, testing_x, testing_y = reformat_data(
-        training_df, testing_df, validation_df, not_use_pre_data=False)
+        training_df, validation_df,testing_df, not_use_pre_data=False)
     # pd.DataFrame().to_numpy()
     X = {
         'training': train_x.to_numpy(),

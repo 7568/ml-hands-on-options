@@ -10,12 +10,13 @@ from torch.utils.data import DataLoader
 import numpy as np
 from torch import einsum
 from einops import rearrange
-
+from sklearn.metrics import f1_score
 from models.saint_3d_lib.models.pretrainmodel import SAINT as SAINTModel
 from models.saint_3d_lib.data_openml import DataSetCatCon
-from models.saint_3d_lib.augmentations import embed_data_mask,mixup_data,add_noise
+from models.saint_3d_lib.augmentations import embed_data_mask, mixup_data, add_noise
 from tqdm import tqdm
 from torchmetrics.classification import BinaryF1Score
+
 '''
     batch内数据为一天内的数据
 '''
@@ -53,7 +54,7 @@ class SAINT_3d(BaseModelTorch):
             cont_embeddings="MLP",
             attentiontype="colrow",
             final_mlp_style="sep",
-            y_dim=args.num_classes,device=self.device
+            y_dim=args.num_classes, device=self.device
         )
 
         if self.args.data_parallel:
@@ -72,8 +73,9 @@ class SAINT_3d(BaseModelTorch):
             criterion = BinaryF1Score().to(self.device)
         else:
             criterion = nn.MSELoss().to(self.device)
-        f1_score = BinaryF1Score().to(self.device)
+        torch_f1_score = BinaryF1Score().to(self.device)
         self.model.to(self.device)
+        print(f'self.learning_rate : {self.args.learning_rate}')
         optimizer = optim.AdamW(self.model.parameters(), lr=self.args.learning_rate)
 
         # SAINT wants it like this...
@@ -140,9 +142,10 @@ class SAINT_3d(BaseModelTorch):
                     y_gts = y_gts.to(self.device).squeeze()
                 else:
                     y_gts = y_gts.to(self.device).float()
-
-                # loss = 0.01 * criterion(soft_max_y_outs, y_gts) + 0.1 * (1 - f1_score(soft_max_y_outs, y_gts))
                 loss = criterion(soft_max_y_outs, y_gts)
+                # loss = 0.01 * criterion(soft_max_y_outs, y_gts) + 0.1 * (1 - f1_score(soft_max_y_outs, y_gts))
+                # loss = criterion(soft_max_y_outs, y_gts) * (1.5 - torch_f1_score(soft_max_y_outs, y_gts))
+                # loss = criterion(soft_max_y_outs, y_gts) *(1 - self._f1_score(y_gts.detach().cpu(), soft_max_y_outs.detach().cpu()))
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
@@ -152,56 +155,17 @@ class SAINT_3d(BaseModelTorch):
                 # print("Loss", loss.item())
 
             print(np.array(loss_history).mean())
-            # Early Stopping
-            val_loss = 0.0
-            val_dim = 0
 
-            self.model.eval()
-            print('valloader')
-            validation_y = []
-            pred_validation_y = []
-            with torch.no_grad():
-                for i, data in tqdm(enumerate(valloader), total=len(valloader)):
-                    # print(i)
-                    x_categ, x_cont, y_gts, cat_mask, con_mask = data
-                    x_categ = x_categ.squeeze(0)
-                    x_cont = x_cont.squeeze(0)
-                    y_gts = y_gts.squeeze(0)
-                    cat_mask = cat_mask.squeeze(0)
-                    con_mask = con_mask.squeeze(0)
-                    x_categ, x_cont = x_categ.to(self.device), x_cont.to(self.device)
-                    cat_mask, con_mask = cat_mask.to(self.device), con_mask.to(self.device)
-
-                    _, x_categ_enc, x_cont_enc = embed_data_mask(x_categ, x_cont, cat_mask, con_mask, self.model)
-
-                    reps = self.model.transformer(x_categ_enc, x_cont_enc)
-                    y_reps = reps[:, -1, :]
-
-                    y_outs = self.model.mlpfory(y_reps)
-                    if self.args.objective == "binary":
-                        y_outs = torch.sigmoid(y_outs)
-                    elif self.args.objective == "classification":
-                        y_outs = F.softmax(y_outs, dim=1)
-                        y_outs = torch.argmax(y_outs,dim=1)
-
-
-                    if self.args.objective == "regression":
-                        y_gts = y_gts.to(self.device)
-                    elif self.args.objective == "classification":
-                        y_gts = y_gts.to(self.device).squeeze()
-                    else:
-                        y_gts = y_gts.to(self.device).float()
-
-                    # val_loss += criterion(y_outs, y_gts)
-                    # val_dim += 1
-
-                    validation_y.append(y_gts.detach().cpu())
-                    pred_validation_y.append(y_outs.detach().cpu())
-
-            f1 = f1_score(torch.cat(pred_validation_y), torch.cat(validation_y))
-            print("Epoch", epoch, "f1", f1.item())
+            validation_y, pred_validation_y = self._predict_helper(valloader)
+            f1 = self._f1_score(validation_y, pred_validation_y)
+            print("Epoch", epoch, "validation f1", f1.item())
             _f1 = f1.item()
             del f1
+            real_testing_y, pred_testing_y = self._predict_helper()
+            f1_t = self._f1_score(real_testing_y, pred_testing_y)
+
+            print("Epoch", epoch, "testing f1", f1_t.item())
+            del f1_t
 
             if _f1 > max_f1:
                 max_f1 = _f1
@@ -215,15 +179,14 @@ class SAINT_3d(BaseModelTorch):
                 print("Early stopping applies.")
                 break
 
-        self.load_model(filename_extension="best", directory="tmp")
+        # self.load_model(filename_extension="best", directory="tmp")
         return loss_history, val_loss_history
 
-    def pretrain(self, X, y, trading_dates=None,use_pretrain_data=False):
+    def pretrain(self, X, y, trading_dates=None, use_pretrain_data=False):
 
         criterion = nn.CrossEntropyLoss().to(self.device)
         self.model.to(self.device)
         optimizer = optim.AdamW(self.model.parameters(), lr=0.0001)
-
 
         # SAINT wants it like this...
         # x_data = np.concatenate((X,X_val),axis=0)
@@ -231,7 +194,7 @@ class SAINT_3d(BaseModelTorch):
         # y_data_2 = y_val.reshape(-1, 1)
         # y_data = np.concatenate((y_data_1,y_data_2),axis=0)
         x_data = {'data': X, 'mask': np.ones_like(X)}
-        y_data= {'data': y}
+        y_data = {'data': y}
 
         train_ds = DataSetCatCon(x_data, y_data, self.args.cat_idx, self.args.objective, trading_dates=trading_dates)
         trainloader = DataLoader(train_ds, batch_size=1, num_workers=8)
@@ -267,17 +230,17 @@ class SAINT_3d(BaseModelTorch):
                 if 'cutmix' in self.args.pt_aug:
 
                     x_categ_corr, x_cont_corr = add_noise(x_categ, x_cont, noise_params=pt_aug_dict)
-                    _, x_categ_enc_2, x_cont_enc_2 = embed_data_mask(x_categ_corr, x_cont_corr, cat_mask, con_mask,self.model)
+                    _, x_categ_enc_2, x_cont_enc_2 = embed_data_mask(x_categ_corr, x_cont_corr, cat_mask, con_mask,
+                                                                     self.model)
                 else:
                     _, x_categ_enc_2, x_cont_enc_2 = embed_data_mask(x_categ, x_cont, cat_mask, con_mask, self.model)
 
                 if 'mixup' in self.args.pt_aug:
-
                     x_categ_enc_2, x_cont_enc_2 = mixup_data(x_categ_enc_2, x_cont_enc_2, lam=self.args.mixup_lam)
                 # We are converting the data to embeddings in the next step
                 _, x_categ_enc, x_cont_enc = embed_data_mask(x_categ, x_cont, cat_mask, con_mask, self.model)
 
-                loss=0
+                loss = 0
                 if 'contrastive' in self.args.pt_tasks:
                     aug_features_1 = self.model.transformer(x_categ_enc, x_cont_enc)
                     aug_features_2 = self.model.transformer(x_categ_enc_2, x_cont_enc_2)
@@ -309,11 +272,11 @@ class SAINT_3d(BaseModelTorch):
                 if 'denoising' in self.args.pt_tasks:
                     cat_outs, con_outs = self.model(x_categ_enc_2, x_cont_enc_2)
                     con_outs = torch.cat(con_outs, dim=1)
-                    _x_cont = x_cont[:,0:x_cont.shape[1]//5]
+                    _x_cont = x_cont[:, 0:x_cont.shape[1] // 5]
                     l2 = criterion2(con_outs, _x_cont)
                     l1 = 0
-                    _x_categ = x_categ[:, 0:x_categ.shape[1]//5]
-                    for j in range(len(self.cat_dims)//5):
+                    _x_categ = x_categ[:, 0:x_categ.shape[1] // 5]
+                    for j in range(len(self.cat_dims) // 5):
                         l1 += criterion1(cat_outs[j], _x_categ[:, j])
                     loss += self.args.lam2 * l1 + self.args.lam3 * l2
                 optimizer.zero_grad()
@@ -330,13 +293,69 @@ class SAINT_3d(BaseModelTorch):
                 self.save_model(filename_extension="pretrain", directory="tmp")
             print(np.array(loss_history).mean())
 
-
-    def set_testing_y(self,y):
+    def set_testing(self, x, y, testing_trading_dates=None):
+        self.testing_x = x
         self.testing_y = y.reshape(-1, 1)
+        self.testing_trading_dates = testing_trading_dates
+
+    def _predict_helper(self, val_dataloader=None):
+        if val_dataloader is None:
+            X = {'data': self.testing_x, 'mask': np.ones_like(self.testing_x)}
+            y = {'data': self.testing_y}
+
+            val_ds = DataSetCatCon(X, y, self.args.cat_idx, self.args.objective,
+                                   trading_dates=self.testing_trading_dates)
+            dataloader = DataLoader(val_ds, batch_size=1, num_workers=1)
+            print('testing_loader')
+        else:
+            print('validation_loader')
+            dataloader = val_dataloader
+
+        _y = []
+        _pred_y = []
+        self.model.eval()
+        with torch.no_grad():
+            for i, data in tqdm(enumerate(dataloader), total=len(dataloader)):
+                # print(i)
+                x_categ, x_cont, y_gts, cat_mask, con_mask = data
+                x_categ = x_categ.squeeze(0)
+                x_cont = x_cont.squeeze(0)
+                y_gts = y_gts.squeeze(0)
+                cat_mask = cat_mask.squeeze(0)
+                con_mask = con_mask.squeeze(0)
+                x_categ, x_cont = x_categ.to(self.device), x_cont.to(self.device)
+                cat_mask, con_mask = cat_mask.to(self.device), con_mask.to(self.device)
+
+                _, x_categ_enc, x_cont_enc = embed_data_mask(x_categ, x_cont, cat_mask, con_mask, self.model)
+
+                reps = self.model.transformer(x_categ_enc, x_cont_enc)
+                y_reps = reps[:, -1, :]
+
+                y_outs = self.model.mlpfory(y_reps)
+                if self.args.objective == "binary":
+                    y_outs = torch.sigmoid(y_outs)
+                elif self.args.objective == "classification":
+                    y_outs = F.softmax(y_outs, dim=1)
+                    y_outs = torch.argmax(y_outs, dim=1)
+
+                if self.args.objective == "regression":
+                    y_gts = y_gts.to(self.device)
+                elif self.args.objective == "classification":
+                    y_gts = y_gts.to(self.device).squeeze()
+                else:
+                    y_gts = y_gts.to(self.device).float()
+
+                # val_loss += criterion(y_outs, y_gts)
+                # val_dim += 1
+
+                _y.append(y_gts.detach().cpu())
+                _pred_y.append(y_outs.detach().cpu())
+
+        return _y, _pred_y
+
     def predict_helper(self, X, testing_trading_dates=None):
         X = {'data': X, 'mask': np.ones_like(X)}
         y = {'data': np.ones((X['data'].shape[0], 1))}
-        f1_score = BinaryF1Score().to(self.device)
         test_ds = DataSetCatCon(X, y, self.args.cat_idx, self.args.objective, trading_dates=testing_trading_dates)
         testloader = DataLoader(test_ds, batch_size=1, shuffle=False, num_workers=4)
         self.load_model(filename_extension="best", directory="tmp")
@@ -344,7 +363,8 @@ class SAINT_3d(BaseModelTorch):
         self.model.eval()
 
         predictions = []
-        pred_validation_y=[]
+        real_testing_y = []
+        pred_testing_y = []
         with torch.no_grad():
 
             for data in tqdm(testloader, total=len(testloader)):
@@ -364,18 +384,32 @@ class SAINT_3d(BaseModelTorch):
                 y_outs = self.model.mlpfory(y_reps)
 
                 if self.args.objective == "binary":
-                    y_outs = torch.sigmoid(y_outs)
+                    y_outs_ = torch.sigmoid(y_outs)
                 elif self.args.objective == "classification":
                     y_outs = F.softmax(y_outs, dim=1)
-                    y_outs = torch.argmax(y_outs,dim=1)
+                    y_outs_ = torch.argmax(y_outs, dim=1)
+                else:
+                    y_outs_ = y_outs
 
-                pred_validation_y.append(y_outs.detach().cpu())
+                pred_testing_y.append(y_outs_.detach().cpu())
+                real_testing_y.append(y_gts.squeeze(0).detach().cpu())
                 predictions.append(y_outs.detach().cpu().numpy())
 
-        f1 = f1_score(torch.cat(pred_validation_y), torch.tensor(self.testing_y))
-        print(f'f1 : {f1}')
+        f1 = self._f1_score(real_testing_y, pred_testing_y)
+
+        print(f'f1 in testing : {f1}')
         del f1
         return np.concatenate(predictions)
+
+    def _f1_score(self, real_y, pred_y):
+        y_true = np.array([int(i > 0) for i in torch.cat(real_y).numpy()])
+        y_prediction_ = np.array([int(i > 0) for i in torch.cat(pred_y).numpy()])
+        print(f'np.all(y_prediction_==0) : {np.all(y_prediction_ == 0)}')
+        print(f'np.all(y_prediction_==1) : {np.all(y_prediction_ == 1)}')
+        print(f"np.sum(np.array(y_prediction)) : {np.sum(np.array(y_prediction_))}")
+        print(f"np.array(y_prediction).size : {np.array(y_prediction_).size}")
+        f1 = f1_score(y_true, y_prediction_, average="binary")
+        return f1
 
     def attribute(self, X, y, strategy=""):
         """ Generate feature attributions for the model input.

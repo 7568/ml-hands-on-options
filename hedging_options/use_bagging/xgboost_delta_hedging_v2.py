@@ -52,10 +52,12 @@ if __name__ == '__main__':
     if opt.log_to_file:
         logger = util.init_log('xgboost_delta_hedging_v2')
     NORMAL_TYPE = 'mean_norm'
+    NORMAL_TYPE = ''
     training_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/training.csv')
     validation_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/validation.csv')
     testing_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/testing.csv')
     no_need_columns = ['TradingDate', 'C_1']
+    no_need_columns = ['TradingDate', 'C_1','SecurityID', 'Filling', 'ContinueSign', 'TradingDayStatusID']
     training_df.drop(columns=no_need_columns, axis=1, inplace=True)
     validation_df.drop(columns=no_need_columns, axis=1, inplace=True)
     testing_df.drop(columns=no_need_columns, axis=1, inplace=True)
@@ -65,7 +67,7 @@ if __name__ == '__main__':
         cat_features.append(f'MainSign_{i}')
         cat_features.append(f'up_and_down_{i}')
     train_x, train_y, validation_x, validation_y, testing_x, testing_y= util.reformat_data(
-        training_df, testing_df, validation_df, not_use_pre_data=False)
+        training_df,validation_df, testing_df, not_use_pre_data=False)
 
     params = {
         # 'objective': 'binary:logistic',
@@ -73,9 +75,9 @@ if __name__ == '__main__':
         'objective': util.mse_loss,
         # 'objective': mae_loss,
         # 'objective': pseudo_huber_loss,
-        'n_estimators': 50000,
+        'n_estimators': 200,
         'max_depth': 12,
-        'learning_rate': 0.05,
+        'learning_rate': 0.001,
         'tree_method': 'hist',
         'subsample': 0.75,
         'colsample_bytree': 0.75,
@@ -91,7 +93,7 @@ if __name__ == '__main__':
 
     model.fit(train_x.to_numpy(), train_y,
               eval_set=[(validation_x.to_numpy(), np.array(validation_y))],
-              early_stopping_rounds=20)
+              early_stopping_rounds=2)
     if opt.log_to_file:
 
         util.remove_file_if_exists(f'XGBClassifier')
