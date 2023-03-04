@@ -65,15 +65,15 @@ class SAINT_3d(BaseModelTorch):
     def fit(self, X, y, X_val=None, y_val=None, training_trading_dates=None, validation_trading_dates=None):
 
         if self.args.objective == 'binary':
-            # criterion = nn.BCEWithLogitsLoss().to(self.device)
-            criterion = nn.BCELoss().to(self.device)
+            criterion = nn.BCEWithLogitsLoss().to(self.device)
+            # criterion = nn.BCELoss().to(self.device)
         elif self.args.objective == 'classification':
             criterion = nn.CrossEntropyLoss().to(self.device)
         elif self.args.objective == 'binary_f1':
             criterion = BinaryF1Score().to(self.device)
         else:
             criterion = nn.MSELoss().to(self.device)
-        torch_f1_score = BinaryF1Score().to(self.device)
+        # torch_f1_score = BinaryF1Score().to(self.device)
         self.model.to(self.device)
         print(f'self.learning_rate : {self.args.learning_rate}')
         optimizer = optim.AdamW(self.model.parameters(), lr=self.args.learning_rate)
@@ -81,15 +81,15 @@ class SAINT_3d(BaseModelTorch):
         # SAINT wants it like this...
         X = {'data': X, 'mask': np.ones_like(X)}
         y = {'data': y.reshape(-1, 1)}
-        X_val = {'data': X_val, 'mask': np.ones_like(X_val)}
-        y_val = {'data': y_val.reshape(-1, 1)}
+        # X_val = {'data': X_val, 'mask': np.ones_like(X_val)}
+        # y_val = {'data': y_val.reshape(-1, 1)}
 
         train_ds = DataSetCatCon(X, y, self.args.cat_idx, self.args.objective, trading_dates=training_trading_dates)
         trainloader = DataLoader(train_ds, batch_size=1, num_workers=4)
 
-        val_ds = DataSetCatCon(X_val, y_val, self.args.cat_idx, self.args.objective,
-                               trading_dates=validation_trading_dates)
-        valloader = DataLoader(val_ds, batch_size=1, num_workers=1)
+        # val_ds = DataSetCatCon(X_val, y_val, self.args.cat_idx, self.args.objective,
+        #                        trading_dates=validation_trading_dates)
+        # valloader = DataLoader(val_ds, batch_size=1, num_workers=1)
 
         min_val_loss = float("inf")
         min_val_loss_idx = 0
@@ -129,12 +129,12 @@ class SAINT_3d(BaseModelTorch):
 
                 y_outs = self.model.mlpfory(y_reps)
 
-                if self.args.objective == "binary":
-                    soft_max_y_outs = torch.sigmoid(y_outs)
-                elif self.args.objective == "classification":
-                    soft_max_y_outs = F.softmax(y_outs, dim=1)
-                else:
-                    soft_max_y_outs = y_outs
+                # if self.args.objective == "binary":
+                #     soft_max_y_outs = torch.sigmoid(y_outs)
+                # elif self.args.objective == "classification":
+                #     soft_max_y_outs = F.softmax(y_outs, dim=1)
+                # else:
+                #     soft_max_y_outs = y_outs
 
                 if self.args.objective == "regression":
                     y_gts = y_gts.to(self.device)
@@ -142,7 +142,7 @@ class SAINT_3d(BaseModelTorch):
                     y_gts = y_gts.to(self.device).squeeze()
                 else:
                     y_gts = y_gts.to(self.device).float()
-                loss = criterion(soft_max_y_outs, y_gts)
+                loss = criterion(y_outs, y_gts)
                 # loss = 0.01 * criterion(soft_max_y_outs, y_gts) + 0.1 * (1 - f1_score(soft_max_y_outs, y_gts))
                 # loss = criterion(soft_max_y_outs, y_gts) * (1.5 - torch_f1_score(soft_max_y_outs, y_gts))
                 # loss = criterion(soft_max_y_outs, y_gts) *(1 - self._f1_score(y_gts.detach().cpu(), soft_max_y_outs.detach().cpu()))
@@ -154,21 +154,12 @@ class SAINT_3d(BaseModelTorch):
 
                 # print("Loss", loss.item())
 
-            print(np.array(loss_history).mean())
+            print(f'epoche " {epoch} , average loss : {np.array(loss_history).mean()}')
 
-            validation_y, pred_validation_y = self._predict_helper(valloader)
-            f1 = self._f1_score(validation_y, pred_validation_y)
-            print("Epoch", epoch, "validation f1", f1.item())
-            _f1 = f1.item()
-            del f1
-            real_testing_y, pred_testing_y = self._predict_helper()
-            f1_t = self._f1_score(real_testing_y, pred_testing_y)
+            f1 = self.predict_helper(X_val,validation_trading_dates,y_val,tag='validation',need_reload_model=False)
 
-            print("Epoch", epoch, "testing f1", f1_t.item())
-            del f1_t
-
-            if _f1 > max_f1:
-                max_f1 = _f1
+            if f1 > max_f1:
+                max_f1 = f1
                 min_val_loss_idx = epoch
 
                 # Save the currently best model
@@ -178,6 +169,8 @@ class SAINT_3d(BaseModelTorch):
                 print("Validation loss has not improved for %d steps!" % self.args.early_stopping_rounds)
                 print("Early stopping applies.")
                 break
+
+            self.predict_helper(self.testing_x, self.testing_trading_dates, self.testing_y,need_reload_model=False)
 
         # self.load_model(filename_extension="best", directory="tmp")
         return loss_history, val_loss_history
@@ -298,76 +291,79 @@ class SAINT_3d(BaseModelTorch):
         self.testing_y = y.reshape(-1, 1)
         self.testing_trading_dates = testing_trading_dates
 
-    def _predict_helper(self, val_dataloader=None):
-        if val_dataloader is None:
-            X = {'data': self.testing_x, 'mask': np.ones_like(self.testing_x)}
-            y = {'data': self.testing_y}
+    # def _predict_helper(self, val_dataloader=None):
+    #     if val_dataloader is None:
+    #         X = {'data': self.testing_x, 'mask': np.ones_like(self.testing_x)}
+    #         y = {'data': self.testing_y}
+    #
+    #         val_ds = DataSetCatCon(X, y, self.args.cat_idx, self.args.objective,
+    #                                trading_dates=self.testing_trading_dates)
+    #         dataloader = DataLoader(val_ds, batch_size=1, num_workers=1)
+    #         print('testing_loader')
+    #     else:
+    #         print('validation_loader')
+    #         dataloader = val_dataloader
+    #
+    #     _y = []
+    #     _pred_y = []
+    #     self.model.eval()
+    #     with torch.no_grad():
+    #         for i, data in tqdm(enumerate(dataloader), total=len(dataloader)):
+    #             # print(i)
+    #             x_categ, x_cont, y_gts, cat_mask, con_mask = data
+    #             x_categ = x_categ.squeeze(0)
+    #             x_cont = x_cont.squeeze(0)
+    #             y_gts = y_gts.squeeze(0)
+    #             cat_mask = cat_mask.squeeze(0)
+    #             con_mask = con_mask.squeeze(0)
+    #             x_categ, x_cont = x_categ.to(self.device), x_cont.to(self.device)
+    #             cat_mask, con_mask = cat_mask.to(self.device), con_mask.to(self.device)
+    #
+    #             _, x_categ_enc, x_cont_enc = embed_data_mask(x_categ, x_cont, cat_mask, con_mask, self.model)
+    #
+    #             reps = self.model.transformer(x_categ_enc, x_cont_enc)
+    #             y_reps = reps[:, -1, :]
+    #
+    #             y_outs = self.model.mlpfory(y_reps)
+    #             if self.args.objective == "binary":
+    #                 y_outs = np.array([int(i>0.5) for i in torch.sigmoid(y_outs).detach().cpu().numpy()])
+    #             elif self.args.objective == "classification":
+    #                 # y_outs = F.softmax(y_outs, dim=1)
+    #                 y_outs = torch.argmax(y_outs, dim=1).detach().cpu()
+    #
+    #             if self.args.objective == "regression":
+    #                 y_gts = y_gts.to(self.device)
+    #             elif self.args.objective == "classification":
+    #                 y_gts = y_gts.to(self.device).squeeze()
+    #             else:
+    #                 y_gts = y_gts.to(self.device).float()
+    #
+    #             # val_loss += criterion(y_outs, y_gts)
+    #             # val_dim += 1
+    #
+    #             _y.append(y_gts.detach().cpu())
+    #             _pred_y.append(y_outs)
+    #
+    #     return _y, _pred_y
 
-            val_ds = DataSetCatCon(X, y, self.args.cat_idx, self.args.objective,
-                                   trading_dates=self.testing_trading_dates)
-            dataloader = DataLoader(val_ds, batch_size=1, num_workers=1)
-            print('testing_loader')
-        else:
-            print('validation_loader')
-            dataloader = val_dataloader
-
-        _y = []
-        _pred_y = []
-        self.model.eval()
-        with torch.no_grad():
-            for i, data in tqdm(enumerate(dataloader), total=len(dataloader)):
-                # print(i)
-                x_categ, x_cont, y_gts, cat_mask, con_mask = data
-                x_categ = x_categ.squeeze(0)
-                x_cont = x_cont.squeeze(0)
-                y_gts = y_gts.squeeze(0)
-                cat_mask = cat_mask.squeeze(0)
-                con_mask = con_mask.squeeze(0)
-                x_categ, x_cont = x_categ.to(self.device), x_cont.to(self.device)
-                cat_mask, con_mask = cat_mask.to(self.device), con_mask.to(self.device)
-
-                _, x_categ_enc, x_cont_enc = embed_data_mask(x_categ, x_cont, cat_mask, con_mask, self.model)
-
-                reps = self.model.transformer(x_categ_enc, x_cont_enc)
-                y_reps = reps[:, -1, :]
-
-                y_outs = self.model.mlpfory(y_reps)
-                if self.args.objective == "binary":
-                    y_outs = torch.sigmoid(y_outs)
-                elif self.args.objective == "classification":
-                    y_outs = F.softmax(y_outs, dim=1)
-                    y_outs = torch.argmax(y_outs, dim=1)
-
-                if self.args.objective == "regression":
-                    y_gts = y_gts.to(self.device)
-                elif self.args.objective == "classification":
-                    y_gts = y_gts.to(self.device).squeeze()
-                else:
-                    y_gts = y_gts.to(self.device).float()
-
-                # val_loss += criterion(y_outs, y_gts)
-                # val_dim += 1
-
-                _y.append(y_gts.detach().cpu())
-                _pred_y.append(y_outs.detach().cpu())
-
-        return _y, _pred_y
-
-    def predict_helper(self, X, testing_trading_dates=None):
+    def predict_helper(self, X, _trading_dates=None,y = None,tag='testing',need_reload_model=True):
         X = {'data': X, 'mask': np.ones_like(X)}
-        y = {'data': np.ones((X['data'].shape[0], 1))}
-        test_ds = DataSetCatCon(X, y, self.args.cat_idx, self.args.objective, trading_dates=testing_trading_dates)
-        testloader = DataLoader(test_ds, batch_size=1, shuffle=False, num_workers=4)
-        self.load_model(filename_extension="best", directory="tmp")
-        self.model.to(self.device)
+        if y is None:
+            y = {'data': np.ones((X['data'].shape[0], 1))}
+        else:
+            y = {'data': y.reshape(-1, 1)}
+        _ds = DataSetCatCon(X, y, self.args.cat_idx, self.args.objective, trading_dates=_trading_dates)
+        dataloader = DataLoader(_ds, batch_size=1, shuffle=False, num_workers=4)
+        if need_reload_model:
+            self.load_model(filename_extension="best", directory="tmp")
+            self.model.to(self.device)
         self.model.eval()
 
         predictions = []
         real_testing_y = []
-        pred_testing_y = []
         with torch.no_grad():
 
-            for data in tqdm(testloader, total=len(testloader)):
+            for data in tqdm(dataloader, total=len(dataloader)):
                 x_categ, x_cont, y_gts, cat_mask, con_mask = data
                 x_categ = x_categ.squeeze(0)
                 x_cont = x_cont.squeeze(0)
@@ -382,28 +378,37 @@ class SAINT_3d(BaseModelTorch):
                 y_reps = reps[:, -1, :]
 
                 y_outs = self.model.mlpfory(y_reps)
-
-                if self.args.objective == "binary":
-                    y_outs_ = torch.sigmoid(y_outs)
-                elif self.args.objective == "classification":
-                    y_outs = F.softmax(y_outs, dim=1)
-                    y_outs_ = torch.argmax(y_outs, dim=1)
+                if self.args.objective == "binary" :
+                    y_outs = torch.sigmoid(y_outs).detach().cpu().numpy()
+                elif self.args.objective == "regression":
+                    y_outs = torch.sigmoid(y_outs-0.5).detach().cpu().numpy()
                 else:
-                    y_outs_ = y_outs
+                    y_outs = y_outs.detach().cpu()
 
-                pred_testing_y.append(y_outs_.detach().cpu())
                 real_testing_y.append(y_gts.squeeze(0).detach().cpu())
-                predictions.append(y_outs.detach().cpu().numpy())
+                predictions.append(y_outs)
 
-        f1 = self._f1_score(real_testing_y, pred_testing_y)
+        f1 = self._f1_score(real_testing_y, predictions).item()
 
-        print(f'f1 in testing : {f1}')
-        del f1
-        return np.concatenate(predictions)
+        print(f'f1 in {tag} : {f1}')
 
-    def _f1_score(self, real_y, pred_y):
-        y_true = np.array([int(i > 0) for i in torch.cat(real_y).numpy()])
-        y_prediction_ = np.array([int(i > 0) for i in torch.cat(pred_y).numpy()])
+        if tag=='validation':
+            return f1
+        else:
+            return np.concatenate(predictions)
+
+    def _f1_score(self, y_true, y_prediction):
+        y_true = np.concatenate(y_true)
+        y_prediction = np.concatenate(y_prediction)
+        if self.args.objective == "binary":
+            y_prediction_ = np.concatenate((1 - y_prediction, y_prediction), 1)
+            y_prediction_ = np.argmax(y_prediction_, axis=1)
+        elif self.args.objective == "classification":
+            y_prediction_ = torch.argmax(y_prediction, dim=1).detach().cpu().numpy()
+        else:
+            # y_prediction_ = torch.sigmoid(y_prediction).detach().cpu().numpy()
+            y_prediction_ = np.concatenate((1 - y_prediction, y_prediction), 1)
+            y_prediction_ = np.argmax(y_prediction_, axis=1)
         print(f'np.all(y_prediction_==0) : {np.all(y_prediction_ == 0)}')
         print(f'np.all(y_prediction_==1) : {np.all(y_prediction_ == 1)}')
         print(f"np.sum(np.array(y_prediction)) : {np.sum(np.array(y_prediction_))}")

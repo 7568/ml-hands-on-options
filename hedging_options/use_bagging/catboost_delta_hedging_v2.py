@@ -44,8 +44,8 @@ if __name__ == '__main__':
         training_df, testing_df, validation_df, not_use_pre_data=False)
 
     params = {
-        'iterations': 50000,
-        'depth': 5,
+        'iterations': 200,
+        'depth': 16,
         'learning_rate': 0.01,
         # 'loss_function': '',
         # 'verbose': False,

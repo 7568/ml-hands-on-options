@@ -111,15 +111,15 @@ parameters: {
     },
     SAINT_3D: {
       dim: 38,
-      depth: 12,
+      depth: 8,
       heads: 5,
-      dropout: 0.6
+      dropout: 0.001
     },
     SAINT_3D_PRE: {
       dim: 38,
-      depth: 6,
+      depth: 4,
       heads: 5,
-      dropout: 0.4
+      dropout: 0.001
     },
     DANet: {
       layer: 8,

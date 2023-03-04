@@ -70,14 +70,14 @@ if __name__ == '__main__':
         training_df,validation_df, testing_df, not_use_pre_data=False)
 
     params = {
-        # 'objective': 'binary:logistic',
+        'objective': 'binary:logistic',
         # 'objective': 'reg:squarederror',
-        'objective': util.mse_loss,
+        # 'objective': util.mse_loss,
         # 'objective': mae_loss,
         # 'objective': pseudo_huber_loss,
         'n_estimators': 200,
-        'max_depth': 12,
-        'learning_rate': 0.001,
+        'max_depth': 30,
+        'learning_rate': 0.01,
         'tree_method': 'hist',
         'subsample': 0.75,
         'colsample_bytree': 0.75,
@@ -93,7 +93,7 @@ if __name__ == '__main__':
 
     model.fit(train_x.to_numpy(), train_y,
               eval_set=[(validation_x.to_numpy(), np.array(validation_y))],
-              early_stopping_rounds=2)
+              early_stopping_rounds=20)
     if opt.log_to_file:
 
         util.remove_file_if_exists(f'XGBClassifier')
