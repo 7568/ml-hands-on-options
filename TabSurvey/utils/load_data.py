@@ -134,7 +134,7 @@ def load_data(args):
         return X,y
 
     elif args.dataset == "CaliforniaHousing":  # Regression dataset
-        X, y = sklearn.datasets.fetch_california_housing(return_X_y=True)
+        X, y = sklearn.datasets.fetch_california_housing(data_home ='/home/liyu/data/tabular-data/california_housing/',return_X_y=True)
 
     elif args.dataset == "Covertype":  # Multi-class classification dataset
         X, y = sklearn.datasets.fetch_covtype(return_X_y=True)
@@ -170,6 +170,7 @@ def load_data(args):
         '''
     elif args.dataset == "Adult" or args.dataset == "AdultCat":  # Binary classification dataset with categorical data, if you pass AdultCat, the numerical columns will be discretized.
         url_data = "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.data"
+        url_data = "/home/liyu/data/tabular-data/adult/adult.data"
 
         features = ['age', 'workclass', 'fnlwgt', 'education', 'education_num', 'marital-status', 'occupation',
                     'relationship', 'race', 'sex', 'capital-gain', 'capital-loss', 'hours-per-week', 'native-country']

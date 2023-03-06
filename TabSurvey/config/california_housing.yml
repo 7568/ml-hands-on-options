@@ -1,6 +1,6 @@
 # General parameters
 dataset: CaliforniaHousing
-model_name: DeepGBM # LinearModel, KNN, SVM, DecisionTree, RandomForest, MLP
+model_name: NODE # LinearModel, KNN, SVM, DecisionTree, RandomForest, MLP
                            # XGBoost, CatBoost, LightGBM,
                            # TabNet, VIME, TabTransformer, ModelTree, NODE, DeepGBM, RLN, DNFNet,
                            # STG, NAM, DeepFM, SAINT

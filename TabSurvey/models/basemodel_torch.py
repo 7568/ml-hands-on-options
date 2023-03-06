@@ -163,8 +163,10 @@ class BaseModelTorch(BaseModel):
         else:
             probas = self.predict_helper(X)
 
+        probas = np.array(probas).squeeze()
         # If binary task returns only probability for the true class, adapt it to return (N x 2)
-        if self.args.objective == "binary":
+        if self.args.objective == "binary" and len(probas.shape)<2:
+            probas = probas.reshape(-1,1)
             probas = np.concatenate((1 - probas, probas), 1)
 
         self.prediction_probabilities = probas

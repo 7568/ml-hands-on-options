@@ -1,6 +1,6 @@
 # General parameters
 dataset: Covertype
-model_name: CatBoost # DecisionTree, KNN, SVM, DecisionTree, RandomForest, XGBoost, CatBoost, LightGBM,
+model_name: NODE # DecisionTree, KNN, SVM, DecisionTree, RandomForest, XGBoost, CatBoost, LightGBM,
     # ModelTree, TabNet, VIME, TabTransformer, RLN, DNFNet, STG, NAM, DeepFM, SAINT
 objective: classification # Don't change
 

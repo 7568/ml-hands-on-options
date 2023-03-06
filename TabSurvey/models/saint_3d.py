@@ -163,7 +163,7 @@ class SAINT_3d(BaseModelTorch):
                 min_val_loss_idx = epoch
 
                 # Save the currently best model
-                self.save_model(filename_extension="best", directory="tmp")
+                self.save_model(filename_extension=f"{self.args.model_name}_{self.args.learning_rate}_best", directory="tmp")
 
             if min_val_loss_idx + self.args.early_stopping_rounds < epoch:
                 print("Validation loss has not improved for %d steps!" % self.args.early_stopping_rounds)
@@ -355,7 +355,8 @@ class SAINT_3d(BaseModelTorch):
         _ds = DataSetCatCon(X, y, self.args.cat_idx, self.args.objective, trading_dates=_trading_dates)
         dataloader = DataLoader(_ds, batch_size=1, shuffle=False, num_workers=4)
         if need_reload_model:
-            self.load_model(filename_extension="best", directory="tmp")
+            self.load_model(filename_extension=f"{self.args.model_name}_{self.args.learning_rate}_best",
+                            directory="tmp")
             self.model.to(self.device)
         self.model.eval()
 

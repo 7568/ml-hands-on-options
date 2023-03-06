@@ -1027,7 +1027,8 @@ def rename_raw_data(ord_1):
 
 # DATA_HOME_PATH = '/home/liyu/data/hedging-option/china-market'
 # DATA_HOME_PATH = '/home/liyu/data/hedging-option/20140101-20160229'
-DATA_HOME_PATH = '/home/liyu/data/hedging-option/20160301-20190531'
+# DATA_HOME_PATH = '/home/liyu/data/hedging-option/20160301-20190531'
+DATA_HOME_PATH = '/home/liyu/data/hedging-option/20160701-20221124'
 # DATA_HOME_PATH = '/home/liyu/data/hedging-option/20190601-20221123'
 # DATA_HOME_PATH = '/home/liyu/data/hedging-option/20190701-20221124'
 OPTION_SYMBOL = 'h_sh_300'
@@ -1035,18 +1036,18 @@ OPTION_SYMBOL = 'h_sh_300'
 if __name__ == '__main__':
     # depart_data(1)
     DATA_HOME_PATH = DATA_HOME_PATH + "/" + OPTION_SYMBOL + "/"
-    check_each_data_num_by_id(1)
-    combine_all_data(1, 3)
-    remove_filling_not0_data(3, 4)  # 删除原始表中节假日填充的数据
-    remove_real_trade_days_less28(4, 5)  # 将合约交易天数小于28天的删除
-    remove_end5_trade_date_data(5, 6)  # 将每份期权合约交易的最后5天的数据删除
-    check_volume(6, 7)  # 将成交量为0的数据中存在nan的地方填充0
-    check_null_by_id(7)  # 查看是否还有nan数据
-    # # save_by_each_option()  # 便于查看每份期权合约的每天交易信息
-    hand_category_data(7, 9)
-    append_before4_days_data(9, 10)  # 将前4天的数据追加到当天，不够4天的用0填充
-    append_next_price(10, 11)  # 得到下一天的期权价格数据
-    append_real_hedging_rate(11, 12)  # 得到真实的对冲比例
+    # check_each_data_num_by_id(1)
+    # combine_all_data(1, 3)
+    # remove_filling_not0_data(3, 4)  # 删除原始表中节假日填充的数据
+    # remove_real_trade_days_less28(4, 5)  # 将合约交易天数小于28天的删除
+    # remove_end5_trade_date_data(5, 6)  # 将每份期权合约交易的最后5天的数据删除
+    # check_volume(6, 7)  # 将成交量为0的数据中存在nan的地方填充0
+    # check_null_by_id(7)  # 查看是否还有nan数据
+    # # # save_by_each_option()  # 便于查看每份期权合约的每天交易信息
+    # hand_category_data(7, 9)
+    # append_before4_days_data(9, 10)  # 将前4天的数据追加到当天，不够4天的用0填充
+    # append_next_price(10, 11)  # 得到下一天的期权价格数据
+    # # append_real_hedging_rate(11, 12)  # 得到真实的对冲比例
     append_payoff_rate(11, '12_1')  # 得到期权是涨还是跌
     check_null_by_id('12_1')
     retype_cat_columns('12_1', 13)  # 将分类数据设置成int型

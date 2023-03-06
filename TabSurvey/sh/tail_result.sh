@@ -6,7 +6,7 @@ for i in ${files[@]}
       do
          echo -e "=========="$i"=========== \n" >>  ${result_file}
          echo -e "\n" >>  ${result_file}
-         tail -n 5 $i >>  ${result_file}
+         tail -n 10 $i >>  ${result_file}
          echo -e "\n=====================\n">>  ${result_file}
       done
 

@@ -1,6 +1,6 @@
 # General parameters
 dataset: Heloc
-model_name: DNFNet # LinearModel, KNN, SVM, DecisionTree, RandomForest, XGBoost, CatBoost, LightGBM, ModelTree
+model_name: NODE # LinearModel, KNN, SVM, DecisionTree, RandomForest, XGBoost, CatBoost, LightGBM, ModelTree
                 # MLP, TabNet, VIME, TabTransformer, NODE, DeepGBM, RLN, DNFNet, STG, NAM, DeepFM, SAINT
 objective: binary # Don't change
 optimize_hyperparameters: True

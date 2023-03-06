@@ -62,10 +62,10 @@ parameters: {
       dropout: 0.4
     },
     NODE: {
-      num_layers: 4,
+      num_layers: 2,
       total_tree_count: 1024,
       tree_depth: 8,
-      tree_output_dim: 3
+      tree_output_dim: 2
     },
     DeepGBM: {
       n_trees: 200,
@@ -111,7 +111,7 @@ parameters: {
     },
     SAINT_3D: {
       dim: 38,
-      depth: 8,
+      depth: 4,
       heads: 5,
       dropout: 0.001
     },

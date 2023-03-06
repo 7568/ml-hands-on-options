@@ -42,8 +42,8 @@ def training_validation_testing(model, X, y, training_trading_dates, validation_
     #     print(f'curr_model.device {curr_model.device}')
     # Pretrain model
     pretrain_timer.start()
-    pretrain_x =  np.concatenate((X_train, X_validation, X_test),axis=0)
-    pretrain_y = np.concatenate((y_train, y_validation, y_test), axis=0)
+    pretrain_x =  np.concatenate((X_train, X_validation),axis=0)
+    pretrain_y = np.concatenate((y_train, y_validation), axis=0)
     pretrain_trading_dates = np.concatenate((training_trading_dates, validation_trading_dates, testing_trading_dates), axis=0)
     curr_model.pretrain(pretrain_x, pretrain_y, pretrain_trading_dates,args.use_pretrain_data)
     pretrain_timer.end()
@@ -73,9 +73,10 @@ if __name__ == "__main__":
     parser = get_parser()
     arguments = parser.parse_args()
     if arguments.log_to_file:
-        logger_conf.init_log(f'{arguments.model_name}_{arguments.dataset}')
+        logger_conf.init_log(f'{arguments.log_to_file_name}')
     print(arguments)
     # Also load the best parameters
     parser = get_given_parameters_parser()
     arguments = parser.parse_args()
+    arguments.gpu_index = 0
     main_once(arguments)

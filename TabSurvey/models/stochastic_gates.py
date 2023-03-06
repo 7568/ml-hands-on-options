@@ -26,6 +26,10 @@ class STG(BaseModelTorch):
                               batch_size=self.args.batch_size, **self.params)  # hidden_dims=[500, 50, 10],
 
     def fit(self, X, y, X_val=None, y_val=None):
+        # X = X[:100,:]
+        # y = y[:100]
+        # X_val = X_val[:100, :]
+        # y_val = y_val[:100]
         X, X_val = X.astype("float"), X_val.astype("float")
 
         if self.args.objective == "regression":

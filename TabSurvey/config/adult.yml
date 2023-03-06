@@ -1,6 +1,6 @@
 # General parameters
 dataset: Adult
-model_name: SAINT # LinearModel, KNN, SVM, DecisionTree, RandomForest, XGBoost, CatBoost, LightGBM, ModelTree
+model_name: NODE # LinearModel, KNN, SVM, DecisionTree, RandomForest, XGBoost, CatBoost, LightGBM, ModelTree
                 # MLP, TabNet, VIME, TabTransformer, RLN, DNFNet, STG, NAM, DeepFM, SAINT
 objective: binary # Don't change
 # optimize_hyperparameters: True
@@ -31,7 +31,7 @@ one_hot_encode: False
 # Training parameters
 batch_size: 128
 val_batch_size: 256
-early_stopping_rounds: 20
+early_stopping_rounds: 1
 epochs: 1000
 logging_period: 100
 

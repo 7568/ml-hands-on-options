@@ -37,6 +37,11 @@ class TabNet(BaseModelTorch):
         
         X = X.astype(np.float32)
 
+        # X = X[:100,:]
+        # y = y[:100]
+        # X_val = X_val[:100, :]
+        # y_val = y_val[:100]
+
         self.model.fit(X, y, eval_set=[(X_val, y_val)], eval_name=["eval"], eval_metric=self.metric,
                        max_epochs=self.args.epochs, patience=self.args.early_stopping_rounds,
                        batch_size=self.args.batch_size)
