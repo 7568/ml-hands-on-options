@@ -6,9 +6,9 @@ objective: binary  # Don't change binary_f1 binary
 # 如果是 binary或者regression 那么num_classes为1
 
 pretrain: True
-pretrain_epochs: 7
+pretrain_epochs: 17
 
-use_pretrain_data: False
+use_pretrain_data: True
 
 # optimize_hyperparameters: True
 use_gpu: True

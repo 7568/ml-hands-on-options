@@ -97,8 +97,9 @@ class Attention(nn.Module):
 
 class RowColTransformer(nn.Module):
     def __init__(self, num_tokens, dim, nfeats, depth, heads, dim_head, attn_dropout, ff_dropout, style='col',
-                 device=None):
+                 device=None,blation_test=-1):
         super().__init__()
+        self.blation_test=blation_test
         self.device = device
         self.embeds = nn.Embedding(num_tokens, dim)
         self.layers = nn.ModuleList([])
@@ -155,12 +156,6 @@ class RowColTransformer(nn.Module):
 
                 x2 = rearrange(x2, '1 b (n d) -> b n d', n=n)
 
-                # x3 = rearrange(x2, 'b n d -> b n d_1 d_2', d_2=5)
-                # x3 = rearrange(x3, 'b n d_1 d_2 -> b d_2 (n d_1)')
-                # x3 = attn3(x3)
-                # x3 = ff3(x3)
-                # x3 = rearrange(x3, 'b d_2 (n d_1) -> b n d_1 d_2', d_2=5)
-                # x3 = rearrange(x3, 'b n d_1 d_2 -> b n d')
                 x3 = rearrange(x2, 'b (d_1 d_2) d -> b d_1 d_2 d', d_1=5)
                 x3 = rearrange(x3, 'b d_1 d_2 d -> b d_1 (d_2 d)')
                 pos = torch.arange(5, 0, -1).unsqueeze(0).repeat(batch, 1).to(self.device)

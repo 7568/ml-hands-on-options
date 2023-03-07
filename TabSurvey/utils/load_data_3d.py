@@ -88,7 +88,8 @@ def reformat_data(training_df, validation_df, testing_df, not_use_pre_data=False
 def load_h_sh_300_options(pretrain=False):
     print(f'pretrain : {pretrain}')
     NORMAL_TYPE = 'mean_norm'
-    if pretrain:
+    # if pretrain:
+    if False:
         PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20160701-20221124/h_sh_300/'
         training_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/training.csv')
         PREPARE_HOME_PATH_2 = '/home/liyu/data/hedging-option/20190701-20221124/h_sh_300/'

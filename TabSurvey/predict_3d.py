@@ -104,10 +104,13 @@ def training_validation_testing(model, X, y, training_trading_dates, validation_
 
 
     test_timer.start()
-    curr_model.set_testing_y(y_test)
-    curr_model.predict(X_test,testing_trading_dates)
+    # curr_model.set_testing(X_test,y_test,testing_trading_dates)
+    curr_model.predict(X_test,testing_trading_dates,y=y_test)
     test_timer.end()
+    sc.eval(curr_model.y_test,curr_model.predictions, curr_model.prediction_probabilities)
 
+
+    print(sc.get_results())
 
 
 
@@ -183,7 +186,7 @@ if __name__ == "__main__":
     parser = get_parser()
     arguments = parser.parse_args()
     if arguments.log_to_file:
-        logger_conf.init_log(f'{arguments.model_name}_{arguments.dataset}')
+        logger_conf.init_log(f'{arguments.log_to_file_name}')
     print(arguments)
     if arguments.optimize_hyperparameters:
         main(arguments)

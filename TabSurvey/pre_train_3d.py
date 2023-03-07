@@ -44,7 +44,7 @@ def training_validation_testing(model, X, y, training_trading_dates, validation_
     pretrain_timer.start()
     pretrain_x =  np.concatenate((X_train, X_validation),axis=0)
     pretrain_y = np.concatenate((y_train, y_validation), axis=0)
-    pretrain_trading_dates = np.concatenate((training_trading_dates, validation_trading_dates, testing_trading_dates), axis=0)
+    pretrain_trading_dates = np.concatenate((training_trading_dates, validation_trading_dates), axis=0)
     curr_model.pretrain(pretrain_x, pretrain_y, pretrain_trading_dates,args.use_pretrain_data)
     pretrain_timer.end()
 

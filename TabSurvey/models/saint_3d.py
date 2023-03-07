@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 import numpy as np
 from torch import einsum
 from einops import rearrange
-from sklearn.metrics import f1_score
+from sklearn.metrics import f1_score, confusion_matrix
 from models.saint_3d_lib.models.pretrainmodel import SAINT as SAINTModel
 from models.saint_3d_lib.data_openml import DataSetCatCon
 from models.saint_3d_lib.augmentations import embed_data_mask, mixup_data, add_noise
@@ -354,6 +354,7 @@ class SAINT_3d(BaseModelTorch):
             y = {'data': y.reshape(-1, 1)}
         _ds = DataSetCatCon(X, y, self.args.cat_idx, self.args.objective, trading_dates=_trading_dates)
         dataloader = DataLoader(_ds, batch_size=1, shuffle=False, num_workers=4)
+        print(f'need_reload_model : {need_reload_model}')
         if need_reload_model:
             self.load_model(filename_extension=f"{self.args.model_name}_{self.args.learning_rate}_best",
                             directory="tmp")
@@ -396,10 +397,10 @@ class SAINT_3d(BaseModelTorch):
         if tag=='validation':
             return f1
         else:
-            return np.concatenate(predictions)
+            return np.concatenate(predictions),np.concatenate(real_testing_y)
 
     def _f1_score(self, y_true, y_prediction):
-        y_true = np.concatenate(y_true)
+        y_true = np.concatenate(y_true).reshape((-1,))
         y_prediction = np.concatenate(y_prediction)
         if self.args.objective == "binary":
             y_prediction_ = np.concatenate((1 - y_prediction, y_prediction), 1)
@@ -410,11 +411,18 @@ class SAINT_3d(BaseModelTorch):
             # y_prediction_ = torch.sigmoid(y_prediction).detach().cpu().numpy()
             y_prediction_ = np.concatenate((1 - y_prediction, y_prediction), 1)
             y_prediction_ = np.argmax(y_prediction_, axis=1)
+        print(np.array(y_prediction_))
+        print(np.array(y_true))
+        print(y_prediction_.shape)
+        print(y_true.shape)
         print(f'np.all(y_prediction_==0) : {np.all(y_prediction_ == 0)}')
         print(f'np.all(y_prediction_==1) : {np.all(y_prediction_ == 1)}')
         print(f"np.sum(np.array(y_prediction)) : {np.sum(np.array(y_prediction_))}")
         print(f"np.array(y_prediction).size : {np.array(y_prediction_).size}")
-        f1 = f1_score(y_true, y_prediction_, average="binary")
+        tn, fp, fn, tp = confusion_matrix(y_true, np.array(y_prediction_)).ravel()
+        # print('0：不涨 ， 1：涨')
+        print('tn, fp, fn, tp', tn, fp, fn, tp)
+        f1 = f1_score(y_true, np.array(y_prediction_), average="binary")
         return f1
 
     def attribute(self, X, y, strategy=""):

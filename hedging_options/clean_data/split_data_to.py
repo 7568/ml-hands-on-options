@@ -293,14 +293,12 @@ def sub_data_by_date(traing_end_date,normal_type):
     df = pd.read_csv(f'{PREPARE_HOME_PATH}/all_raw_data.csv', parse_dates=['TradingDate'])
     no_need_columns = ['SecurityID', 'Filling', 'ContinueSign', 'TradingDayStatusID']
     df.drop(columns=no_need_columns, axis=1, inplace=True)
-    normal_data = pd.read_csv(f'/home/liyu/data/hedging-option/20190701-20221124/h_sh_300/{normal_type}/normal_data.csv')
     print(f'all data length is {df.shape}')
 
     # trading_date = df.sort_values(by=['TradingDate'])['TradingDate'].unique()
     training_df = df[df['TradingDate'] < pd.Timestamp(traing_end_date)]
     for k in tqdm(df.columns, total=len(df.columns)):
-        if not f'{k}_mean' in np.array(normal_data.columns):
-            continue
+
         if normal_type == 'no_norm':
             break
         # if k in ['TradingDate', 'C_1', 'S_1', 'real_hedging_rate']:
@@ -316,8 +314,8 @@ def sub_data_by_date(traing_end_date,normal_type):
                     training_df[k] = (training_df[k] - min) / (max - min)
 
                 else:
-                    mean = float(normal_data[f'{k}_mean'])
-                    std = float(normal_data[f'{k}_std'])
+                    mean = float(_df.mean())
+                    std = float(_df.std())
                     if std == 0:
                         print(f'{k} std is o!')
                         r = np.array(training_df[k])
@@ -409,7 +407,7 @@ PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/20160701-20221124/h_sh_300/
 # PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/20190701-20221124/h_sh_300/'
 if __name__ == '__main__':
     NORMAL_TYPE = 'mean_norm'
-    # sub_data_by_date('2022-07-21',NORMAL_TYPE) # 将原始数据截取至 20220721 ， 因为20220721之后的数据为testing
+    sub_data_by_date('2022-07-21',NORMAL_TYPE) # 将原始数据截取至 20220721 ， 因为20220721之后的数据为testing
     # split_training_validation_test()
     # split_training_validation_test_by_date()
     split_training_validation_test_by_date_2()

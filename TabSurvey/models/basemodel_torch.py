@@ -141,25 +141,25 @@ class BaseModelTorch(BaseModel):
         self.load_model(filename_extension="best", directory="tmp")
         return loss_history, val_loss_history
 
-    def predict(self, X,testing_trading_dates=None):
+    def predict(self, X,testing_trading_dates=None,y=None):
         if self.args.objective == "regression":
             if not testing_trading_dates is None:
-                self.predictions = self.predict_helper(X,testing_trading_dates)
+                self.predictions = self.predict_helper(X,testing_trading_dates,y=y)
             else:
                 self.predictions = self.predict_helper(X)
 
         else:
             if not testing_trading_dates is None:
-                self.predict_proba(X,testing_trading_dates)
+                self.predict_proba(X,testing_trading_dates,y=y)
             else:
                 self.predict_proba(X)
             self.predictions = np.argmax(self.prediction_probabilities, axis=1)
 
         return self.predictions
 
-    def predict_proba(self, X: np.ndarray,testing_trading_dates=None) -> np.ndarray:
+    def predict_proba(self, X: np.ndarray,testing_trading_dates=None,y=None) -> np.ndarray:
         if not testing_trading_dates is None:
-            probas = self.predict_helper(X, testing_trading_dates)
+            probas,sorted_y_test = self.predict_helper(X, testing_trading_dates,y=y)
         else:
             probas = self.predict_helper(X)
 
@@ -170,6 +170,7 @@ class BaseModelTorch(BaseModel):
             probas = np.concatenate((1 - probas, probas), 1)
 
         self.prediction_probabilities = probas
+        self.y_test = sorted_y_test
         return self.prediction_probabilities
 
     def predict_helper(self, X,testing_trading_dates=None):

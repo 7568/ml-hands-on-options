@@ -155,6 +155,10 @@ class BinScorer(Scorer):
 
     def eval(self, y_true, y_prediction, y_probabilities):
         y_true = y_true.reshape((-1,))
+        print(np.array(y_prediction))
+        print(np.array(y_true))
+        print(y_prediction.shape)
+        print(y_true.shape)
         logloss = log_loss(y_true, y_probabilities)
         auc = roc_auc_score(y_true, y_probabilities[:, 1])
 

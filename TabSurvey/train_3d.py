@@ -96,7 +96,7 @@ def training_validation_testing(model, X, y, training_trading_dates, validation_
     curr_model = model.clone()
     print(f'use_pretrain_data : {args.use_pretrain_data}')
     if args.use_pretrain_data:
-        model.load_model(filename_extension="pretrain_v2", directory="tmp")
+        model.load_model(filename_extension="pretrain", directory="tmp")
     # print(f'args.use_gpu {args.use_gpu}')
     # if args.use_gpu:
     #     import torch
