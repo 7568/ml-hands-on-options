@@ -76,7 +76,7 @@ if __name__ == '__main__':
         # 'objective': util.mse_loss,
         # 'objective': mae_loss,
         # 'objective': pseudo_huber_loss,
-        'n_estimators': 200,
+        'n_estimators': 500,
         'max_depth': 30,
         'learning_rate': 0.01,
         'tree_method': 'hist',
