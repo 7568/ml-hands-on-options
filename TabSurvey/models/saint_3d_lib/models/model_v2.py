@@ -134,11 +134,15 @@ class RowColTransformer(nn.Module):
                     PreNorm(dim * nfeats, Residual(FeedForward(dim * nfeats, dropout=ff_dropout))),
                 ]))
 
-    def forward(self, x, x_cont=None, mask=None):
+    def forward(self, x, x_cont=None, mask=None, blation_test_id=11):
+        each_day_feature_num = 39
+        each_day_cat_feature_num = 3
         if x_cont is not None:
             x_new = []
             for i in range(5):
-                x_new.append(torch.cat((x[:, i * 3:(i + 1) * 3, :], x_cont[:, i * 35:(i + 1) * 35, :]), dim=1))
+                x_new.append(torch.cat((x[:, i * 3:(i + 1) * each_day_cat_feature_num, :], x_cont[:, i * (
+                        each_day_feature_num - each_day_cat_feature_num):(i + 1) * (
+                        each_day_feature_num - each_day_cat_feature_num), :]), dim=1))
             x = torch.cat(x_new, dim=1)
         else:
             print(f'x_cont is {x_cont}')
@@ -147,7 +151,7 @@ class RowColTransformer(nn.Module):
             for attn1_ff1_s, attn2_ff2_s,attn3, ff3 in self.layers:
                 x1 = []
                 for i,(attn1,ff1) in enumerate(attn1_ff1_s):
-                    _x1 = attn1(x[:, i * 38:(i + 1) * 38, :])
+                    _x1 = attn1(x[:, i * each_day_feature_num:(i + 1) * each_day_feature_num, :])
                     _x1 = ff1(_x1)
                     x1.append(_x1)
                 x1 = torch.cat(x1, dim=1)
@@ -156,7 +160,7 @@ class RowColTransformer(nn.Module):
                 x2_ = rearrange(x1, 'b n d -> 1 b (n d)')
 
                 for i,(attn2,ff2) in enumerate(attn2_ff2_s):
-                    _x2 = attn2(x2_[:, :, i * 38 * 8:(i + 1) * 38 * 8])
+                    _x2 = attn2(x2_[:, :, i * each_day_feature_num * 8:(i + 1) * each_day_feature_num * 8])
                     _x2 = ff2(_x2)
                     x2.append(_x2)
                 x2 = torch.cat(x2, dim=2)
@@ -187,7 +191,7 @@ class RowColTransformer(nn.Module):
                 x = ff1(x)
                 x = rearrange(x, '1 b (n d) -> b n d', n=n)
 
-        x = x[:, 0:38, :]
+        x = x[:, 0:each_day_feature_num, :]
         # x = rearrange(x, 'b n d -> b (n d)')
         return x
 

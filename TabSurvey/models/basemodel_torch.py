@@ -160,6 +160,7 @@ class BaseModelTorch(BaseModel):
     def predict_proba(self, X: np.ndarray,testing_trading_dates=None) -> np.ndarray:
         if not testing_trading_dates is None:
             probas,sorted_y_test = self.predict_helper(X, testing_trading_dates)
+            self.y_test = sorted_y_test
         else:
             probas = self.predict_helper(X)
 
@@ -170,7 +171,6 @@ class BaseModelTorch(BaseModel):
             probas = np.concatenate((1 - probas, probas), 1)
 
         self.prediction_probabilities = probas
-        self.y_test = sorted_y_test
         return self.prediction_probabilities
 
     def predict_helper(self, X,testing_trading_dates=None):

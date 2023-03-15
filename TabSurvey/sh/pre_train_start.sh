@@ -21,7 +21,7 @@ TRAIN_FILE_NAME=(
 declare -A MODELS_GPU_INDEX
 
 MODELS_GPU_INDEX=(
-         ["SAINT_3D"]=2
+         ["SAINT_3D"]=0
           )
 
 #CONFIGS=( "config/adult.yml"

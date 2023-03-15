@@ -7,16 +7,16 @@ declare -A MODELS_1
 
 MODELS_1=(
          ["TabNet"]=$TORCH_ENV
-#         ["VIME"]=$TORCH_ENV
-#         ["TabTransformer"]=$TORCH_ENV
-#         ["NODE"]=$TORCH_ENV
-#         ["MLP"]=$TORCH_ENV
-#         ["DeepGBM"]=$TORCH_ENV
+         ["VIME"]=$TORCH_ENV
+         ["TabTransformer"]=$TORCH_ENV
+         ["NODE"]=$TORCH_ENV
+         ["MLP"]=$TORCH_ENV
+         ["DeepGBM"]=$TORCH_ENV
          ["STG"]=$TORCH_ENV
-#         ["NAM"]=$TORCH_ENV
-#         ["DeepFM"]=$TORCH_ENV
-#         ["SAINT"]=$TORCH_ENV
-#         ["DANet"]=$TORCH_ENV
+         ["NAM"]=$TORCH_ENV
+         ["DeepFM"]=$TORCH_ENV
+         ["SAINT"]=$TORCH_ENV
+         ["DANet"]=$TORCH_ENV
           )
 #MODELS_1=(
 #         ["SAINT"]=$TORCH_ENV
@@ -34,6 +34,7 @@ MODELS_GPU_INDEX=(
          ["DeepFM"]=7
          ["SAINT"]=5
          ["DANet"]=1
+         ["NAM"]=2
           )
 
 #CONFIGS=( "config/adult.yml"
@@ -51,7 +52,7 @@ for config in "${CONFIGS[@]}"; do
 
   for model in "${!MODELS_1[@]}"; do
     printf "\n\n----------------------------------------------------------------------------\n"
-    printf 'Training %s with %s in env %s\n\n' "$model" "$config" "${MODELS_1[$model]}"
+    printf 'Training %s with %s in env %s\n gpu_index %s \n' "$model" "$config" "${MODELS_1[$model]}" "${MODELS_GPU_INDEX[$model]}"
 
     conda activate "${MODELS_1[$model]}"
     cd ..
