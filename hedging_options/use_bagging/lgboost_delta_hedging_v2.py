@@ -20,6 +20,7 @@ def init_parser():
 
 
 PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20190701-20221124_2/h_sh_300/'
+PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20140101-20221124/h_sh_300/'
 if __name__ == '__main__':
     opt = init_parser()
     if opt.log_to_file:

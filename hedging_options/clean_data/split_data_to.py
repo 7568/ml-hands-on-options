@@ -491,8 +491,8 @@ PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/20140101-20221124/h_sh_300/
 # PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/20160301-20190531/h_sh_300/'
 # PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/20160701-20221124/h_sh_300/'
 # PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/20190601-20221123/h_sh_300/'
-PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/20190701-20221124/h_sh_300/'
-PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/20190701-20221124_2/h_sh_300/'
+# PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/20190701-20221124/h_sh_300/'
+# PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/20190701-20221124_2/h_sh_300/'
 if __name__ == '__main__':
     NORMAL_TYPE = 'mean_norm'
     # sub_data_by_date('2022-07-21',NORMAL_TYPE) # 将原始数据截取至 20220721 ， 因为20220721之后的数据为testing
