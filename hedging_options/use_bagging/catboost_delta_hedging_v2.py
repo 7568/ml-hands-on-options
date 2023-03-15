@@ -20,7 +20,7 @@ def init_parser():
     return parser.parse_args()
 
 
-PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20190701-20221124/h_sh_300/'
+PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20190701-20221124_2/h_sh_300/'
 if __name__ == '__main__':
     opt = init_parser()
     if opt.log_to_file:
@@ -30,16 +30,16 @@ if __name__ == '__main__':
     training_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/training.csv')
     validation_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/validation.csv')
     testing_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/testing.csv')
-    no_need_columns = ['TradingDate', 'C_1']
+    no_need_columns = ['TradingDate', 'NEXT_HIGH']
     training_df.drop(columns=no_need_columns, axis=1, inplace=True)
     validation_df.drop(columns=no_need_columns, axis=1, inplace=True)
     testing_df.drop(columns=no_need_columns, axis=1, inplace=True)
-    # cat_features = ['CallOrPut', 'MainSign', 'up_and_down']
-    cat_features = ['CallOrPut', 'MainSign']
+    cat_features = ['CallOrPut', 'MainSign', 'up_and_down']
+    # cat_features = ['CallOrPut', 'MainSign']
     for i in range(1, 5):
         cat_features.append(f'CallOrPut_{i}')
         cat_features.append(f'MainSign_{i}')
-        # cat_features.append(f'up_and_down_{i}')
+        cat_features.append(f'up_and_down_{i}')
     train_x, train_y, validation_x, validation_y, testing_x, testing_y = util.reformat_data(
         training_df, testing_df, validation_df, not_use_pre_data=False)
 

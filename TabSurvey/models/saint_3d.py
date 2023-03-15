@@ -39,6 +39,8 @@ class SAINT_3d(BaseModelTorch):
         dim = self.params["dim"] if args.num_features < 50 else 8
         self.batch_size = self.args.batch_size if args.num_features < 50 else 64
 
+        self.blation_test_id = args.blation_test_id
+        print(f'blation_test_id : {self.blation_test_id}')
         # print("Using dim %d and batch size %d" % (dim, self.batch_size))
         self.cat_dims = cat_dims
         self.model = SAINTModel(
@@ -98,6 +100,7 @@ class SAINT_3d(BaseModelTorch):
         val_loss_history = []
 
         for epoch in range(self.args.epochs):
+            loss_history = []
             self.model.train()
 
             for i, data in tqdm(enumerate(trainloader), total=len(trainloader)):
@@ -121,7 +124,7 @@ class SAINT_3d(BaseModelTorch):
                 # We are converting the data to embeddings in the next step
                 _, x_categ_enc, x_cont_enc = embed_data_mask(x_categ, x_cont, cat_mask, con_mask, self.model)
 
-                reps = self.model.transformer(x_categ_enc, x_cont_enc)
+                reps = self.model.transformer(x_categ_enc, x_cont_enc,self.blation_test_id)
 
                 # select only the representations corresponding to CLS token
                 # and apply mlp on it in the next step to get the predictions.
@@ -157,13 +160,19 @@ class SAINT_3d(BaseModelTorch):
             print(f'epoche " {epoch} , average loss : {np.array(loss_history).mean()}')
 
             f1 = self.predict_helper(X_val,validation_trading_dates,y_val,tag='validation',need_reload_model=False)
+            # if np.array(loss_history).mean() < min_val_loss:
+            #     min_val_loss = np.array(loss_history).mean()
+            #     min_val_loss_idx = epoch
+            #
+            #     # Save the currently best model
+            #     self.save_model(filename_extension=f"{self.args.model_name}_{self.args.blation_test_id}_{self.args.learning_rate}_best", directory="tmp")
 
             if f1 > max_f1:
                 max_f1 = f1
                 min_val_loss_idx = epoch
 
                 # Save the currently best model
-                self.save_model(filename_extension=f"{self.args.model_name}_{self.args.learning_rate}_best", directory="tmp")
+                self.save_model(filename_extension=f"{self.args.model_name}_{self.args.blation_test_id}_{self.args.learning_rate}_best", directory="tmp")
 
             if min_val_loss_idx + self.args.early_stopping_rounds < epoch:
                 print("Validation loss has not improved for %d steps!" % self.args.early_stopping_rounds)
@@ -349,14 +358,14 @@ class SAINT_3d(BaseModelTorch):
     def predict_helper(self, X, _trading_dates=None,y = None,tag='testing',need_reload_model=True):
         X = {'data': X, 'mask': np.ones_like(X)}
         if y is None:
-            y = {'data': np.ones((X['data'].shape[0], 1))}
+            y = {'data': self.testing_y}
         else:
             y = {'data': y.reshape(-1, 1)}
         _ds = DataSetCatCon(X, y, self.args.cat_idx, self.args.objective, trading_dates=_trading_dates)
         dataloader = DataLoader(_ds, batch_size=1, shuffle=False, num_workers=4)
         print(f'need_reload_model : {need_reload_model}')
         if need_reload_model:
-            self.load_model(filename_extension=f"{self.args.model_name}_{self.args.learning_rate}_best",
+            self.load_model(filename_extension=f"{self.args.model_name}_{self.args.blation_test_id}_{self.args.learning_rate}_best",
                             directory="tmp")
             self.model.to(self.device)
         self.model.eval()
@@ -376,7 +385,7 @@ class SAINT_3d(BaseModelTorch):
                 cat_mask, con_mask = cat_mask.to(self.device), con_mask.to(self.device)
 
                 _, x_categ_enc, x_cont_enc = embed_data_mask(x_categ, x_cont, cat_mask, con_mask, self.model)
-                reps = self.model.transformer(x_categ_enc, x_cont_enc)
+                reps = self.model.transformer(x_categ_enc, x_cont_enc,blation_test_id=self.blation_test_id)
                 y_reps = reps[:, -1, :]
 
                 y_outs = self.model.mlpfory(y_reps)

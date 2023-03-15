@@ -133,52 +133,59 @@ def get_data_by_securityids(param):
     feature1 = param['feature1']
     feature2 = param['feature2']
     option_ids = df['SecurityID'].unique()
+    font_size=30
     if not os.path.exists(f'{SAVE_ROOT_PATH}/(1&_1)/'):
         os.makedirs(f'{SAVE_ROOT_PATH}/(1&_1)/')
     if not os.path.exists(f'{SAVE_ROOT_PATH}/(2-1)/'):
         os.makedirs(f'{SAVE_ROOT_PATH}/(2-1)/')
     if not os.path.exists(f'{SAVE_ROOT_PATH}/(2-1)_1/'):
         os.makedirs(f'{SAVE_ROOT_PATH}/(2-1)_1/')
+    # for option_id in tqdm(option_ids, total=len(option_ids)):
+    #     _option_datas = df[df['SecurityID'] == option_id]
+    #     data_numbers = _option_datas.shape[0]
+    #     fig = plt.figure(figsize=(10, 10))
+    #
+    #     ax = host_subplot(111)
+    #     ax2 = ax.twinx()
+    #     ax.set_xlabel("Day",size=font_size)
+    #     ax.set_ylabel("Value",size=font_size)
+    #     ax2.set_ylabel("Value",size=font_size)
+    #     ax.set_title(f'{option_id}_{_option_datas.iloc[0]["TradingDate"]}',size=font_size)
+    #     p1, = ax.plot(range(data_numbers), _option_datas[feature1]+_option_datas['StrikePrice'], color='red', label=f'{feature1}')
+    #     ax.tick_params(axis='y', labelcolor='red',size=font_size)
+    #
+    #     p2, = ax2.plot(range(data_numbers), _option_datas['UnderlyingScrtClose'], color='green',
+    #                    label='UnderlyingScrtClose')
+    #     ax2.tick_params(axis='y', labelcolor='green',labelsize=font_size)
+    #     leg = plt.legend()
+    #
+    #     ax.yaxis.get_label().set_color(p1.get_color())
+    #     leg.texts[0].set_color(p1.get_color())
+    #     leg.texts[0]._fontproperties._size = 14
+    #     ax2.yaxis.get_label().set_color(p2.get_color())
+    #     leg.texts[1].set_color(p2.get_color())
+    #     leg.texts[1]._fontproperties._size = 14
+    #     print(f'{SAVE_ROOT_PATH}/(1&_1)/{str(option_id)[-5:]}.png')
+    #     plt.yticks(fontsize=16)
+    #     plt.xticks(fontsize=26)
+    #     plt.savefig(f'{SAVE_ROOT_PATH}/(1&_1)/{str(option_id)[-5:]}.png')
+    #     plt.close(fig)
+    # for option_id in tqdm(option_ids, total=len(option_ids)):
+    #     _option_datas = df[df['SecurityID'] == option_id]
+    #     data_numbers = _option_datas.shape[0]
+    #     fig = plt.figure(figsize=(10, 10))
+    #     ax = fig.add_subplot(1, 1, 1)
+    #     ax.set_title(f'{option_id}_{_option_datas.iloc[0]["TradingDate"]}',size=font_size)
+    #     ax.set_xlabel('day',size=font_size)
+    #     ax.set_ylabel('value',size=font_size)
+    #     ax.plot(range(data_numbers), (_option_datas[feature2] - _option_datas[feature1]))
+    #     print(f'{SAVE_ROOT_PATH}/(2-1)/{str(option_id)[-5:]}.png')
+    #     plt.savefig(f'{SAVE_ROOT_PATH}/(2-1)/{str(option_id)[-5:]}.png')
+    #     plt.close(fig)
     for option_id in tqdm(option_ids, total=len(option_ids)):
         _option_datas = df[df['SecurityID'] == option_id]
         data_numbers = _option_datas.shape[0]
-        fig = plt.figure(figsize=(10, 10))
-        ax = host_subplot(111)
-        ax2 = ax.twinx()
-        ax.set_xlabel("Day")
-        ax.set_ylabel("Value")
-        ax2.set_ylabel("Value")
-        ax.set_title(f'{option_id}_{_option_datas.iloc[0]["TradingDate"]}')
-        p1, = ax.plot(range(data_numbers), _option_datas[feature1]+_option_datas['StrikePrice'], color='red', label=f'{feature1}')
-        ax.tick_params(axis='y', labelcolor='red')
-        p2, = ax2.plot(range(data_numbers), _option_datas['UnderlyingScrtClose'], color='green',
-                       label='UnderlyingScrtClose')
-        ax2.tick_params(axis='y', labelcolor='green')
-        leg = plt.legend()
-
-        ax.yaxis.get_label().set_color(p1.get_color())
-        leg.texts[0].set_color(p1.get_color())
-
-        ax2.yaxis.get_label().set_color(p2.get_color())
-        leg.texts[1].set_color(p2.get_color())
-
-        plt.savefig(f'{SAVE_ROOT_PATH}/(1&_1)/{str(option_id)[-5:]}.png')
-        plt.close(fig)
-    for option_id in tqdm(option_ids, total=len(option_ids)):
-        _option_datas = df[df['SecurityID'] == option_id]
-        data_numbers = _option_datas.shape[0]
-        fig = plt.figure(figsize=(10, 10))
-        ax = fig.add_subplot(1, 1, 1)
-        ax.set_title(f'{option_id}_{_option_datas.iloc[0]["TradingDate"]}')
-        ax.set_xlabel('day')
-        ax.set_ylabel('value')
-        ax.plot(range(data_numbers), (_option_datas[feature2] - _option_datas[feature1]))
-        plt.savefig(f'{SAVE_ROOT_PATH}/(2-1)/{str(option_id)[-5:]}.png')
-        plt.close(fig)
-    for option_id in tqdm(option_ids, total=len(option_ids)):
-        _option_datas = df[df['SecurityID'] == option_id]
-        data_numbers = _option_datas.shape[0]
-        fig = plt.figure(figsize=(10, 10))
+        fig = plt.figure(figsize=(20, 10))
 
 
         # ax = fig.add_subplot(1, 1, 1)
@@ -199,29 +206,33 @@ def get_data_by_securityids(param):
         # # print(((_option_datas[feature2] - _option_datas[feature1]) / (_option_datas[feature1] + 1e-6)).to_numpy().max())
         # plt.legend()
 
-        ax = host_subplot(111)
+        ax = host_subplot(121)
         ax2 = ax.twinx()
-        ax.set_xlabel("Day")
-        ax.set_ylabel("Value")
-        ax2.set_ylabel("Value")
-        ax.set_title(f'{option_id}_{str(_option_datas.iloc[0]["TradingDate"]).split(" ")[0]}')
+        ax.set_xlabel("Day",size=font_size)
+        ax.set_ylabel("Value",size=font_size)
+        ax2.set_ylabel("Value",size=font_size)
+        ax.set_title(f'{option_id}_{str(_option_datas.iloc[0]["TradingDate"]).split(" ")[0]}',size=font_size)
         p1, = ax.plot(range(data_numbers),
                 (_option_datas[feature2] - _option_datas[feature1]) / (_option_datas[feature1] + 1e-6), color='#E50000',
                 label=f'(price1-price)/price')
-        ax.tick_params(axis='y', labelcolor='#E50000')
+        ax.tick_params(axis='y', labelcolor='#E50000',labelsize=font_size)
         p2, = ax2.plot(range(data_numbers),
                  (_option_datas['UnderlyingScrtClose_1'] - _option_datas['UnderlyingScrtClose']), color='#AAA662',
                  label=f'Underprince-Under1price')
-        ax2.tick_params(axis='y', labelcolor='#AAA662')
-        leg = plt.legend()
-
+        ax2.tick_params(axis='y', labelcolor='#AAA662',labelsize=font_size)
+        leg = plt.legend(bbox_to_anchor=(0.65,0.9))
         ax.yaxis.get_label().set_color(p1.get_color())
         leg.texts[0].set_color(p1.get_color())
 
         ax2.yaxis.get_label().set_color(p2.get_color())
         leg.texts[1].set_color(p2.get_color())
+        leg.texts[0]._fontproperties._size = font_size-12
+        leg.texts[1]._fontproperties._size = font_size-12
+
+        plt.xticks(fontsize=font_size)
         if not os.path.exists(f'{SAVE_ROOT_PATH}/(2-1)_1/{str(_option_datas.iloc[0]["TradingDate"]).split(" ")[0]}'):
             os.makedirs(f'{SAVE_ROOT_PATH}/(2-1)_1/{str(_option_datas.iloc[0]["TradingDate"]).split(" ")[0]}')
+        print(f'{SAVE_ROOT_PATH}/(2-1)_1/{str(_option_datas.iloc[0]["TradingDate"]).split(" ")[0]}/{str(option_id)[-5:]}.png')
         plt.savefig(f'{SAVE_ROOT_PATH}/(2-1)_1/{str(_option_datas.iloc[0]["TradingDate"]).split(" ")[0]}/{str(option_id)[-5:]}.png')
         plt.close(fig)
 

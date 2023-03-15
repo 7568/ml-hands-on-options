@@ -8,7 +8,7 @@ objective: binary  # Don't change binary_f1 binary
 pretrain: True
 pretrain_epochs: 17
 
-use_pretrain_data: True
+use_pretrain_data: False
 
 # optimize_hyperparameters: True
 use_gpu: True
@@ -45,7 +45,7 @@ logging_period: 20
 
 # About the data
 num_classes: 1  # for classification
-num_features: 190
-cat_idx: [ 0, 28, 37, 38, 66, 75, 76,104, 113,114,142,151,152,180,189]
+num_features: 195
+cat_idx: [ 0, 28, 38, 39, 67, 77, 78,106, 116,117,145,155,156,184,194]
 # cat_dims: will be automatically set.
 #cat_dims: [ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2 ]

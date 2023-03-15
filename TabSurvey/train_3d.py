@@ -79,7 +79,8 @@ def cross_validation(model, X, y, args, save_model=False):
     return sc, (train_timer.get_average_time(), test_timer.get_average_time())
 
 
-def training_validation_testing(model, X, y, training_trading_dates, validation_trading_dates, testing_trading_dates,args, save_model=False):
+def training_validation_testing(model, X, y, training_trading_dates, validation_trading_dates, testing_trading_dates,
+                                args, save_model=False):
     # Record some statistics and metrics
     sc = get_scorer(args)
     train_timer = Timer()
@@ -105,26 +106,25 @@ def training_validation_testing(model, X, y, training_trading_dates, validation_
     #     print(f'curr_model.device {curr_model.device}')
     # Train model
     train_timer.start()
-    curr_model.set_testing(X_test,y_test,testing_trading_dates)
-    loss_history, val_loss_history = curr_model.fit(X_train, y_train, X_validation, y_validation,training_trading_dates, validation_trading_dates)  # X_val, y_val)
+    curr_model.set_testing(X_test, y_test, testing_trading_dates)
+    loss_history, val_loss_history = curr_model.fit(X_train, y_train, X_validation, y_validation,
+                                                    training_trading_dates, validation_trading_dates)  # X_val, y_val)
     # loss_history, val_loss_history = curr_model.fit(X_train, y_train, X_test, y_test,training_trading_dates, testing_trading_dates)  # X_val, y_val)
     train_timer.end()
 
-
     test_timer.start()
-    curr_model.predict(X_test,testing_trading_dates)
+    curr_model.predict(X_test, testing_trading_dates)
     test_timer.end()
 
     # Save model weights and the truth/prediction pairs for traceability
-    curr_model.save_model_and_predictions(y_test)
+    # curr_model.save_model_and_predictions(y_test)
 
     if save_model:
         save_loss_to_file(args, loss_history, "loss")
         save_loss_to_file(args, val_loss_history, "val_loss")
 
     # Compute scores on the output
-    sc.eval(y_test, curr_model.predictions, curr_model.prediction_probabilities)
-
+    sc.eval(curr_model.y_test, curr_model.predictions, curr_model.prediction_probabilities)
 
     print(sc.get_results())
 
@@ -173,7 +173,7 @@ class Objective(object):
 
 def main(args):
     print("Start hyperparameter optimization")
-    X, y,training_trading_dates, validation_trading_dates, testing_trading_dates = load_data(args)
+    X, y, training_trading_dates, validation_trading_dates, testing_trading_dates = load_data(args)
 
     model_name = str2model(args.model_name)
 
@@ -198,7 +198,7 @@ def main(args):
 
 def main_once(args):
     print("Train model with given hyperparameters")
-    X, y ,training_trading_dates, validation_trading_dates, testing_trading_dates= load_data(args)
+    X, y, training_trading_dates, validation_trading_dates, testing_trading_dates = load_data(args)
 
     model_name = str2model(args.model_name)
 
@@ -207,7 +207,8 @@ def main_once(args):
     if not args.dataset == 'H_sh_300_options':
         sc, time = cross_validation(model, X, y, args)
     else:
-        sc, time = training_validation_testing(model, X, y,training_trading_dates, validation_trading_dates, testing_trading_dates, args)
+        sc, time = training_validation_testing(model, X, y, training_trading_dates, validation_trading_dates,
+                                               testing_trading_dates, args)
     print('finished training model')
     print(sc.get_results())
     print(time)
@@ -228,6 +229,8 @@ if __name__ == "__main__":
         parser = get_given_parameters_parser()
         arguments = parser.parse_args()
         # update default gpu_index
-        if arguments.gpu_index==0:
-            arguments.gpu_index=7
+        if arguments.gpu_index == 0:
+            arguments.gpu_index = 7
+        if arguments.gpu_index > 7:
+            arguments.gpu_index %= 7
         main_once(arguments)

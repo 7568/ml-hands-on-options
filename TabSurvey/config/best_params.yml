@@ -117,7 +117,7 @@ parameters: {
     },
     SAINT_3D_PRE: {
       dim: 38,
-      depth: 4,
+      depth: 12,
       heads: 5,
       dropout: 0.001
     },

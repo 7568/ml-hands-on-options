@@ -101,7 +101,7 @@ def training_validation_testing(model, X, y, training_trading_dates, validation_
     #     device = torch.device(f"cuda:{args.gpu_index}" if torch.cuda.is_available() else "cpu")
     #     curr_model.device = device
     #     print(f'curr_model.device {curr_model.device}')
-
+    curr_model.blation_test_id=2
 
     test_timer.start()
     # curr_model.set_testing(X_test,y_test,testing_trading_dates)

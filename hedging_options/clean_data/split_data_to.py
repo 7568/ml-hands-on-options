@@ -102,6 +102,83 @@ def make_index(tag):
     pd.DataFrame(train_data_index, columns=['SecurityID', 'days']).to_csv(
         f'{PREPARE_HOME_PATH}/h_sh_300_{tag}_index.csv', index=False)
 
+@cm.my_log
+def normalize_data2(normal_type):
+    PREPARE_HOME_PATH2 = f'/home/liyu/data/hedging-option/20190701-20221124/h_sh_300/'
+    training_df = pd.read_csv(f'{PREPARE_HOME_PATH}/training.csv', parse_dates=['TradingDate'])
+    validation_df = pd.read_csv(f'{PREPARE_HOME_PATH2}/validation.csv', parse_dates=['TradingDate'])
+    testing_df = pd.read_csv(f'{PREPARE_HOME_PATH2}/testing.csv', parse_dates=['TradingDate'])
+
+    no_need_columns = ['SecurityID', 'Filling', 'ContinueSign', 'TradingDayStatusID']
+    training_df.drop(columns=no_need_columns, axis=1, inplace=True)
+    validation_df.drop(columns=no_need_columns, axis=1, inplace=True)
+    testing_df.drop(columns=no_need_columns, axis=1, inplace=True)
+
+    cat_columns = ['CallOrPut', 'CallOrPut_1', 'CallOrPut_2', 'CallOrPut_3', 'CallOrPut_4',
+                   'MainSign', 'MainSign_1', 'MainSign_2', 'MainSign_3', 'MainSign_4', 'TradingDate',
+                   'up_and_down', 'up_and_down_1', 'up_and_down_2', 'up_and_down_3', 'up_and_down_4']
+    normal_data = []
+
+    for i in cat_columns:
+        if i == 'TradingDate':
+            continue
+        training_df[i] = training_df[i].astype('int')
+        validation_df[i] = validation_df[i].astype('int')
+        testing_df[i] = testing_df[i].astype('int')
+
+    for j in training_df.columns:
+        if not (j in cat_columns):
+            training_df[j] = training_df[j].astype('float64')
+            validation_df[j] = validation_df[j].astype('float64')
+            testing_df[j] = testing_df[j].astype('float64')
+    for k in tqdm(training_df.columns, total=len(training_df.columns)):
+        if normal_type == 'no_norm':
+            break
+        # if k in ['TradingDate', 'C_1', 'S_1', 'real_hedging_rate']:
+        if k in ['TradingDate']:
+            continue
+        if validation_df[k].dtype == 'float64':
+            # for df in [training_df, validation_df, testing_df]:
+            df = training_df
+            _df = df[k]
+            max = _df.max()
+            min = _df.min()
+            if max > 1 or min < -1:
+                if normal_type == 'min_max_norm':
+                    df[k] = (_df - min) / (max - min)
+                    validation_df[k] = (validation_df[k] - min) / (max - min)
+                    testing_df[k] = (testing_df[k] - min) / (max - min)
+                    normal_data.append([f'{k}_max', max])
+                    normal_data.append([f'{k}_min', min])
+                else:
+                    mean = _df.mean()
+                    std = _df.std()
+                    if std == 0:
+                        df[k] = 0
+                        validation_df[k] = 0
+                        testing_df[k] = 0
+                        normal_data.append([f'{k}_mean', 0])
+                        normal_data.append([f'{k}_std', 0])
+                    else:
+                        df[k] = (_df - mean) / std
+                        validation_df[k] = (validation_df[k] - mean) / std
+                        testing_df[k] = (testing_df[k] - mean) / std
+                        normal_data.append([f'{k}_mean', mean])
+                        normal_data.append([f'{k}_std', std])
+            else:
+                print(f'{k} do not normalize')
+
+    remove_file_if_exists(f'{PREPARE_HOME_PATH}/{normal_type}/training.csv')
+    remove_file_if_exists(f'{PREPARE_HOME_PATH}/{normal_type}/validation.csv')
+    remove_file_if_exists(f'{PREPARE_HOME_PATH}/{normal_type}/testing.csv')
+    remove_file_if_exists(f'{PREPARE_HOME_PATH}/{normal_type}/normal_data.csv')
+    if not os.path.exists(f'{PREPARE_HOME_PATH}/{normal_type}/'):
+        os.mkdir(f'{PREPARE_HOME_PATH}/{normal_type}/')
+    training_df.to_csv(f'{PREPARE_HOME_PATH}/{normal_type}/training.csv', index=False)
+    validation_df.to_csv(f'{PREPARE_HOME_PATH}/{normal_type}/validation.csv', index=False)
+    testing_df.to_csv(f'{PREPARE_HOME_PATH}/{normal_type}/testing.csv', index=False)
+    pd.DataFrame(data=[{i[0]: i[1] for i in normal_data}]).to_csv(f'{PREPARE_HOME_PATH}/{normal_type}/normal_data.csv',
+                                                                  index=False)
 
 @cm.my_log
 def normalize_data(normal_type):
@@ -249,6 +326,14 @@ def split_training_validation_test_by_date():
     validation_data.to_csv(f'{PREPARE_HOME_PATH}/validation.csv', index=False)
     testing_data.to_csv(f'{PREPARE_HOME_PATH}/testing.csv', index=False)
 
+@cm.my_log
+def split_training_validation_test_by_date_3():
+    df = pd.read_csv(f'{PREPARE_HOME_PATH}/all_raw_data.csv', parse_dates=['TradingDate'])
+    print(f'all data length is {df.shape}')
+    remove_file_if_exists(f'{PREPARE_HOME_PATH}/training.csv')
+    training_data = df
+    training_data.to_csv(f'{PREPARE_HOME_PATH}/training.csv', index=False)
+    print(f'training data length is {training_data.shape}')
 
 @cm.my_log
 def split_training_validation_test_by_date_2():
@@ -401,18 +486,23 @@ def create_train_mirror_data(normal_type):
 
 # PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/china-market/h_sh_300/'
 # PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/20140101-20160229/h_sh_300/'
+# PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/20140101-20220321/h_sh_300/'
+PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/20140101-20221124/h_sh_300/'
 # PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/20160301-20190531/h_sh_300/'
-PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/20160701-20221124/h_sh_300/'
+# PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/20160701-20221124/h_sh_300/'
 # PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/20190601-20221123/h_sh_300/'
-# PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/20190701-20221124/h_sh_300/'
+PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/20190701-20221124/h_sh_300/'
+PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/20190701-20221124_2/h_sh_300/'
 if __name__ == '__main__':
     NORMAL_TYPE = 'mean_norm'
-    sub_data_by_date('2022-07-21',NORMAL_TYPE) # 将原始数据截取至 20220721 ， 因为20220721之后的数据为testing
+    # sub_data_by_date('2022-07-21',NORMAL_TYPE) # 将原始数据截取至 20220721 ， 因为20220721之后的数据为testing
     # split_training_validation_test()
     # split_training_validation_test_by_date()
-    split_training_validation_test_by_date_2()
+    split_training_validation_test_by_date_2() # 根据时间前后划分，比例为8：1：1
+    # split_training_validation_test_by_date_3() # 将20140101-20220321数据作为训练集
     # save_head() # 方便查看，不修改数据
     normalize_data(NORMAL_TYPE)
+    # normalize_data2(NORMAL_TYPE)
     check_null(NORMAL_TYPE)
     # create_train_mirror_data(NORMAL_TYPE)
     # NORMAL_TYPE = 'min_max_norm'

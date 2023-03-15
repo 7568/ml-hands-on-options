@@ -138,34 +138,7 @@ class RowColTransformer(nn.Module):
         batch, n, _ = x.shape
         if self.style == 'colrow':
             for attn1, ff1, attn2, ff2, attn3, ff3 in self.layers:
-                x1 = []
-                for i in range(5):
-                    _x1 = attn1(x[:, i * 38:(i + 1) * 38, :])
-                    _x1 = ff1(_x1)
-                    x1.append(_x1)
-                x1 = torch.cat(x1, dim=1)
-
-                x2 = []
-                x2_ = rearrange(x1, 'b n d -> 1 b (n d)')
-                for i in range(5):
-                    _x2 = attn2(x2_[:, :, i * 38 * 8:(i + 1) * 38 * 8])
-                    _x2 = ff2(_x2)
-                    x2.append(_x2)
-                x2 = torch.cat(x2, dim=2)
-
-                x2 = rearrange(x2, '1 b (n d) -> b n d', n=n)
-
-                x3 = rearrange(x2, 'b (d_1 d_2) d -> b d_1 d_2 d', d_1=5)
-                x3 = rearrange(x3, 'b d_1 d_2 d -> b d_1 (d_2 d)')
-                pos = torch.arange(5, 0, -1).unsqueeze(0).repeat(batch, 1).to(self.device)
-                x3 = x3 * self.scale + self.pos_embedding(pos)
-                x3 = attn3(x3)
-                x3 = ff3(x3)
-                x3 = rearrange(x3, 'b d_1 (d_2 d) -> b d_1 d_2 d', d=8)
-                x3 = rearrange(x3, 'b d_1 d_2 d -> b (d_1 d_2) d')
-
-                x = 0.0 * x1 + 0.0 * x2 + 1.0 * x3
-
+                x = self.blation_test(blation_test_id,x, attn1, ff1, attn2, ff2, attn3, ff3, batch, n)
         else:
             for attn1, ff1 in self.layers:
                 x = rearrange(x, 'b n d -> 1 b (n d)')
@@ -176,6 +149,187 @@ class RowColTransformer(nn.Module):
         x = x[:, 0:38, :]
         # x = rearrange(x, 'b n d -> b (n d)')
         return x
+
+    def blation_test(self,blation_test_id,x,attn1, ff1, attn2, ff2, attn3, ff3,batch,n):
+        """
+        列维度0
+        行维度1
+        时间维度2
+        列+行维度3
+        行+列维度6
+        列+时间维度4
+        时间+列维度7
+        行+时间维度5
+        时间+行维度8
+        行+列+时间维度9
+        行+时间+列维度10
+        列+行+时间维度11
+        列+时间+行维度12
+        时间+行+列维度13
+        时间+列+行维度14
+
+        串行网络 结果相加
+        1	1	1           15
+        1	0.1	0.1         16
+        0.1	1	0.1         17
+        0.1	0.1	1           18
+
+        并行网络 结果相加
+        1	1	1           19
+        1	0.1	0.1         20
+        0.1	1	0.1         21
+        0.1	0.1	1           22
+
+
+        """
+        if blation_test_id==6:#r+c
+            x1 = self.r_attention(x,attn1, ff1, attn2, ff2, attn3, ff3,batch,n)
+            x2 = self.c_attention(x1,attn1, ff1, attn2, ff2, attn3, ff3,batch,n)
+            return x2
+        if blation_test_id==7:#t+c
+            x1 = self.t_attention(x,attn1, ff1, attn2, ff2, attn3, ff3,batch,n)
+            x2 = self.c_attention(x1,attn1, ff1, attn2, ff2, attn3, ff3,batch,n)
+            return x2
+        if blation_test_id == 8:#t+r
+            x1 = self.t_attention(x,attn1, ff1, attn2, ff2, attn3, ff3,batch,n)
+            x2 = self.r_attention(x1,attn1, ff1, attn2, ff2, attn3, ff3,batch,n)
+            return x2
+        if blation_test_id == 9:  # r+c+t
+            x1 = self.r_attention(x, attn1, ff1, attn2, ff2, attn3, ff3, batch, n)
+            x2 = self.c_attention(x1, attn1, ff1, attn2, ff2, attn3, ff3, batch, n)
+            x3 = self.t_attention(x2, attn1, ff1, attn2, ff2, attn3, ff3, batch, n)
+            return x3
+        if blation_test_id == 10:  # r+t+c
+            x1 = self.r_attention(x, attn1, ff1, attn2, ff2, attn3, ff3, batch, n)
+            x2 = self.t_attention(x1, attn1, ff1, attn2, ff2, attn3, ff3, batch, n)
+            x3 = self.c_attention(x2, attn1, ff1, attn2, ff2, attn3, ff3, batch, n)
+            return x3
+        if blation_test_id == 11:  # c+r+t
+            x1 = self.c_attention(x, attn1, ff1, attn2, ff2, attn3, ff3, batch, n)
+            x2 = self.r_attention(x1, attn1, ff1, attn2, ff2, attn3, ff3, batch, n)
+            x3 = self.t_attention(x2, attn1, ff1, attn2, ff2, attn3, ff3, batch, n)
+            return x3
+        if blation_test_id == 12:  # c+t+r
+            x1 = self.c_attention(x, attn1, ff1, attn2, ff2, attn3, ff3, batch, n)
+            x2 = self.t_attention(x1, attn1, ff1, attn2, ff2, attn3, ff3, batch, n)
+            x3 = self.r_attention(x2, attn1, ff1, attn2, ff2, attn3, ff3, batch, n)
+            return x3
+        if blation_test_id == 13:  # t+r+c
+            x1 = self.t_attention(x, attn1, ff1, attn2, ff2, attn3, ff3, batch, n)
+            x2 = self.r_attention(x1, attn1, ff1, attn2, ff2, attn3, ff3, batch, n)
+            x3 = self.c_attention(x2, attn1, ff1, attn2, ff2, attn3, ff3, batch, n)
+            return x3
+        if blation_test_id == 14:  # t+c+r
+            x1 = self.t_attention(x, attn1, ff1, attn2, ff2, attn3, ff3, batch, n)
+            x2 = self.c_attention(x1, attn1, ff1, attn2, ff2, attn3, ff3, batch, n)
+            x3 = self.r_attention(x2, attn1, ff1, attn2, ff2, attn3, ff3, batch, n)
+            return x3
+        if blation_test_id in [19,20,21,22]:  # t+c+r
+            x1 = self.t_attention(x, attn1, ff1, attn2, ff2, attn3, ff3, batch, n)
+            x2 = self.c_attention(x, attn1, ff1, attn2, ff2, attn3, ff3, batch, n)
+            x3 = self.r_attention(x, attn1, ff1, attn2, ff2, attn3, ff3, batch, n)
+            x1_param = 0
+            x2_param = 0
+            x3_param = 1.0
+            if blation_test_id == 19:
+                x1_param = 1.0
+                x2_param = 1.0
+                x3_param = 1.0
+            if blation_test_id == 20:
+                x1_param = 1.0
+                x2_param = 0.1
+                x3_param = 0.1
+            if blation_test_id == 21:
+                x1_param = 0.1
+                x2_param = 1.0
+                x3_param = 0.1
+            if blation_test_id == 22:
+                x1_param = 0.1
+                x2_param = 0.1
+                x3_param = 1.0
+            x = x1_param * x1 + x2_param * x2 + x3_param * x3
+            return x
+        x1 = self.c_attention(x,attn1, ff1, attn2, ff2, attn3, ff3,batch,n)
+        if blation_test_id==0: # c
+            return x1
+
+        if blation_test_id==1:# r
+            x1 = x
+        if blation_test_id == 5:  # r+t
+            x1 = x
+        x2 = self.r_attention(x1,attn1, ff1, attn2, ff2, attn3, ff3,batch,n)
+        if blation_test_id == 1:# r
+            return x2
+
+        if  blation_test_id == 3: # c+r
+            return x2
+
+        if  blation_test_id == 4: # c+t
+            x2 = x1
+
+        if blation_test_id == 2:# t
+            x2 = x
+        x3 = self.t_attention(x2,attn1, ff1, attn2, ff2, attn3, ff3,batch,n)
+        if blation_test_id == 2:# t
+            return x3
+        if blation_test_id == 4:  # c+t
+            return x3
+        if blation_test_id == 5:  # r+t
+            return x3
+
+        x1_param=0
+        x2_param=0
+        x3_param=1.0
+        if blation_test_id == 15:
+            x1_param = 1.0
+            x2_param = 1.0
+            x3_param = 1.0
+        if blation_test_id == 16:
+            x1_param = 1.0
+            x2_param = 0.1
+            x3_param = 0.1
+        if blation_test_id == 17:
+            x1_param = 0.1
+            x2_param = 1.0
+            x3_param = 0.1
+        if blation_test_id == 18:
+            x1_param = 0.1
+            x2_param = 0.1
+            x3_param = 1.0
+        x = x1_param * x1 + x2_param * x2 + x3_param * x3
+        return x
+
+
+    def c_attention(self, x,attn1, ff1, attn2, ff2, attn3, ff3,batch,n):
+        x1 = []
+        for i in range(5):
+            _x1 = attn1(x[:, i * 38:(i + 1) * 38, :])
+            _x1 = ff1(_x1)
+            x1.append(_x1)
+        x1 = torch.cat(x1, dim=1)
+        return x1
+
+    def r_attention(self, x1,attn1, ff1, attn2, ff2, attn3, ff3,batch,n):
+        x2 = []
+        x2_ = rearrange(x1, 'b n d -> 1 b (n d)')
+        for i in range(5):
+            _x2 = attn2(x2_[:, :, i * 38 * 8:(i + 1) * 38 * 8])
+            _x2 = ff2(_x2)
+            x2.append(_x2)
+        x2 = torch.cat(x2, dim=2)
+        x2 = rearrange(x2, '1 b (n d) -> b n d', n=n)
+        return x2
+
+    def t_attention(self, x2,attn1, ff1, attn2, ff2, attn3, ff3,batch,n):
+        x3 = rearrange(x2, 'b (d_1 d_2) d -> b d_1 d_2 d', d_1=5)
+        x3 = rearrange(x3, 'b d_1 d_2 d -> b d_1 (d_2 d)')
+        pos = torch.arange(5, 0, -1).unsqueeze(0).repeat(batch, 1).to(self.device)
+        x3 = x3 * self.scale + self.pos_embedding(pos)
+        x3 = attn3(x3)
+        x3 = ff3(x3)
+        x3 = rearrange(x3, 'b d_1 (d_2 d) -> b d_1 d_2 d', d=8)
+        x3 = rearrange(x3, 'b d_1 d_2 d -> b (d_1 d_2) d')
+        return x3
 
     def forward1(self, x, x_cont=None, mask=None):
         if x_cont is not None:

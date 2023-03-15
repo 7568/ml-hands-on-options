@@ -87,15 +87,15 @@ def reformat_data(training_df, validation_df, testing_df, not_use_pre_data=False
     """
     target_fea = 'up_and_down'
     train_x = training_df.copy()
-    train_x = train_x.iloc[:,:-5]
+    # train_x = train_x.iloc[:,:-5]
     train_y = training_df[target_fea]
 
     validation_x = validation_df.copy()
-    validation_x = validation_x.iloc[:,:-5]
+    # validation_x = validation_x.iloc[:,:-5]
     validation_y = validation_df[target_fea]
 
     testing_x = testing_df.copy()
-    testing_x = testing_x.iloc[:,:-5]
+    # testing_x = testing_x.iloc[:,:-5]
     testing_y = testing_df[target_fea]
 
     # latest_x = latest_df.copy()
@@ -106,6 +106,9 @@ def reformat_data(training_df, validation_df, testing_df, not_use_pre_data=False
         validation_x = validation_x.iloc[:, :int(validation_x.shape[1] / 5)]
         testing_x = testing_x.iloc[:, :int(testing_x.shape[1] / 5)]
         # latest_x = latest_x.iloc[:, :int(latest_x.shape[1] / 5)]
+    train_x.loc[:, target_fea] = -1
+    validation_x.loc[:, target_fea] = -1
+    testing_x.loc[:, target_fea] = -1
     return train_x, train_y, validation_x, validation_y, testing_x, testing_y
 
 def mse_loss(y_pred, y_val):

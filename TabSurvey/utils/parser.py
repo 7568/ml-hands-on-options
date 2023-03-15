@@ -21,7 +21,8 @@ def get_parser():
     parser.add('--gpu_ids', type=int, action="append", help="IDs of the GPUs used when data_parallel is true")
     parser.add('--gpu_index', default=0, type=int, help="ID of the GPU used when use_gpu is true")
     parser.add('--data_parallel', action="store_true", help="Distribute the training over multiple GPUs")
-    parser.add('--learning_rate', default=0.0001, type=float)
+    parser.add('--learning_rate', default=0.00001, type=float)
+    parser.add('--blation_test_id', default=-1, type=int)
 
     parser.add('--optimize_hyperparameters', action="store_true",
                help="Search for the best hyperparameters")

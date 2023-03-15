@@ -8,6 +8,9 @@ from einops import rearrange
 
 
 # helpers
+"""
+对每一天的数据采用不同的网络来处理
+"""
 
 def exists(val):
     return val is not None

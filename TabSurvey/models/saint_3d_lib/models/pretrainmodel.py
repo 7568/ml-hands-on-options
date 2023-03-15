@@ -1,4 +1,4 @@
-from .model import *
+from .model_v3 import *
 
 
 class sep_MLP(nn.Module):

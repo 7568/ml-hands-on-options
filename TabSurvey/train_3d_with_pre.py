@@ -123,7 +123,7 @@ def training_validation_testing(model, X, y, training_trading_dates, validation_
         save_loss_to_file(args, val_loss_history, "val_loss")
 
     # Compute scores on the output
-    sc.eval(y_test, curr_model.predictions, curr_model.prediction_probabilities)
+    sc.eval(curr_model.y_test, curr_model.predictions, curr_model.prediction_probabilities)
 
 
     print(sc.get_results())

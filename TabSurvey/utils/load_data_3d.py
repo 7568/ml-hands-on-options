@@ -20,7 +20,7 @@ def reformat_data_2(training_df, validation_df, testing_df, not_use_pre_data=Fal
                'DividendYeild','OpenPrice', 'HighPrice', 'LowPrice', 'SettlePrice', 'Change1', 'Change2','Volume',
                'Position', 'Amount', 'PreClosePrice', 'PreSettlePrice','PrePosition', 'PositionChange', 'MainSign',
                'AvgPrice','ClosePriceChangeRatio', 'SettlePriceChangeRatio', 'Amplitude', 'LimitUp','LimitDown',
-               'MaintainingMargin', 'ChangeRatio', 'up_and_down']
+               'MaintainingMargin', 'ChangeRatio', 'NEXT_OPEN','up_and_down']
 
     day_0_training_df = training_df[columns].copy()
     day_0_training_df.loc[:,'up_and_down']=0
@@ -40,7 +40,6 @@ def reformat_data_2(training_df, validation_df, testing_df, not_use_pre_data=Fal
     train_y = training_df[target_fea]
     validation_y = validation_df[target_fea]
     testing_y = testing_df[target_fea]
-
     return day_0_training_df, train_y, day_0_validation_df, validation_y, day_0_testing_df, testing_y
 
 
@@ -96,7 +95,8 @@ def load_h_sh_300_options(pretrain=False):
         validation_df = pd.read_csv(f'{PREPARE_HOME_PATH_2}/{NORMAL_TYPE}/validation.csv')
         testing_df = pd.read_csv(f'{PREPARE_HOME_PATH_2}/{NORMAL_TYPE}/testing.csv')
     else:
-        PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20190701-20221124/h_sh_300/'
+        PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20190701-20221124_2/h_sh_300/'
+        # PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20140101-20221124/h_sh_300/'
         training_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/training.csv')
         validation_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/validation.csv')
         testing_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/testing.csv')
@@ -104,10 +104,10 @@ def load_h_sh_300_options(pretrain=False):
     training_trading_dates = training_df['TradingDate']
     validation_trading_dates = validation_df['TradingDate']
     testing_trading_dates = testing_df['TradingDate']
-    no_need_columns = ['TradingDate', 'C_1']
-    training_df.drop(columns=no_need_columns, axis=1, inplace=True)
-    validation_df.drop(columns=no_need_columns, axis=1, inplace=True)
-    testing_df.drop(columns=no_need_columns, axis=1, inplace=True)
+    # no_need_columns = ['TradingDate','NEXT_HIGH']
+    # training_df.drop(columns=no_need_columns, axis=1, inplace=True)
+    # validation_df.drop(columns=no_need_columns, axis=1, inplace=True)
+    # testing_df.drop(columns=no_need_columns, axis=1, inplace=True)
     cat_features = ['CallOrPut', 'MainSign', 'up_and_down']
     for i in range(1, 5):
         cat_features.append(f'CallOrPut_{i}')

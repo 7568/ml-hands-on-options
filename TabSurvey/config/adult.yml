@@ -1,6 +1,6 @@
 # General parameters
 dataset: Adult
-model_name: NODE # LinearModel, KNN, SVM, DecisionTree, RandomForest, XGBoost, CatBoost, LightGBM, ModelTree
+model_name: SAINT # LinearModel, KNN, SVM, DecisionTree, RandomForest, XGBoost, CatBoost, LightGBM, ModelTree
                 # MLP, TabNet, VIME, TabTransformer, RLN, DNFNet, STG, NAM, DeepFM, SAINT
 objective: binary # Don't change
 # optimize_hyperparameters: True

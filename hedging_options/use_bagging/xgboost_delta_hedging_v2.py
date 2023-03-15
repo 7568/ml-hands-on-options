@@ -39,25 +39,26 @@ def pseudo_huber_loss(y_pred, y_val):
     return grad, hess
 
 def f1_eval(y_pred, y_val):
-    print('f1')
-    f_1 = f1_score(y_pred,y_val, average="binary")
-    return f_1
+    y_pred = np.array([int(i>0) for i in y_pred])
+    f_1 = f1_score(y_val.get_label(),y_pred, average="binary")
+    return ('1-f1',1-f_1)
 
 # PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20140101-20160229/h_sh_300/'
 # PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20160301-20190531/h_sh_300/'
 # PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20190601-20221123/h_sh_300/'
-PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20190701-20221124/h_sh_300/'
+# PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20190701-20221124/h_sh_300/'
+PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20190701-20221124_2/h_sh_300/'
+# PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20140101-20220321/h_sh_300/'
 if __name__ == '__main__':
     opt = init_parser()
     if opt.log_to_file:
         logger = util.init_log('xgboost_delta_hedging_v2')
     NORMAL_TYPE = 'mean_norm'
-    NORMAL_TYPE = ''
     training_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/training.csv')
     validation_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/validation.csv')
     testing_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/testing.csv')
-    no_need_columns = ['TradingDate', 'C_1']
-    no_need_columns = ['TradingDate', 'C_1','SecurityID', 'Filling', 'ContinueSign', 'TradingDayStatusID']
+    no_need_columns = ['TradingDate', 'NEXT_HIGH']
+    # no_need_columns = ['TradingDate', 'C_1','SecurityID', 'Filling', 'ContinueSign', 'TradingDayStatusID']
     training_df.drop(columns=no_need_columns, axis=1, inplace=True)
     validation_df.drop(columns=no_need_columns, axis=1, inplace=True)
     testing_df.drop(columns=no_need_columns, axis=1, inplace=True)
@@ -84,8 +85,7 @@ if __name__ == '__main__':
         'reg_alpha': 0.5,
         'reg_lambda': 0.5,
         'use_label_encoder': False,
-        'eval_metric': 'logloss'
-        # 'eval_metric': f1_eval
+        # 'eval_metric': 'f1'
 
     }
 
