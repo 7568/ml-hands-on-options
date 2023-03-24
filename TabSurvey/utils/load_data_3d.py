@@ -95,8 +95,13 @@ def load_h_sh_300_options(pretrain=False):
         validation_df = pd.read_csv(f'{PREPARE_HOME_PATH_2}/{NORMAL_TYPE}/validation.csv')
         testing_df = pd.read_csv(f'{PREPARE_HOME_PATH_2}/{NORMAL_TYPE}/testing.csv')
     else:
-        # PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20190701-20221124_2/h_sh_300/'
-        PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20140101-20221124/h_sh_300/'
+        up_rate=0
+        PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/20190701-20221124_{up_rate}/h_sh_300/'
+        # PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20190701-20221124_0.1/h_sh_300/'
+        # PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20190701-20221124_0.05/h_sh_300/'
+        # PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20190701-20221124_1.0/h_sh_300/'
+        # PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20140101-20221124/h_sh_300/'
+        # PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20140101-20220321/h_sh_300/'
         training_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/training.csv')
         validation_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/validation.csv')
         testing_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/testing.csv')

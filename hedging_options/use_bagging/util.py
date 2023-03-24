@@ -106,9 +106,9 @@ def reformat_data(training_df, validation_df, testing_df, not_use_pre_data=False
         validation_x = validation_x.iloc[:, :int(validation_x.shape[1] / 5)]
         testing_x = testing_x.iloc[:, :int(testing_x.shape[1] / 5)]
         # latest_x = latest_x.iloc[:, :int(latest_x.shape[1] / 5)]
-    train_x.loc[:, target_fea] = -1
-    validation_x.loc[:, target_fea] = -1
-    testing_x.loc[:, target_fea] = -1
+    train_x.loc[:, target_fea] = 0
+    validation_x.loc[:, target_fea] = 0
+    testing_x.loc[:, target_fea] = 0
     return train_x, train_y, validation_x, validation_y, testing_x, testing_y
 
 def mse_loss(y_pred, y_val):

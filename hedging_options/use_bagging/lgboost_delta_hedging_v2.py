@@ -19,8 +19,8 @@ def init_parser():
     return opt
 
 
-PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20190701-20221124_2/h_sh_300/'
-PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20140101-20221124/h_sh_300/'
+PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20190701-20221124_0/h_sh_300/'
+
 if __name__ == '__main__':
     opt = init_parser()
     if opt.log_to_file:
@@ -44,7 +44,7 @@ if __name__ == '__main__':
         cat_features.append(f'MainSign_{i}')
         cat_features.append(f'up_and_down_{i}')
     train_x, train_y, validation_x, validation_y, testing_x, testing_y = util.reformat_data(
-        training_df, testing_df, validation_df, not_use_pre_data=False)
+        training_df, validation_df,testing_df, not_use_pre_data=False)
 
     params = {'objective': 'binary',
               # 'boosting': 'gbdt',
@@ -92,3 +92,31 @@ test中为0的比例 : 0.5326281147155618
 F1 = 0.06612995974698102
 总体准确率：0.5418899858956276
 """
+
+
+"""0.1 0：不涨 ， 1：涨
+tn, fp, fn, tp 12911 1771 3513 3075
+test中为1的比例 : 0.3097320169252468
+test中为0的比例 : 0.6902679830747531
+查准率 - 预测为1 且实际为1 ，看涨的准确率: 0.6345439537763103
+查全率 - 实际为1，预测为1 : 0.46675774134790526
+F1 = 0.5378695119818085
+总体准确率：0.7515749882463564"""
+
+"""0.05 0：不涨 ， 1：涨
+tn, fp, fn, tp 8952 2535 3526 6257
+test中为1的比例 : 0.45994358251057826
+test中为0的比例 : 0.5400564174894217
+查准率 - 预测为1 且实际为1 ，看涨的准确率: 0.7116696997270245
+查全率 - 实际为1，预测为1 : 0.6395788612899929
+F1 = 0.6737012113055182
+总体准确率：0.7150446638457922"""
+
+"""0.01 0：不涨 ， 1：涨
+tn, fp, fn, tp 3275 3788 1941 12266
+test中为1的比例 : 0.6679360601786554
+test中为0的比例 : 0.33206393982134463
+查准率 - 预测为1 且实际为1 ，看涨的准确率: 0.7640463435903825
+查全率 - 实际为1，预测为1 : 0.8633772084183853
+F1 = 0.8106804137338488
+总体准确率：0.7306535025858016"""

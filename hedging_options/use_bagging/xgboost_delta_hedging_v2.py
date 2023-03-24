@@ -41,13 +41,13 @@ def pseudo_huber_loss(y_pred, y_val):
 def f1_eval(y_pred, y_val):
     y_pred = np.array([int(i>0) for i in y_pred])
     f_1 = f1_score(y_val.get_label(),y_pred, average="binary")
-    return ('1-f1',1-f_1)
+    return ('f1_error',1-f_1)
 
 # PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20140101-20160229/h_sh_300/'
 # PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20160301-20190531/h_sh_300/'
 # PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20190601-20221123/h_sh_300/'
 # PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20190701-20221124/h_sh_300/'
-PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20190701-20221124_2/h_sh_300/'
+PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20190701-20221124_0.05/h_sh_300/'
 # PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20140101-20220321/h_sh_300/'
 if __name__ == '__main__':
     opt = init_parser()
@@ -79,13 +79,14 @@ if __name__ == '__main__':
         'n_estimators': 500,
         'max_depth': 30,
         'learning_rate': 0.01,
-        'tree_method': 'hist',
+        # 'tree_method': 'hist',
         'subsample': 0.75,
         'colsample_bytree': 0.75,
         'reg_alpha': 0.5,
         'reg_lambda': 0.5,
         'use_label_encoder': False,
-        # 'eval_metric': 'f1'
+        # 'disable_default_eval_metric': 1
+        # 'eval_metric': '1-f1'
 
     }
 
@@ -93,7 +94,7 @@ if __name__ == '__main__':
 
     model.fit(train_x.to_numpy(), train_y,
               eval_set=[(validation_x.to_numpy(), np.array(validation_y))],
-              early_stopping_rounds=20)
+              early_stopping_rounds=20,eval_metric=f1_eval)
     if opt.log_to_file:
 
         util.remove_file_if_exists(f'XGBClassifier')

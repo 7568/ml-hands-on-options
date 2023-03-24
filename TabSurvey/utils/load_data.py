@@ -54,7 +54,7 @@ def reformat_data(training_df, validation_df, testing_df, not_use_pre_data=False
 
 
 def load_h_sh_300_options():
-    PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20190701-20221124/h_sh_300/'
+    PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20190701-20221124_0/h_sh_300/'
     NORMAL_TYPE = 'mean_norm'
     training_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/training.csv')
     validation_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/validation.csv')

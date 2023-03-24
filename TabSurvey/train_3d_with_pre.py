@@ -229,5 +229,5 @@ if __name__ == "__main__":
         if arguments.gpu_index == 0:
             arguments.gpu_index = 6
         arguments.learning_rate /=2
-        # arguments.use_pretrain_data=True
+        arguments.use_pretrain_data=True
         main_once(arguments)

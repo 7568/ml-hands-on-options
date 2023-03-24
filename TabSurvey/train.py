@@ -5,7 +5,7 @@ import optuna
 
 from utils import logger_conf
 from models import str2model
-from utils.load_data import load_data
+from utils.load_data_3d import load_data
 from utils.scorer import get_scorer
 from utils.timer import Timer
 from utils.io_utils import save_results_to_file, save_hyperparameters_to_file, save_loss_to_file
@@ -167,7 +167,7 @@ class Objective(object):
 
 def main(args):
     print("Start hyperparameter optimization")
-    X, y = load_data(args)
+    X, y,_,_,_ = load_data(args)
 
     model_name = str2model(args.model_name)
 
@@ -192,7 +192,7 @@ def main(args):
 
 def main_once(args):
     print("Train model with given hyperparameters")
-    X, y = load_data(args)
+    X, y,_,_,_ = load_data(args)
 
     model_name = str2model(args.model_name)
 

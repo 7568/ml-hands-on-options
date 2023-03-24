@@ -1,11 +1,11 @@
 # General parameters
 dataset: H_sh_300_options
 model_name: SAINT_3D # LinearModel, KNN, SVM, DecisionTree, RandomForest, XGBoost, CatBoost, LightGBM, ModelTree
-# MLP, TabNet, VIME, TabTransformer, RLN, DNFNet, STG, NAM, DeepFM, SAINT,SAINT_v2.SAINT_3d
+# MLP, TabNet, VIME, TabTransformer, RLN, DNFNet, STG, NAM, DeepFM, SAINT, SAINT_v2, SAINT_3D
 objective: binary  # Don't change binary_f1 binary
 # 如果是 binary或者regression 那么num_classes为1
 
-pretrain: True
+pretrain: False
 pretrain_epochs: 17
 
 use_pretrain_data: False
@@ -13,7 +13,7 @@ use_pretrain_data: False
 # optimize_hyperparameters: True
 use_gpu: True
 # use one GPU parameters
-gpu_index: 5
+gpu_index: 0
 # use GPU data_parallel parameters
 gpu_ids: [ 0, 1 ]
 

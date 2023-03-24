@@ -1026,6 +1026,7 @@ def append_payoff_rate_1(ord_1, ord_2, up_rate=0.1):
     # C_1 = df['NEXT_OPEN']
     # H_1 = df['NEXT_HIGH']
     _ra = (df['NEXT_HIGH']-df['NEXT_OPEN']) / df['NEXT_OPEN']  # （明天的最高价-明天的开盘价）除以明天的开盘价
+    print(np.sum(_ra > up_rate)/len(_ra > up_rate))
     df.loc[_ra > up_rate, 'up_and_down'] = 1
     _ra_1 = (df['NEXT_HIGH_1']-df['NEXT_OPEN_1']) / df['NEXT_OPEN_1']  # 今天天的开盘价除以昨天的平均价
     df.loc[_ra_1 > up_rate, 'up_and_down_1'] = 1
@@ -1099,23 +1100,18 @@ def rename_raw_data(ord_1):
 # DATA_HOME_PATH = '/home/liyu/data/hedging-option/china-market'
 # DATA_HOME_PATH = '/home/liyu/data/hedging-option/20140101-20160229'
 # DATA_HOME_PATH = '/home/liyu/data/hedging-option/20140101-20220321'
-DATA_HOME_PATH = '/home/liyu/data/hedging-option/20140101-20221124'
+# DATA_HOME_PATH = '/home/liyu/data/hedging-option/20140101-20221124'
 # DATA_HOME_PATH = '/home/liyu/data/hedging-option/20160301-20190531'
 # DATA_HOME_PATH = '/home/liyu/data/hedging-option/20160701-20221124'
 # DATA_HOME_PATH = '/home/liyu/data/hedging-option/20190601-20221123'
 # DATA_HOME_PATH = '/home/liyu/data/hedging-option/20190701-20221124'
-# DATA_HOME_PATH = '/home/liyu/data/hedging-option/20190701-20221124_2'
+up_rete=0 # 0, 0.1 , 0.05, 0.01
+DATA_HOME_PATH = f'/home/liyu/data/hedging-option/20190701-20221124_{up_rete}'
 OPTION_SYMBOL = 'h_sh_300'
 
 if __name__ == '__main__':
     DATA_HOME_PATH = DATA_HOME_PATH + "/" + OPTION_SYMBOL + "/"
-    append_next_price_1(9, 10)  # 得到下一天的期权开盘价格数据
-    append_before4_days_data(10, 11)  # 将前4天的数据追加到当天，不够4天的用0填充
-    # append_next_price(10, 11)  # 得到下一天的期权价格数据
-    # append_next_price_1(10, 11)  # 得到下一天的期权开盘价格数据
-    # append_real_hedging_rate(11, 12)  # 得到真实的对冲比例
-    # append_payoff_rate(11, '12_1')  # 得到期权是涨还是跌,此处的涨跌的判断是根据今天的收盘价，再对明天的开盘价来预测的
-    append_payoff_rate_1(11, '12_1', 0.05)  # 得到期权是涨还是跌，此处的涨跌的判断是根据明天早上，得到开盘价之后，再对明天的最高价来预测的
+    append_payoff_rate_1(11, '12_1', up_rete)  # 得到期权是涨还是跌，此处的涨跌的判断是根据明天早上，得到开盘价之后，再对明天的最高价来预测的
     check_null_by_id('12_1')
     retype_cat_columns('12_1', 13)  # 将分类数据设置成int型
     # get_expand_head()  # 查看填充效果
