@@ -19,7 +19,7 @@ def init_parser():
     return opt
 
 
-PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20190701-20221124_0/h_sh_300/'
+PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20190701-20221124_0.05/h_sh_300/'
 
 if __name__ == '__main__':
     opt = init_parser()
@@ -43,7 +43,7 @@ if __name__ == '__main__':
         cat_features.append(f'CallOrPut_{i}')
         cat_features.append(f'MainSign_{i}')
         cat_features.append(f'up_and_down_{i}')
-    train_x, train_y, validation_x, validation_y, testing_x, testing_y = util.reformat_data(
+    train_x, train_y, validation_x, validation_y, testing_x, testing_y,testing_y_2 = util.reformat_data(
         training_df, validation_df,testing_df, not_use_pre_data=False)
 
     params = {'objective': 'binary',
@@ -67,6 +67,7 @@ if __name__ == '__main__':
     validation_data = lgb.Dataset(validation_x, validation_y)
     bst = lgb.train(params, train_data, num_round,valid_sets=[validation_data],
                     callbacks=[early_stopping(early_s_n), log_evaluation()])
+    opt.log_to_file=True
     if opt.log_to_file:
 
         util.remove_file_if_exists(f'lgboostClassifier')
@@ -78,8 +79,9 @@ if __name__ == '__main__':
     y_test_hat = bst_from_file.predict(testing_x, num_iteration=bst.best_iteration)
 
 
-    util.binary_eval_accuracy(validation_y, y_validation_hat > 0.5)
+    # util.binary_eval_accuracy(validation_y, y_validation_hat > 0.5)
     util.binary_eval_accuracy(testing_y, y_test_hat > 0.5)
+    util.detail_result_analysis(testing_y_2.to_numpy(), y_test_hat > 0.5)
 
 
 """

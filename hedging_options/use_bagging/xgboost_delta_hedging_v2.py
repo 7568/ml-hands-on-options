@@ -67,7 +67,7 @@ if __name__ == '__main__':
         cat_features.append(f'CallOrPut_{i}')
         cat_features.append(f'MainSign_{i}')
         cat_features.append(f'up_and_down_{i}')
-    train_x, train_y, validation_x, validation_y, testing_x, testing_y= util.reformat_data(
+    train_x, train_y, validation_x, validation_y, testing_x, testing_y,testing_y_2= util.reformat_data(
         training_df,validation_df, testing_df, not_use_pre_data=False)
 
     params = {
@@ -77,8 +77,8 @@ if __name__ == '__main__':
         # 'objective': mae_loss,
         # 'objective': pseudo_huber_loss,
         'n_estimators': 500,
-        'max_depth': 30,
-        'learning_rate': 0.01,
+        'max_depth': 20,
+        'learning_rate': 0.015,
         # 'tree_method': 'hist',
         'subsample': 0.75,
         'colsample_bytree': 0.75,
@@ -107,10 +107,10 @@ if __name__ == '__main__':
     y_validation_hat = model_from_file.predict(np.ascontiguousarray(validation_x.to_numpy()))
     y_test_hat = model_from_file.predict(np.ascontiguousarray(testing_x.to_numpy()))
     # y_latest_hat = model_from_file.predict(np.ascontiguousarray(latest_x.to_numpy()))
-    util.binary_eval_accuracy(np.array(validation_y), y_validation_hat)
-    print('======================')
+    # util.binary_eval_accuracy(np.array(validation_y), y_validation_hat)
+    # print('======================')
     util.binary_eval_accuracy(np.array(testing_y), y_test_hat)
-    # util.binary_eval_accuracy(np.array(latest_y), y_latest_hat)
+    util.detail_result_analysis(testing_y_2.to_numpy(), y_test_hat)
 
 """
    

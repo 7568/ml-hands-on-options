@@ -104,8 +104,8 @@ def training_validation_testing(model, X, y, training_trading_dates, validation_
     curr_model.blation_test_id=2
 
     test_timer.start()
-    # curr_model.set_testing(X_test,y_test,testing_trading_dates)
-    curr_model.predict(X_test,testing_trading_dates,y=y_test)
+    curr_model.set_testing(X_test,y_test,testing_trading_dates)
+    curr_model.predict(X_test,testing_trading_dates)
     test_timer.end()
     sc.eval(curr_model.y_test,curr_model.predictions, curr_model.prediction_probabilities)
 

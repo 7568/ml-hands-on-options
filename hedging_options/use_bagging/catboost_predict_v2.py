@@ -20,19 +20,17 @@ def init_parser():
     return parser.parse_args()
 
 
-PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20190701-20221124_0.05/h_sh_300/'
+PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20190701-20221124_0/h_sh_300/'
 if __name__ == '__main__':
     opt = init_parser()
     if opt.log_to_file:
         logger = util.init_log('catboost_delta_hedging_v2')
     # NORMAL_TYPE = 'min_max_norm'
     NORMAL_TYPE = 'mean_norm'
-    training_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/training.csv')
-    validation_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/validation.csv')
     testing_df = pd.read_csv(f'{PREPARE_HOME_PATH}/{NORMAL_TYPE}/testing.csv')
+    training_df = testing_df.iloc[0:10,:]
+    validation_df = testing_df.iloc[0:10,:]
     no_need_columns = ['TradingDate', 'NEXT_HIGH']
-    training_df.drop(columns=no_need_columns, axis=1, inplace=True)
-    validation_df.drop(columns=no_need_columns, axis=1, inplace=True)
     testing_df.drop(columns=no_need_columns, axis=1, inplace=True)
     cat_features = ['CallOrPut', 'MainSign', 'up_and_down']
     # cat_features = ['CallOrPut', 'MainSign']
@@ -43,39 +41,14 @@ if __name__ == '__main__':
     train_x, train_y, validation_x, validation_y, testing_x, testing_y,testing_y_2 = util.reformat_data(
         training_df, validation_df, testing_df, not_use_pre_data=False)
 
-    params = {
-        'iterations': 200,
-        'depth': 16,
-        'learning_rate': 0.01,
-        # 'loss_function': '',
-        # 'verbose': False,
-        'task_type': "GPU",
-        'logging_level': 'Verbose',
-        'devices': '6',
-        'early_stopping_rounds': 20,
-        # 'eval_metric':'Accuracy'
 
-    }
-
-    train_pool = Pool(train_x, np.array(train_y).reshape(-1, 1), cat_features=cat_features)
-    validation_pool = Pool(validation_x, np.array(validation_y).reshape(-1, 1), cat_features=cat_features)
     test_pool = Pool(testing_x, cat_features=cat_features)
 
+    from_file = CatBoostClassifier()
 
-    model = CatBoostClassifier(**params)
-    model.fit(train_pool, eval_set=validation_pool, log_cerr=sys.stderr, log_cout=sys.stdout)
-    opt.log_to_file=True
-    if opt.log_to_file:
-        util.remove_file_if_exists(f'CatBoostClassifier')
-        model.save_model("CatBoostClassifier")
-
-        from_file = CatBoostClassifier()
-
-        from_file.load_model("CatBoostClassifier")
-    else:
-        from_file = model
+    from_file.load_model("CatBoostClassifier")
     # make the prediction using the resulting model
-    y_validation_hat = from_file.predict(validation_pool)
+
     y_test_hat = from_file.predict(test_pool)
 
     y_validation_true = np.array(validation_y).reshape(-1, 1)

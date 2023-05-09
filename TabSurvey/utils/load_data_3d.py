@@ -22,6 +22,16 @@ def reformat_data_2(training_df, validation_df, testing_df, not_use_pre_data=Fal
                'AvgPrice','ClosePriceChangeRatio', 'SettlePriceChangeRatio', 'Amplitude', 'LimitUp','LimitDown',
                'MaintainingMargin', 'ChangeRatio', 'NEXT_OPEN','up_and_down']
 
+    testing_spot = testing_df['UnderlyingScrtClose'].to_numpy()
+    testing_strike = testing_df['StrikePrice'].to_numpy()
+    testing_money_ness = testing_spot / testing_strike
+    testing_df.loc[:, 'MoneyNess'] = testing_money_ness
+
+
+    # training_df.loc[:, 'RemainingTerm'] = np.round((training_df['RemainingTerm'] * 365).to_numpy())
+    # validation_df.loc[:, 'RemainingTerm'] = np.round((validation_df['RemainingTerm'] * 365).to_numpy())
+    # testing_df.loc[:, 'RemainingTerm'] = np.round((testing_df['RemainingTerm'] * 365).to_numpy())
+
     day_0_training_df = training_df[columns].copy()
     day_0_training_df.loc[:,'up_and_down']=0
     day_0_validation_df = validation_df[columns].copy()
@@ -36,10 +46,12 @@ def reformat_data_2(training_df, validation_df, testing_df, not_use_pre_data=Fal
         day_0_training_df = pd.concat((day_0_training_df,day_i_training_df),axis=1)
         day_0_validation_df = pd.concat((day_0_validation_df,day_i_validation_df),axis=1)
         day_0_testing_df = pd.concat((day_0_testing_df,day_i_testing_df),axis=1)
+    testing_target_fea = ['up_and_down','RemainingTerm','MoneyNess','CallOrPut']
     target_fea = 'up_and_down'
     train_y = training_df[target_fea]
     validation_y = validation_df[target_fea]
-    testing_y = testing_df[target_fea]
+    testing_y = testing_df[testing_target_fea]
+    testing_y.loc[:, 'RemainingTerm'] = np.round((testing_y['RemainingTerm'] * 365).to_numpy())
     return day_0_training_df, train_y, day_0_validation_df, validation_y, day_0_testing_df, testing_y
 
 
@@ -95,7 +107,8 @@ def load_h_sh_300_options(pretrain=False):
         validation_df = pd.read_csv(f'{PREPARE_HOME_PATH_2}/{NORMAL_TYPE}/validation.csv')
         testing_df = pd.read_csv(f'{PREPARE_HOME_PATH_2}/{NORMAL_TYPE}/testing.csv')
     else:
-        up_rate=0
+        up_rate=0.05
+        # up_rate=0
         PREPARE_HOME_PATH = f'/home/liyu/data/hedging-option/20190701-20221124_{up_rate}/h_sh_300/'
         # PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20190701-20221124_0.1/h_sh_300/'
         # PREPARE_HOME_PATH = '/home/liyu/data/hedging-option/20190701-20221124_0.05/h_sh_300/'

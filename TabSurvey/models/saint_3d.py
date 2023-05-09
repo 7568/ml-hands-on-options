@@ -297,7 +297,9 @@ class SAINT_3d(BaseModelTorch):
 
     def set_testing(self, x, y, testing_trading_dates=None):
         self.testing_x = x
-        self.testing_y = y.reshape(-1, 1)
+        self.testing_y_raw = y
+        self.testing_y = y[:,0].reshape(-1, 1)
+        # self.testing_y = y.reshape(-1, 1)
         self.testing_trading_dates = testing_trading_dates
 
     # def _predict_helper(self, val_dataloader=None):
@@ -359,6 +361,7 @@ class SAINT_3d(BaseModelTorch):
         X = {'data': X, 'mask': np.ones_like(X)}
         if y is None:
             y = {'data': self.testing_y}
+            y = {'data': self.testing_y_raw}
         else:
             y = {'data': y.reshape(-1, 1)}
         _ds = DataSetCatCon(X, y, self.args.cat_idx, self.args.objective, trading_dates=_trading_dates)
@@ -399,7 +402,60 @@ class SAINT_3d(BaseModelTorch):
                 real_testing_y.append(y_gts.squeeze(0).detach().cpu())
                 predictions.append(y_outs)
 
-        f1 = self._f1_score(real_testing_y, predictions).item()
+        new_y = np.column_stack([np.concatenate(real_testing_y), np.concatenate(predictions)])
+        self._f1_score_2(new_y[:,0], new_y[:,-1]).item()
+        c_set = new_y[new_y[:, -2] == 0]
+        p_set = new_y[new_y[:, -2] == 1]
+
+        c_m_less_097=c_set[c_set[:, -3] < 0.97]
+        p_m_less_097=p_set[p_set[:, -3] < 0.97]
+
+        c_m_more_097_less_103 = c_set[(c_set[:, -3] >= 0.97) & (c_set[:, -3] < 1.03)]
+        p_m_more_097_less_103 = p_set[(p_set[:, -3] >= 0.97) & (p_set[:, -3] < 1.03)]
+
+        c_m_more_103 = c_set[c_set[:, -3] >= 1.03]
+        p_m_more_103 = p_set[p_set[:, -3] >= 1.03]
+
+        print('++++++++++++++++     c_m_less_097     ++++++++++++++++++++++++++++')
+        f1 = self._f1_score_2(c_m_less_097[:,0], c_m_less_097[:,-1]).item()
+        print('++++++++++++++++     p_m_less_097     +++++++++++++++++++')
+        f1 = self._f1_score_2(p_m_less_097[:, 0], p_m_less_097[:, -1]).item()
+        print('++++++++++++++++     c_m_more_097_less_103     ++++++++++++++++++')
+        f1 = self._f1_score_2(c_m_more_097_less_103[:, 0], c_m_more_097_less_103[:, -1]).item()
+        print('+++++++++++++++     p_m_more_097_less_103     ++++++++++++++++++++')
+        f1 = self._f1_score_2(p_m_more_097_less_103[:, 0], p_m_more_097_less_103[:, -1]).item()
+        print('++++++++++++++++     c_m_more_103     ++++++++++++++++++++++')
+        f1 = self._f1_score_2(c_m_more_103[:, 0], c_m_more_103[:, -1]).item()
+        print('++++++++++++++++     p_m_more_103     +++++++++++++++++++++')
+        f1 = self._f1_score_2(p_m_more_103[:, 0], p_m_more_103[:, -1]).item()
+        print('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+
+        max_day=570
+        # for index, df in enumerate([c_set, p_set]):
+        span_days = 30
+
+        for d in range(0, 210, span_days):
+            c_maturity = c_set[(c_set[:, 1] >= d) & (c_set[:, 1] < (d + span_days))]
+            p_maturity = p_set[(p_set[:, 1] >= d) & (p_set[:, 1] < (d + span_days))]
+            print('+++++++++        c          ++++++++++++++++++++++')
+            print(f'{d}~{d + span_days}')
+            f1 = self._f1_score_2(c_maturity[:, 0], c_maturity[:, -1]).item()
+            print('+++++++++++        p           +++++++++++++++++')
+            print(f'{d}~{d + span_days}')
+            f1 = self._f1_score_2(p_maturity[:, 0], p_maturity[:, -1]).item()
+            print('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
+
+        if max_day > 270:
+            d = 210
+            c_maturity = c_set[(c_set[:, 1] >= d) & (c_set[:, 1] < (max_day))]
+            p_maturity = p_set[(p_set[:, 1] >= d) & (p_set[:, 1] < (max_day))]
+            print('+++++++++        c          ++++++++++++++++++++++')
+            print(f'{d}~{max_day}')
+            f1 = self._f1_score_2(c_maturity[:, 0], c_maturity[:, -1]).item()
+            print('+++++++++++        p           +++++++++++++++++')
+            print(f'{d}~{max_day}')
+            f1 = self._f1_score_2(p_maturity[:, 0], p_maturity[:, -1]).item()
+            print('+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++')
 
         print(f'f1 in {tag} : {f1}')
 
@@ -407,6 +463,93 @@ class SAINT_3d(BaseModelTorch):
             return f1
         else:
             return np.concatenate(predictions),np.concatenate(real_testing_y)
+
+    def predict_helper_2(self, X, _trading_dates=None, y=None, tag='testing', need_reload_model=True):
+        X = {'data': X, 'mask': np.ones_like(X)}
+        if y is None:
+            y = {'data': self.testing_y}
+        else:
+            y = {'data': y.reshape(-1, 1)}
+        _ds = DataSetCatCon(X, y, self.args.cat_idx, self.args.objective, trading_dates=_trading_dates)
+        dataloader = DataLoader(_ds, batch_size=1, shuffle=False, num_workers=4)
+        print(f'need_reload_model : {need_reload_model}')
+        if need_reload_model:
+            self.load_model(
+                filename_extension=f"{self.args.model_name}_{self.args.blation_test_id}_{self.args.learning_rate}_best",
+                directory="tmp")
+            self.model.to(self.device)
+        self.model.eval()
+
+        predictions = []
+        real_testing_y = []
+        with torch.no_grad():
+
+            for data in tqdm(dataloader, total=len(dataloader)):
+                x_categ, x_cont, y_gts, cat_mask, con_mask = data
+                x_categ = x_categ.squeeze(0)
+                x_cont = x_cont.squeeze(0)
+                cat_mask = cat_mask.squeeze(0)
+                con_mask = con_mask.squeeze(0)
+
+                x_categ, x_cont = x_categ.to(self.device), x_cont.to(self.device)
+                cat_mask, con_mask = cat_mask.to(self.device), con_mask.to(self.device)
+
+                _, x_categ_enc, x_cont_enc = embed_data_mask(x_categ, x_cont, cat_mask, con_mask, self.model)
+                reps = self.model.transformer(x_categ_enc, x_cont_enc, blation_test_id=self.blation_test_id)
+                y_reps = reps[:, -1, :]
+
+                y_outs = self.model.mlpfory(y_reps)
+                if self.args.objective == "binary":
+                    y_outs = torch.sigmoid(y_outs).detach().cpu().numpy()
+                elif self.args.objective == "regression":
+                    y_outs = torch.sigmoid(y_outs - 0.5).detach().cpu().numpy()
+                else:
+                    y_outs = y_outs.detach().cpu()
+
+                real_testing_y.append(y_gts.squeeze(0).detach().cpu())
+                predictions.append(y_outs)
+
+        f1 = self._f1_score(real_testing_y, predictions).item()
+
+        print(f'f1 in {tag} : {f1}')
+
+        if tag == 'validation':
+            return f1
+        else:
+            return np.concatenate(predictions), np.concatenate(real_testing_y)
+
+    def _f1_score_2(self, y_true, y_prediction):
+        # new_y = np.column_stack([np.concatenate(y_true), np.concatenate(y_prediction)])
+        # c_set = np.where(new_y[:,-1]==0)
+        # p_set = np.where(new_y[:,-1]==1)
+        #
+        # y_true = np.concatenate(y_true).reshape((-1,))
+        # y_prediction = np.concatenate(y_prediction)
+        y_true = y_true.reshape((-1,1))
+        y_prediction = y_prediction.reshape((-1,1))
+        if self.args.objective == "binary":
+            y_prediction_ = np.concatenate((1 - y_prediction, y_prediction), 1)
+            y_prediction_ = np.argmax(y_prediction_, axis=1)
+        elif self.args.objective == "classification":
+            y_prediction_ = torch.argmax(y_prediction, dim=1).detach().cpu().numpy()
+        else:
+            # y_prediction_ = torch.sigmoid(y_prediction).detach().cpu().numpy()
+            y_prediction_ = np.concatenate((1 - y_prediction, y_prediction), 1)
+            y_prediction_ = np.argmax(y_prediction_, axis=1)
+        # print(np.array(y_prediction_))
+        # print(np.array(y_true))
+        # print(y_prediction_.shape)
+        # print(y_true.shape)
+        # print(f'np.all(y_prediction_==0) : {np.all(y_prediction_ == 0)}')
+        # print(f'np.all(y_prediction_==1) : {np.all(y_prediction_ == 1)}')
+        # print(f"np.sum(np.array(y_prediction)) : {np.sum(np.array(y_prediction_))}")
+        # print(f"np.array(y_prediction).size : {np.array(y_prediction_).size}")
+        tn, fp, fn, tp = confusion_matrix(y_true, np.array(y_prediction_)).ravel()
+        # print('0：不涨 ， 1：涨')
+        print('tn, fp, fn, tp', tn, fp, fn, tp)
+        f1 = f1_score(y_true, np.array(y_prediction_), average="binary")
+        print(f'f1 : {f1}')
+        return f1
 
     def _f1_score(self, y_true, y_prediction):
         y_true = np.concatenate(y_true).reshape((-1,))

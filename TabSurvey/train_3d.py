@@ -232,5 +232,5 @@ if __name__ == "__main__":
         if arguments.gpu_index == 0:
             arguments.gpu_index = 7
         if arguments.gpu_index > 7:
-            arguments.gpu_index %= 7
+            arguments.gpu_index %= 8
         main_once(arguments)
